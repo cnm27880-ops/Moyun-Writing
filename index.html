@@ -113,10 +113,12 @@
             font-family: var(--font-ui);
             background: var(--bg-app);
             color: var(--ink-primary);
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Custom Scrollbar */
@@ -139,8 +141,11 @@
            ============================================ */
         .app {
             position: relative;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         /* ============================================
@@ -922,20 +927,29 @@
            ============================================ */
         .main-content {
             padding-top: calc(var(--navbar-height) + var(--safe-area-top));
-            padding-bottom: calc(160px + var(--safe-area-bottom));
-            min-height: 100vh;
-            min-height: 100dvh;
+            padding-bottom: calc(var(--safe-area-bottom));
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .editor-container {
             max-width: 720px;
             margin: 0 auto;
             padding: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
         }
 
         @media (max-width: 767px) {
             .editor-container {
-                padding: var(--spacing-md);
+                padding: 0;
+                max-width: 100%;
             }
         }
 
@@ -944,13 +958,17 @@
             border-radius: 12px;
             box-shadow: var(--shadow-card);
             padding: var(--spacing-xl);
-            min-height: 50vh;
+            flex: 1;
+            min-height: 0;
         }
 
+        /* Mobile: Infinite paper - no side margins, full width */
         @media (max-width: 767px) {
             .editor-paper {
                 padding: var(--spacing-lg);
-                border-radius: 8px;
+                border-radius: 0;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+                margin: 0;
             }
         }
 
@@ -1039,25 +1057,34 @@
             padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
             z-index: var(--z-navbar);
             box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+            transition: transform var(--transition-smooth), opacity var(--transition-smooth);
+        }
+
+        .input-area.hidden-focus {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .input-wrapper {
             max-width: 720px;
             margin: 0 auto;
             display: flex;
+            flex-direction: column;
             gap: var(--spacing-sm);
-            align-items: flex-end;
+            width: 100%;
         }
 
         .input-field-wrapper {
             flex: 1;
             position: relative;
+            width: 100%;
         }
 
         .input-field {
             width: 100%;
             min-height: 48px;
-            max-height: 150px;
+            max-height: 50vh;
             padding: var(--spacing-sm) var(--spacing-md);
             font-family: var(--font-literary);
             font-size: 1rem;
@@ -1068,7 +1095,8 @@
             border-radius: 12px;
             resize: none;
             outline: none;
-            transition: border-color var(--transition-fast);
+            transition: border-color var(--transition-fast), height var(--transition-fast);
+            overflow-y: auto;
         }
 
         .input-field:focus {
@@ -1814,6 +1842,163 @@
         }
 
         /* ============================================
+           Text Selection Floating Menu
+           ============================================ */
+        .selection-menu {
+            position: fixed;
+            display: none;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: var(--spacing-xs);
+            gap: var(--spacing-xs);
+            z-index: var(--z-modal);
+            animation: menuFadeIn 0.15s ease;
+        }
+
+        .selection-menu.active {
+            display: flex;
+        }
+
+        @keyframes menuFadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .selection-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: none;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .selection-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .selection-btn.refine:hover {
+            background: rgba(255, 193, 7, 0.15);
+            color: #F9A825;
+        }
+
+        .selection-btn.expand:hover {
+            background: rgba(76, 175, 80, 0.15);
+            color: #43A047;
+        }
+
+        .selection-btn.delete-text:hover {
+            background: rgba(199, 92, 92, 0.15);
+            color: var(--error);
+        }
+
+        .selection-btn .btn-icon {
+            font-size: 1rem;
+        }
+
+        /* ============================================
+           Focus Mode (Reading Mode)
+           ============================================ */
+        .focus-mode-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .focus-mode-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .focus-mode-btn:active {
+            transform: scale(0.95);
+        }
+
+        .focus-mode-btn.active {
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        /* Focus mode styles */
+        body.focus-mode .navbar {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.focus-mode .input-area {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.focus-mode .main-content {
+            padding-top: var(--spacing-lg);
+            padding-bottom: var(--spacing-lg);
+        }
+
+        /* Exit focus mode overlay */
+        .focus-mode-exit {
+            position: fixed;
+            inset: 0;
+            z-index: calc(var(--z-navbar) - 1);
+            cursor: pointer;
+            display: none;
+        }
+
+        body.focus-mode .focus-mode-exit {
+            display: block;
+        }
+
+        /* Focus mode hint */
+        .focus-hint {
+            position: fixed;
+            bottom: var(--spacing-lg);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--bg-paper);
+            border-radius: 20px;
+            box-shadow: var(--shadow-card);
+            font-size: 0.8rem;
+            color: var(--ink-muted);
+            opacity: 0;
+            transition: opacity var(--transition-smooth);
+            pointer-events: none;
+            z-index: var(--z-navbar);
+        }
+
+        body.focus-mode .focus-hint {
+            animation: hintFade 3s ease forwards;
+        }
+
+        @keyframes hintFade {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }
@@ -1832,6 +2017,9 @@
             <div class="navbar-title">
                 <span class="navbar-title-text" id="navTitle">未命名文檔</span>
             </div>
+            <button class="focus-mode-btn" id="focusModeBtn" aria-label="閱讀模式" title="閱讀模式">
+                <span>👁️</span>
+            </button>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
                 <span class="settings-icon">
                     <span class="tooth"></span>
@@ -2054,7 +2242,7 @@
         </main>
 
         <!-- Input Area -->
-        <div class="input-area">
+        <div class="input-area" id="inputArea">
             <div class="input-wrapper">
                 <!-- Status Bar for Character Mindset -->
                 <div class="status-bar" id="statusBar">
@@ -2073,6 +2261,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Text Selection Menu -->
+        <div class="selection-menu" id="selectionMenu">
+            <button class="selection-btn refine" id="refineBtn">
+                <span class="btn-icon">✨</span>
+                <span>潤飾</span>
+            </button>
+            <button class="selection-btn expand" id="expandBtn">
+                <span class="btn-icon">➕</span>
+                <span>擴寫</span>
+            </button>
+            <button class="selection-btn delete-text" id="deleteTextBtn">
+                <span class="btn-icon">❌</span>
+                <span>刪除</span>
+            </button>
+        </div>
+
+        <!-- Focus Mode Exit Overlay -->
+        <div class="focus-mode-exit" id="focusModeExit"></div>
+        <div class="focus-hint">點擊任意處退出閱讀模式</div>
 
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
@@ -2321,7 +2529,20 @@
             confirmModalMessage: $('confirmModalMessage'),
             confirmModalClose: $('confirmModalClose'),
             confirmModalCancel: $('confirmModalCancel'),
-            confirmModalConfirm: $('confirmModalConfirm')
+            confirmModalConfirm: $('confirmModalConfirm'),
+
+            // Focus Mode
+            focusModeBtn: $('focusModeBtn'),
+            focusModeExit: $('focusModeExit'),
+
+            // Selection Menu
+            selectionMenu: $('selectionMenu'),
+            refineBtn: $('refineBtn'),
+            expandBtn: $('expandBtn'),
+            deleteTextBtn: $('deleteTextBtn'),
+
+            // Input Area
+            inputArea: $('inputArea')
         };
 
         // ============================================
@@ -3694,7 +3915,170 @@ ${recentContent}
         // ============================================
         function autoResizeTextarea(textarea) {
             textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            const maxHeight = window.innerHeight * 0.5; // 50vh max
+            textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+        }
+
+        // ============================================
+        // Focus Mode (Reading Mode)
+        // ============================================
+        let isFocusMode = false;
+
+        function toggleFocusMode() {
+            isFocusMode = !isFocusMode;
+            document.body.classList.toggle('focus-mode', isFocusMode);
+            el.focusModeBtn.classList.toggle('active', isFocusMode);
+        }
+
+        function exitFocusMode() {
+            if (isFocusMode) {
+                isFocusMode = false;
+                document.body.classList.remove('focus-mode');
+                el.focusModeBtn.classList.remove('active');
+            }
+        }
+
+        // ============================================
+        // Text Selection Menu
+        // ============================================
+        let selectedText = '';
+        let selectedRange = null;
+
+        function showSelectionMenu(x, y) {
+            const menu = el.selectionMenu;
+            menu.classList.add('active');
+
+            // Position menu near selection
+            const menuRect = menu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Adjust position to keep menu in viewport
+            let posX = x - menuRect.width / 2;
+            let posY = y - menuRect.height - 10;
+
+            if (posX < 10) posX = 10;
+            if (posX + menuRect.width > viewportWidth - 10) {
+                posX = viewportWidth - menuRect.width - 10;
+            }
+            if (posY < 10) {
+                posY = y + 25; // Show below if no room above
+            }
+
+            menu.style.left = posX + 'px';
+            menu.style.top = posY + 'px';
+        }
+
+        function hideSelectionMenu() {
+            el.selectionMenu.classList.remove('active');
+        }
+
+        function handleTextSelection() {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+
+            if (text.length > 0 && el.editorBody.contains(selection.anchorNode)) {
+                selectedText = text;
+                selectedRange = selection.getRangeAt(0).cloneRange();
+
+                // Get selection coordinates
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top;
+
+                showSelectionMenu(x, y);
+            } else {
+                hideSelectionMenu();
+                selectedText = '';
+                selectedRange = null;
+            }
+        }
+
+        function deleteSelectedText() {
+            if (selectedRange && state.currentDoc) {
+                // Find and update the paragraph containing the selection
+                const paragraphs = state.currentDoc.paragraphs;
+                const selectionText = selectedText;
+
+                for (let i = 0; i < paragraphs.length; i++) {
+                    if (paragraphs[i].content.includes(selectionText)) {
+                        paragraphs[i].content = paragraphs[i].content.replace(selectionText, '');
+                        break;
+                    }
+                }
+
+                renderEditor();
+                autoSave();
+                hideSelectionMenu();
+                showToast('已刪除選取文字', 'success', 1500);
+            }
+        }
+
+        async function refineSelectedText() {
+            if (!selectedText || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            hideSelectionMenu();
+            showToast('正在潤飾文字...', 'info', 2000);
+
+            const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+            try {
+                const response = await callAPI([{ role: 'user', content: prompt }]);
+                if (response && state.currentDoc) {
+                    const paragraphs = state.currentDoc.paragraphs;
+                    for (let i = 0; i < paragraphs.length; i++) {
+                        if (paragraphs[i].content.includes(selectedText)) {
+                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            break;
+                        }
+                    }
+                    renderEditor();
+                    autoSave();
+                    showToast('潤飾完成', 'success', 1500);
+                }
+            } catch (error) {
+                showToast('潤飾失敗：' + error.message, 'error');
+            }
+        }
+
+        async function expandSelectedText() {
+            if (!selectedText || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            hideSelectionMenu();
+            showToast('正在擴寫文字...', 'info', 2000);
+
+            const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+            try {
+                const response = await callAPI([{ role: 'user', content: prompt }]);
+                if (response && state.currentDoc) {
+                    const paragraphs = state.currentDoc.paragraphs;
+                    for (let i = 0; i < paragraphs.length; i++) {
+                        if (paragraphs[i].content.includes(selectedText)) {
+                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            break;
+                        }
+                    }
+                    renderEditor();
+                    autoSave();
+                    showToast('擴寫完成', 'success', 1500);
+                }
+            } catch (error) {
+                showToast('擴寫失敗：' + error.message, 'error');
+            }
         }
 
         // ============================================
@@ -3786,6 +4170,24 @@ ${recentContent}
             // Scroll behavior
             window.addEventListener('scroll', handleScroll, { passive: true });
             
+            // Focus Mode
+            el.focusModeBtn.addEventListener('click', toggleFocusMode);
+            el.focusModeExit.addEventListener('click', exitFocusMode);
+
+            // Selection Menu
+            document.addEventListener('mouseup', debounce(handleTextSelection, 100));
+            document.addEventListener('touchend', debounce(handleTextSelection, 100));
+            el.deleteTextBtn.addEventListener('click', deleteSelectedText);
+            el.refineBtn.addEventListener('click', refineSelectedText);
+            el.expandBtn.addEventListener('click', expandSelectedText);
+
+            // Hide selection menu on click outside
+            document.addEventListener('mousedown', (e) => {
+                if (!el.selectionMenu.contains(e.target)) {
+                    hideSelectionMenu();
+                }
+            });
+
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if (e.ctrlKey && e.key === 's') {
@@ -3797,6 +4199,8 @@ ${recentContent}
                     closeAllPanels();
                     hideTitleModal();
                     hideConfirmModal();
+                    exitFocusMode();
+                    hideSelectionMenu();
                 }
             });
             
