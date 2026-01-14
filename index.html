@@ -145,7 +145,7 @@
             box-shadow: var(--shadow-navbar);
             z-index: var(--z-navbar);
             transform: translateY(0);
-            transition: transform var(--transition-smooth);
+            transition: transform 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -170,6 +170,7 @@
             color: var(--ink-secondary);
             cursor: pointer;
             transition: all var(--transition-fast);
+            position: relative;
         }
 
         .navbar-btn:hover {
@@ -180,6 +181,63 @@
         .navbar-btn:active {
             transform: scale(0.95);
         }
+
+        /* Simple Settings Icon */
+        .settings-icon {
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .settings-icon::before,
+        .settings-icon::after {
+            content: '';
+            position: absolute;
+            background: currentColor;
+            border-radius: 2px;
+        }
+
+        /* Horizontal line */
+        .settings-icon::before {
+            width: 20px;
+            height: 2px;
+            top: 4px;
+            left: 0;
+        }
+
+        /* Vertical line */
+        .settings-icon::after {
+            width: 20px;
+            height: 2px;
+            top: 9px;
+            left: 0;
+        }
+
+        .settings-icon span {
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 2px;
+            bottom: 4px;
+            left: 0;
+        }
+
+        /* Sliders on lines */
+        .settings-icon .slider {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: currentColor;
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .settings-icon .slider:nth-child(1) { left: 3px; top: 4px; }
+        .settings-icon .slider:nth-child(2) { right: 3px; top: 9px; }
+        .settings-icon .slider:nth-child(3) { left: 7px; bottom: 4px; }
 
         .navbar-title {
             flex: 1;
@@ -782,6 +840,40 @@
             color: var(--error);
         }
 
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        .stat-card {
+            background: var(--bg-paper);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: var(--spacing-lg);
+            text-align: center;
+            transition: all var(--transition-fast);
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-value {
+            font-family: var(--font-literary);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--ink-secondary);
+        }
+
         /* ============================================
            Main Content - Editor
            ============================================ */
@@ -817,24 +909,6 @@
                 padding: var(--spacing-lg);
                 border-radius: 8px;
             }
-        }
-
-        .editor-title-input {
-            width: 100%;
-            font-family: var(--font-literary);
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--ink-primary);
-            background: none;
-            border: none;
-            outline: none;
-            padding-bottom: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .editor-title-input::placeholder {
-            color: var(--ink-muted);
         }
 
         .editor-body {
@@ -1230,7 +1304,12 @@
                 <span class="navbar-title-text" id="navTitle">未命名文檔</span>
             </div>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
-                <span>⚙️</span>
+                <span class="settings-icon">
+                    <span></span>
+                    <span class="slider"></span>
+                    <span class="slider"></span>
+                    <span class="slider"></span>
+                </span>
             </button>
         </nav>
 
@@ -1263,8 +1342,8 @@
             </div>
             <div class="panel-tabs">
                 <button class="panel-tab active" data-panel="memory">記憶庫</button>
-                <button class="panel-tab" data-panel="world">世界觀</button>
                 <button class="panel-tab" data-panel="settings">設定</button>
+                <button class="panel-tab" data-panel="stats">統計</button>
             </div>
             <div class="panel-content">
                 <!-- Memory Section -->
@@ -1316,8 +1395,8 @@
                     </div>
                 </div>
 
-                <!-- World Section -->
-                <div class="panel-section" id="worldSection">
+                <!-- Settings Section (Merged with World) -->
+                <div class="panel-section" id="settingsSection">
                     <div class="setting-group">
                         <label class="setting-label">🌍 世界觀設定</label>
                         <textarea class="setting-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
@@ -1329,10 +1408,7 @@
                         <textarea class="setting-textarea" id="customPrompt" spellcheck="false">你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
                         <p class="setting-hint">此內容會作為 AI 的基礎行為指令</p>
                     </div>
-                </div>
 
-                <!-- Settings Section -->
-                <div class="panel-section" id="settingsSection">
                     <div class="setting-group">
                         <label class="setting-label">API 格式</label>
                         <select class="setting-select" id="apiFormat">
@@ -1371,6 +1447,28 @@
                         <button class="action-btn danger" id="clearAllBtn">🗑️ 清除全部</button>
                     </div>
                 </div>
+
+                <!-- Stats Section -->
+                <div class="panel-section" id="statsSection">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statTotalChars">0</div>
+                            <div class="stat-label">總字數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statUserChars">0</div>
+                            <div class="stat-label">用戶字數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statAiChars">0</div>
+                            <div class="stat-label">AI 字數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statParagraphs">0</div>
+                            <div class="stat-label">段落數</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </aside>
 
@@ -1378,7 +1476,6 @@
         <main class="main-content">
             <div class="editor-container">
                 <div class="editor-paper">
-                    <input type="text" class="editor-title-input" id="editorTitle" placeholder="為你的故事取個名字..." spellcheck="false">
                     <div class="editor-body" id="editorBody">
                         <!-- Paragraphs rendered here -->
                     </div>
@@ -1534,9 +1631,8 @@
             tempValue: $('tempValue'),
             saveSettingsBtn: $('saveSettingsBtn'),
             clearAllBtn: $('clearAllBtn'),
-            
+
             // Editor
-            editorTitle: $('editorTitle'),
             editorBody: $('editorBody'),
             inputField: $('inputField'),
             sendBtn: $('sendBtn'),
@@ -1716,22 +1812,22 @@
         // ============================================
         const handleScroll = debounce(() => {
             const currentScrollY = window.scrollY;
-            const threshold = 10;
-            
-            if (currentScrollY > state.lastScrollY + threshold && currentScrollY > 100) {
-                // Scrolling down
-                if (!state.navbarHidden) {
-                    el.navbar.classList.add('hidden');
-                    state.navbarHidden = true;
-                }
-            } else if (currentScrollY < state.lastScrollY - threshold || currentScrollY < 50) {
-                // Scrolling up
+
+            // Show navbar when scrolling up or when near top (< 50px)
+            if (currentScrollY < 50 || currentScrollY < state.lastScrollY) {
                 if (state.navbarHidden) {
                     el.navbar.classList.remove('hidden');
                     state.navbarHidden = false;
                 }
             }
-            
+            // Hide navbar when scrolling down and past 50px
+            else if (currentScrollY > 50 && currentScrollY > state.lastScrollY) {
+                if (!state.navbarHidden) {
+                    el.navbar.classList.add('hidden');
+                    state.navbarHidden = true;
+                }
+            }
+
             state.lastScrollY = currentScrollY;
         }, 50);
 
@@ -1787,15 +1883,14 @@
             
             state.currentDocId = docId;
             state.currentDoc = docData;
-            
+
             // Update UI
-            el.editorTitle.value = docData.title;
             el.navTitle.textContent = docData.title || '未命名文檔';
             el.storyAnchors.value = docData.storyAnchors || DEFAULT_DOC_DATA.storyAnchors;
             el.styleFingerprint.value = docData.styleFingerprint || DEFAULT_DOC_DATA.styleFingerprint;
             el.worldSetting.value = docData.worldSetting || '';
             el.customPrompt.value = docData.customPrompt || DEFAULT_DOC_DATA.customPrompt;
-            
+
             // Render paragraphs
             renderParagraphs();
             renderDocList();
@@ -1804,25 +1899,24 @@
 
         function saveCurrentDocument() {
             if (!state.currentDocId || !state.currentDoc) return;
-            
+
             // Update document data
-            state.currentDoc.title = el.editorTitle.value || '未命名文檔';
             state.currentDoc.storyAnchors = el.storyAnchors.value;
             state.currentDoc.styleFingerprint = el.styleFingerprint.value;
             state.currentDoc.worldSetting = el.worldSetting.value;
             state.currentDoc.customPrompt = el.customPrompt.value;
             state.currentDoc.lastModified = Date.now();
-            
+
             // Generate preview text
             const previewText = state.currentDoc.paragraphs
                 .slice(0, 2)
                 .map(p => p.content)
                 .join(' ')
                 .substring(0, 100);
-            
+
             // Save to storage
             saveToStorage(STORAGE.DOC_PREFIX + state.currentDocId, state.currentDoc);
-            
+
             // Update index
             const indexItem = state.docIndex.find(d => d.id === state.currentDocId);
             if (indexItem) {
@@ -1831,7 +1925,7 @@
                 indexItem.previewText = previewText;
                 saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
             }
-            
+
             // Update navbar title
             el.navTitle.textContent = state.currentDoc.title || '未命名文檔';
         }
@@ -1976,18 +2070,56 @@
         function initPanelTabs() {
             const tabs = $$('.panel-tab');
             const sections = $$('.panel-section');
-            
+
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     const target = tab.dataset.panel;
-                    
+
                     tabs.forEach(t => t.classList.remove('active'));
                     sections.forEach(s => s.classList.remove('active'));
-                    
+
                     tab.classList.add('active');
                     $(`${target}Section`).classList.add('active');
+
+                    // Update stats when stats tab is opened
+                    if (target === 'stats') {
+                        updateStats();
+                    }
                 });
             });
+        }
+
+        // ============================================
+        // Stats Update
+        // ============================================
+        function updateStats() {
+            if (!state.currentDoc?.paragraphs) {
+                $('statTotalChars').textContent = '0';
+                $('statUserChars').textContent = '0';
+                $('statAiChars').textContent = '0';
+                $('statParagraphs').textContent = '0';
+                return;
+            }
+
+            let totalChars = 0;
+            let userChars = 0;
+            let aiChars = 0;
+            const paragraphs = state.currentDoc.paragraphs;
+
+            paragraphs.forEach(p => {
+                const chars = countChars(p.content);
+                totalChars += chars;
+                if (p.source === 'user') {
+                    userChars += chars;
+                } else {
+                    aiChars += chars;
+                }
+            });
+
+            $('statTotalChars').textContent = totalChars.toLocaleString();
+            $('statUserChars').textContent = userChars.toLocaleString();
+            $('statAiChars').textContent = aiChars.toLocaleString();
+            $('statParagraphs').textContent = paragraphs.length.toLocaleString();
         }
 
         // ============================================
@@ -2270,13 +2402,7 @@ ${recentContent}
             el.temperature.addEventListener('input', (e) => {
                 el.tempValue.textContent = e.target.value;
             });
-            
-            // Editor title
-            el.editorTitle.addEventListener('input', () => {
-                el.navTitle.textContent = el.editorTitle.value || '未命名文檔';
-                autoSave();
-            });
-            
+
             // Memory & settings auto-save
             [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt].forEach(textarea => {
                 textarea.addEventListener('input', autoSave);
@@ -2299,7 +2425,9 @@ ${recentContent}
             el.titleModalCancel.addEventListener('click', hideTitleModal);
             el.titleModalConfirm.addEventListener('click', () => {
                 const newTitle = el.titleModalInput.value.trim() || '未命名文檔';
-                el.editorTitle.value = newTitle;
+                if (state.currentDoc) {
+                    state.currentDoc.title = newTitle;
+                }
                 el.navTitle.textContent = newTitle;
                 autoSave();
                 hideTitleModal();
