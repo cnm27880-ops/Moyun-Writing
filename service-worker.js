@@ -1,6 +1,6 @@
 // 墨韻 MòYùn Service Worker
 // 版本號 - 更新時請遞增
-const CACHE_VERSION = 'moyun-v1.0.0';
+const CACHE_VERSION = 'moyun-v1.0.1';
 const CACHE_NAME = `moyun-cache-${CACHE_VERSION}`;
 
 // 需要快取的核心資源
