@@ -2,17 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>墨韻 MòYùn - AI 協作小說寫作平台</title>
-    
-    <!-- Google Fonts: Noto Serif TC for body, Noto Sans TC for UI -->
+
+    <!-- Google Fonts: 霞鶩文楷 LXGW WenKai TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+
     <style>
         /* ============================================
            CSS Variables - Modern Zen Color Palette
@@ -21,7 +21,7 @@
             /* Core Colors */
             --bg-app: #F5F5F0;
             --bg-paper: #FFFFFF;
-            --ink-primary: #333333;
+            --ink-primary: #2C2C2C;
             --ink-secondary: #666666;
             --ink-muted: #999999;
             --accent: #6B8E23;
@@ -31,37 +31,47 @@
             --ai-marker-light: rgba(93, 115, 126, 0.1);
             --border: #E0E0D0;
             --border-light: #EEEEEA;
-            
+
             /* Semantic Colors */
             --success: #6B8E23;
             --warning: #D4A574;
             --error: #C75C5C;
             --info: #5D737E;
-            
+
             /* Shadows */
             --shadow-paper: 0 2px 20px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.1);
-            --shadow-elevated: 0 4px 30px rgba(0, 0, 0, 0.1);
-            --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
-            
-            /* Typography */
-            --font-serif: 'Noto Serif TC', serif;
-            --font-sans: 'Noto Sans TC', sans-serif;
-            --line-height: 1.8;
-            --paragraph-spacing: 1.5em;
-            
+            --shadow-elevated: 0 4px 30px rgba(0, 0, 0, 0.12);
+            --shadow-navbar: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --shadow-drawer: -2px 0 16px rgba(0, 0, 0, 0.1);
+
+            /* Typography - 霞鶩文楷 */
+            --font-main: 'LXGW WenKai TC', serif;
+            --font-ui: 'Noto Sans TC', sans-serif;
+            --line-height: 1.9;
+            --paragraph-spacing: 1.6em;
+
             /* Spacing */
-            --sidebar-width: 380px;
-            --editor-max-width: 800px;
+            --navbar-height: 56px;
+            --drawer-width: 320px;
+            --brain-width: 420px;
             --spacing-xs: 0.5rem;
             --spacing-sm: 0.75rem;
             --spacing-md: 1rem;
             --spacing-lg: 1.5rem;
             --spacing-xl: 2rem;
-            
+
             /* Transitions */
-            --transition-fast: 150ms ease;
-            --transition-normal: 250ms ease;
-            --transition-slow: 400ms ease;
+            --transition-fast: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 280ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Z-index layers */
+            --z-content: 1;
+            --z-navbar: 100;
+            --z-drawer: 200;
+            --z-overlay: 300;
+            --z-modal: 400;
+            --z-toast: 500;
         }
 
         /* ============================================
@@ -76,20 +86,23 @@
         html {
             font-size: 16px;
             scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         body {
-            font-family: var(--font-sans);
-            background-color: var(--bg-app);
+            font-family: var(--font-main);
+            background: var(--bg-app);
             color: var(--ink-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
         }
 
         ::-webkit-scrollbar-track {
@@ -98,7 +111,7 @@
 
         ::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 4px;
+            border-radius: 5px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
@@ -106,104 +119,87 @@
         }
 
         /* ============================================
-           Layout Structure
+           Smart Floating Navbar
            ============================================ */
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Main Editor Area - Left 70% */
-        .editor-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: var(--spacing-xl);
-            padding-bottom: 200px;
-            overflow-y: auto;
-            background: linear-gradient(180deg, var(--bg-app) 0%, #EFEFE8 100%);
-        }
-
-        /* Sidebar - Right 30% */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--bg-paper);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.03);
-        }
-
-        /* ============================================
-           Header / Title Bar
-           ============================================ */
-        .header {
-            padding: var(--spacing-lg) var(--spacing-xl);
-            border-bottom: 1px solid var(--border-light);
-            background: var(--bg-paper);
-            position: sticky;
+        .navbar {
+            position: fixed;
             top: 0;
-            z-index: 10;
-        }
-
-        .header-content {
-            max-width: var(--editor-max-width);
-            margin: 0 auto;
+            left: 0;
+            right: 0;
+            height: var(--navbar-height);
+            background: var(--bg-paper);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-navbar);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 var(--spacing-md);
+            z-index: var(--z-navbar);
+            transition: transform var(--transition-normal);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
+        .navbar.hidden {
+            transform: translateY(-100%);
         }
 
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
-            border-radius: 6px;
+        .navbar-btn {
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            color: var(--ink-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-family: var(--font-serif);
-            font-weight: 700;
+            transition: background var(--transition-fast);
+        }
+
+        .navbar-btn:hover {
+            background: var(--accent-light);
+        }
+
+        .navbar-btn:active {
+            background: var(--border-light);
+        }
+
+        .navbar-title {
+            flex: 1;
+            text-align: center;
+            font-family: var(--font-main);
             font-size: 1.1rem;
-        }
-
-        .logo-text {
-            font-family: var(--font-serif);
-            font-size: 1.25rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--ink-primary);
+            cursor: pointer;
+            padding: 0 var(--spacing-md);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .logo-subtitle {
-            font-size: 0.75rem;
-            color: var(--ink-muted);
-            margin-left: var(--spacing-sm);
-        }
-
-        .header-actions {
-            display: flex;
-            gap: var(--spacing-sm);
+        .navbar-title:hover {
+            color: var(--accent);
         }
 
         /* ============================================
-           Paper / Document Area
+           Main Content Area
            ============================================ */
+        .main-content {
+            margin-top: var(--navbar-height);
+            padding: var(--spacing-xl) var(--spacing-md);
+            padding-bottom: 180px;
+            min-height: calc(100vh - var(--navbar-height));
+        }
+
         .paper {
-            max-width: var(--editor-max-width);
-            width: 100%;
-            margin: var(--spacing-xl) auto;
+            max-width: 780px;
+            margin: 0 auto;
             background: var(--bg-paper);
-            border-radius: 4px;
+            border-radius: 8px;
             box-shadow: var(--shadow-paper);
-            padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
+            padding: var(--spacing-xl) calc(var(--spacing-xl) * 1.5);
             min-height: 60vh;
             position: relative;
         }
@@ -214,38 +210,44 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 3px;
             background: linear-gradient(90deg, var(--accent) 0%, var(--ai-marker) 100%);
-            border-radius: 4px 4px 0 0;
-            opacity: 0.6;
+            border-radius: 8px 8px 0 0;
+            opacity: 0.7;
         }
 
         /* Document Title */
         .document-title {
-            font-family: var(--font-serif);
-            font-size: 1.75rem;
-            font-weight: 600;
+            font-family: var(--font-main);
+            font-size: 1.875rem;
+            font-weight: 700;
             color: var(--ink-primary);
             border: none;
             outline: none;
             width: 100%;
             margin-bottom: var(--spacing-lg);
             padding-bottom: var(--spacing-md);
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 2px solid var(--border-light);
             background: transparent;
+            transition: border-color var(--transition-fast);
+        }
+
+        .document-title:focus {
+            border-bottom-color: var(--accent);
         }
 
         .document-title::placeholder {
             color: var(--ink-muted);
+            font-weight: 400;
         }
 
         /* Editor Content */
         .editor-content {
-            font-family: var(--font-serif);
-            font-size: 1.0625rem;
+            font-family: var(--font-main);
+            font-size: 1.125rem;
             line-height: var(--line-height);
             color: var(--ink-primary);
-            min-height: 300px;
+            min-height: 400px;
         }
 
         .editor-content:empty::before {
@@ -257,11 +259,11 @@
         /* Paragraph Styling */
         .paragraph {
             position: relative;
-            padding: var(--spacing-sm) 0 var(--spacing-sm) var(--spacing-lg);
+            padding: var(--spacing-sm) 0 var(--spacing-sm) var(--spacing-md);
             margin-bottom: var(--spacing-md);
             border-left: 3px solid transparent;
             transition: all var(--transition-fast);
-            border-radius: 0 4px 4px 0;
+            border-radius: 0 6px 6px 0;
         }
 
         .paragraph:hover {
@@ -286,51 +288,9 @@
         }
 
         .paragraph-content:focus {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        /* Paragraph Label */
-        .paragraph-label {
-            position: absolute;
-            left: -60px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.65rem;
-            font-family: var(--font-sans);
-            color: var(--ink-muted);
-            opacity: 0;
-            transition: opacity var(--transition-fast);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .paragraph:hover .paragraph-label {
-            opacity: 1;
-        }
-
-        /* Markdown Rendered Content */
-        .paragraph-content p {
-            margin-bottom: var(--paragraph-spacing);
-        }
-
-        .paragraph-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .paragraph-content strong {
-            font-weight: 600;
-        }
-
-        .paragraph-content em {
-            font-style: italic;
-        }
-
-        .paragraph-content blockquote {
-            border-left: 3px solid var(--border);
-            padding-left: var(--spacing-md);
-            margin: var(--spacing-md) 0;
-            color: var(--ink-secondary);
-            font-style: italic;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+            padding: 4px;
         }
 
         /* ============================================
@@ -340,16 +300,16 @@
             position: fixed;
             bottom: 0;
             left: 0;
-            right: var(--sidebar-width);
+            right: 0;
             background: var(--bg-paper);
             border-top: 1px solid var(--border);
             padding: var(--spacing-lg);
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+            z-index: 90;
         }
 
         .input-container {
-            max-width: var(--editor-max-width);
+            max-width: 780px;
             margin: 0 auto;
             display: flex;
             gap: var(--spacing-md);
@@ -363,16 +323,16 @@
 
         .input-field {
             width: 100%;
-            min-height: 80px;
-            max-height: 200px;
+            min-height: 72px;
+            max-height: 160px;
             padding: var(--spacing-md);
-            font-family: var(--font-serif);
+            font-family: var(--font-main);
             font-size: 1rem;
             line-height: 1.6;
             color: var(--ink-primary);
             background: var(--bg-app);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
             resize: none;
             outline: none;
             transition: all var(--transition-fast);
@@ -387,47 +347,29 @@
             color: var(--ink-muted);
         }
 
-        .input-hint {
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            font-size: 0.75rem;
-            color: var(--ink-muted);
-        }
-
-        .input-hint kbd {
-            background: var(--border-light);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: var(--font-sans);
-            font-size: 0.7rem;
-        }
-
-        /* Submit Button */
         .submit-btn {
-            padding: var(--spacing-md) var(--spacing-lg);
+            width: 52px;
+            height: 52px;
             background: var(--accent);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 1.3rem;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
             align-items: center;
-            gap: var(--spacing-xs);
-            height: 48px;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         .submit-btn:hover {
             background: var(--accent-hover);
-            transform: translateY(-1px);
+            transform: scale(1.05);
         }
 
         .submit-btn:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         .submit-btn:disabled {
@@ -457,34 +399,256 @@
         }
 
         /* ============================================
-           Sidebar Styles
+           Left Drawer - Document List
            ============================================ */
-        .sidebar-header {
-            padding: var(--spacing-lg);
-            border-bottom: 1px solid var(--border-light);
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-normal), visibility var(--transition-normal);
+            z-index: var(--z-overlay);
+        }
+
+        .drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .left-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--drawer-width);
+            background: var(--bg-paper);
+            box-shadow: var(--shadow-drawer);
+            transform: translateX(-100%);
+            transition: transform var(--transition-normal);
+            z-index: var(--z-drawer);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .left-drawer.active {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            height: var(--navbar-height);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 var(--spacing-lg);
         }
 
-        .sidebar-title {
-            font-family: var(--font-serif);
+        .drawer-title {
+            font-family: var(--font-main);
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--ink-primary);
         }
 
-        .sidebar-tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .sidebar-tab {
-            flex: 1;
-            padding: var(--spacing-md);
+        .drawer-close {
+            width: 32px;
+            height: 32px;
             background: none;
             border: none;
-            font-family: var(--font-sans);
+            border-radius: 6px;
+            color: var(--ink-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .drawer-close:hover {
+            background: var(--border-light);
+            color: var(--ink-primary);
+        }
+
+        .drawer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+        }
+
+        .new-doc-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .new-doc-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 142, 35, 0.3);
+        }
+
+        .new-doc-btn:active {
+            transform: translateY(0);
+        }
+
+        .doc-list-title {
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--spacing-sm);
+            padding: 0 var(--spacing-xs);
+        }
+
+        .doc-item {
+            padding: var(--spacing-md);
+            background: var(--bg-app);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            margin-bottom: var(--spacing-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .doc-item:hover {
+            border-color: var(--border);
+            background: var(--bg-paper);
+        }
+
+        .doc-item.active {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .doc-item-title {
+            font-family: var(--font-main);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--ink-primary);
+            margin-bottom: var(--spacing-xs);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-item-meta {
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .doc-item-preview {
+            font-family: var(--font-main);
+            font-size: 0.85rem;
+            color: var(--ink-secondary);
+            margin-top: var(--spacing-xs);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl) var(--spacing-md);
+            color: var(--ink-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* ============================================
+           Right/Bottom Panel - The Brain
+           ============================================ */
+        .brain-panel {
+            position: fixed;
+            background: var(--bg-paper);
+            box-shadow: var(--shadow-elevated);
+            z-index: var(--z-drawer);
+            transition: transform var(--transition-normal);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Desktop: Right Drawer */
+        @media (min-width: 769px) {
+            .brain-panel {
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: var(--brain-width);
+                transform: translateX(100%);
+            }
+
+            .brain-panel.active {
+                transform: translateX(0);
+            }
+        }
+
+        /* Mobile: Bottom Sheet */
+        @media (max-width: 768px) {
+            .brain-panel {
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 85vh;
+                border-radius: 20px 20px 0 0;
+                transform: translateY(100%);
+            }
+
+            .brain-panel.active {
+                transform: translateY(0);
+            }
+
+            .brain-handle {
+                width: 48px;
+                height: 4px;
+                background: var(--border);
+                border-radius: 2px;
+                margin: var(--spacing-sm) auto;
+            }
+        }
+
+        .brain-header {
+            height: var(--navbar-height);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-lg);
+            flex-shrink: 0;
+        }
+
+        .brain-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            flex-shrink: 0;
+        }
+
+        .brain-tab {
+            flex: 1;
+            padding: var(--spacing-md) var(--spacing-sm);
+            background: none;
+            border: none;
+            font-family: var(--font-ui);
             font-size: 0.85rem;
             color: var(--ink-secondary);
             cursor: pointer;
@@ -492,17 +656,17 @@
             position: relative;
         }
 
-        .sidebar-tab:hover {
+        .brain-tab:hover {
             color: var(--ink-primary);
             background: var(--accent-light);
         }
 
-        .sidebar-tab.active {
+        .brain-tab.active {
             color: var(--accent);
-            font-weight: 500;
+            font-weight: 600;
         }
 
-        .sidebar-tab.active::after {
+        .brain-tab.active::after {
             content: '';
             position: absolute;
             bottom: 0;
@@ -512,7 +676,7 @@
             background: var(--accent);
         }
 
-        .sidebar-content {
+        .brain-content {
             flex: 1;
             overflow-y: auto;
             padding: var(--spacing-lg);
@@ -539,7 +703,8 @@
         }
 
         .memory-title {
-            font-size: 0.9rem;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
             font-weight: 600;
             color: var(--ink-primary);
             display: flex;
@@ -547,15 +712,12 @@
             gap: var(--spacing-xs);
         }
 
-        .memory-title .icon {
-            font-size: 1rem;
-        }
-
         .memory-badge {
+            font-family: var(--font-ui);
             font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
         }
 
         .memory-badge.anchor {
@@ -570,15 +732,15 @@
 
         .memory-textarea {
             width: 100%;
-            min-height: 200px;
+            min-height: 180px;
             padding: var(--spacing-md);
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 0.8rem;
             line-height: 1.6;
             color: var(--ink-primary);
             background: var(--bg-app);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
             resize: vertical;
             outline: none;
             transition: border-color var(--transition-fast);
@@ -588,17 +750,16 @@
             border-color: var(--accent);
         }
 
-        /* Checkpoint Button */
         .checkpoint-btn {
             width: 100%;
             padding: var(--spacing-md);
             background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            font-weight: 500;
+            border-radius: 10px;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
@@ -613,6 +774,10 @@
             box-shadow: 0 4px 15px rgba(107, 142, 35, 0.3);
         }
 
+        .checkpoint-btn:active {
+            transform: translateY(0);
+        }
+
         .checkpoint-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -622,45 +787,48 @@
 
         /* Settings Section */
         .settings-group {
-            margin-bottom: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
         }
 
         .settings-label {
             display: block;
+            font-family: var(--font-ui);
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--ink-primary);
             margin-bottom: var(--spacing-sm);
         }
 
-        .settings-input {
+        .settings-input,
+        .settings-select {
             width: 100%;
             padding: var(--spacing-sm) var(--spacing-md);
-            font-family: var(--font-sans);
+            font-family: var(--font-ui);
             font-size: 0.9rem;
             color: var(--ink-primary);
             background: var(--bg-app);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
             outline: none;
             transition: border-color var(--transition-fast);
         }
 
-        .settings-input:focus {
+        .settings-input:focus,
+        .settings-select:focus {
             border-color: var(--accent);
         }
 
         .settings-textarea {
             width: 100%;
-            min-height: 150px;
+            min-height: 140px;
             padding: var(--spacing-md);
-            font-family: var(--font-sans);
-            font-size: 0.85rem;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
             line-height: 1.6;
             color: var(--ink-primary);
             background: var(--bg-app);
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
             resize: vertical;
             outline: none;
             transition: border-color var(--transition-fast);
@@ -671,36 +839,12 @@
         }
 
         .settings-hint {
+            font-family: var(--font-ui);
             font-size: 0.75rem;
             color: var(--ink-muted);
             margin-top: var(--spacing-xs);
         }
 
-        /* API Format Select */
-        .settings-select {
-            width: 100%;
-            padding: var(--spacing-sm) var(--spacing-md);
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            outline: none;
-            cursor: pointer;
-            transition: border-color var(--transition-fast);
-        }
-
-        .settings-select:focus {
-            border-color: var(--accent);
-        }
-
-        /* World Setting Section */
-        .world-setting-section {
-            margin-bottom: var(--spacing-xl);
-        }
-
-        /* Action Buttons */
         .action-buttons {
             display: flex;
             gap: var(--spacing-sm);
@@ -712,10 +856,11 @@
             padding: var(--spacing-sm) var(--spacing-md);
             background: var(--bg-app);
             color: var(--ink-secondary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-family: var(--font-sans);
-            font-size: 0.8rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
         }
@@ -723,6 +868,7 @@
         .action-btn:hover {
             background: var(--border-light);
             color: var(--ink-primary);
+            border-color: var(--ink-secondary);
         }
 
         .action-btn.danger:hover {
@@ -731,14 +877,43 @@
             border-color: var(--error);
         }
 
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stat-card {
+            background: var(--bg-app);
+            padding: var(--spacing-md);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-main);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+            margin-top: var(--spacing-xs);
+        }
+
         /* ============================================
            Toast Notifications
            ============================================ */
         .toast-container {
             position: fixed;
-            top: var(--spacing-lg);
-            right: calc(var(--sidebar-width) + var(--spacing-lg));
-            z-index: 1000;
+            top: calc(var(--navbar-height) + var(--spacing-md));
+            right: var(--spacing-md);
+            z-index: var(--z-toast);
             display: flex;
             flex-direction: column;
             gap: var(--spacing-sm);
@@ -747,38 +922,31 @@
         .toast {
             padding: var(--spacing-md) var(--spacing-lg);
             background: var(--bg-paper);
-            border-radius: 8px;
+            border-radius: 10px;
             box-shadow: var(--shadow-elevated);
             display: flex;
             align-items: center;
             gap: var(--spacing-sm);
-            animation: slideIn 0.3s ease;
-            max-width: 400px;
+            animation: slideInRight 0.3s ease;
+            max-width: 360px;
+            min-width: 280px;
         }
 
-        .toast.success {
-            border-left: 4px solid var(--success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--error);
-        }
-
-        .toast.warning {
-            border-left: 4px solid var(--warning);
-        }
-
-        .toast.info {
-            border-left: 4px solid var(--info);
-        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--error); }
+        .toast.warning { border-left: 4px solid var(--warning); }
+        .toast.info { border-left: 4px solid var(--info); }
 
         .toast-icon {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            flex-shrink: 0;
         }
 
         .toast-message {
+            font-family: var(--font-ui);
             font-size: 0.9rem;
             color: var(--ink-primary);
+            flex: 1;
         }
 
         .toast-close {
@@ -787,10 +955,11 @@
             color: var(--ink-muted);
             cursor: pointer;
             padding: 4px;
-            margin-left: auto;
+            font-size: 1.2rem;
+            line-height: 1;
         }
 
-        @keyframes slideIn {
+        @keyframes slideInRight {
             from {
                 transform: translateX(100%);
                 opacity: 0;
@@ -801,7 +970,7 @@
             }
         }
 
-        @keyframes slideOut {
+        @keyframes slideOutRight {
             from {
                 transform: translateX(0);
                 opacity: 1;
@@ -813,7 +982,7 @@
         }
 
         /* ============================================
-           Modal Styles
+           Modal
            ============================================ */
         .modal-overlay {
             position: fixed;
@@ -822,8 +991,8 @@
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(2px);
+            z-index: var(--z-modal);
+            backdrop-filter: blur(3px);
         }
 
         .modal-overlay.active {
@@ -832,9 +1001,9 @@
 
         .modal {
             background: var(--bg-paper);
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: var(--shadow-elevated);
-            max-width: 500px;
+            max-width: 480px;
             width: 90%;
             max-height: 80vh;
             overflow: hidden;
@@ -843,7 +1012,7 @@
 
         @keyframes modalIn {
             from {
-                transform: scale(0.95);
+                transform: scale(0.9);
                 opacity: 0;
             }
             to {
@@ -861,9 +1030,10 @@
         }
 
         .modal-title {
-            font-family: var(--font-serif);
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--ink-primary);
         }
 
         .modal-close {
@@ -882,6 +1052,13 @@
             max-height: 60vh;
         }
 
+        .modal-body p {
+            font-family: var(--font-main);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--ink-secondary);
+        }
+
         .modal-footer {
             padding: var(--spacing-lg);
             border-top: 1px solid var(--border-light);
@@ -890,63 +1067,63 @@
             gap: var(--spacing-sm);
         }
 
-        /* ============================================
-           Statistics
-           ============================================ */
-        .stats-bar {
-            display: flex;
-            gap: var(--spacing-lg);
-            padding: var(--spacing-md) 0;
-            border-bottom: 1px solid var(--border-light);
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.25rem;
+        .modal-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
             font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-btn.primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .modal-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .modal-btn.secondary {
+            background: transparent;
+            color: var(--ink-secondary);
+        }
+
+        .modal-btn.secondary:hover {
+            background: var(--border-light);
             color: var(--ink-primary);
         }
 
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .modal-btn.danger {
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
         }
 
-        /* ============================================
-           Responsive Adjustments
-           ============================================ */
-        @media (max-width: 1200px) {
-            :root {
-                --sidebar-width: 320px;
-            }
+        .modal-btn.danger:hover {
+            background: #B34A4A;
         }
 
-        @media (max-width: 900px) {
-            .app-container {
-                flex-direction: column;
-            }
+        /* Title Edit Modal */
+        .modal-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            color: var(--ink-primary);
+            background: var(--bg-app);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color var(--transition-fast);
+        }
 
-            .sidebar {
-                width: 100%;
-                height: auto;
-                max-height: 50vh;
-                border-left: none;
-                border-top: 1px solid var(--border);
-            }
-
-            .input-area {
-                right: 0;
-            }
-
-            .toast-container {
-                right: var(--spacing-lg);
-            }
+        .modal-input:focus {
+            border-color: var(--accent);
         }
 
         /* ============================================
@@ -956,114 +1133,169 @@
             display: none !important;
         }
 
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+        /* ============================================
+           Responsive Adjustments
+           ============================================ */
+        @media (max-width: 768px) {
+            :root {
+                --drawer-width: 280px;
+                --spacing-xl: 1.5rem;
+            }
+
+            .navbar-title {
+                font-size: 1rem;
+            }
+
+            .paper {
+                padding: var(--spacing-lg) var(--spacing-md);
+            }
+
+            .document-title {
+                font-size: 1.5rem;
+            }
+
+            .editor-content {
+                font-size: 1.05rem;
+            }
+
+            .input-area {
+                padding: var(--spacing-md);
+            }
+
+            .input-field {
+                font-size: 0.95rem;
+            }
+
+            .submit-btn {
+                width: 48px;
+                height: 48px;
+            }
+
+            .toast-container {
+                left: var(--spacing-sm);
+                right: var(--spacing-sm);
+            }
+
+            .toast {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --drawer-width: 260px;
+            }
+
+            .navbar-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1.3rem;
+            }
+
+            .paper {
+                padding: var(--spacing-md);
+            }
+
+            .document-title {
+                font-size: 1.3rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Main Editor Area -->
-        <main class="editor-area">
-            <!-- Header -->
-            <header class="header">
-                <div class="header-content">
-                    <div class="logo">
-                        <div class="logo-icon">墨</div>
-                        <span class="logo-text">墨韻 MòYùn</span>
-                        <span class="logo-subtitle">AI 協作寫作平台</span>
-                    </div>
-                    <div class="header-actions">
-                        <button class="action-btn" id="exportBtn" title="匯出文檔">
-                            📄 匯出
-                        </button>
-                        <button class="action-btn" id="newDocBtn" title="新建文檔">
-                            ✨ 新文檔
-                        </button>
-                    </div>
-                </div>
-            </header>
+    <!-- Smart Floating Navbar -->
+    <nav class="navbar" id="navbar">
+        <button class="navbar-btn" id="menuBtn" aria-label="開啟選單">☰</button>
+        <h1 class="navbar-title" id="navbarTitle">墨韻 MòYùn</h1>
+        <button class="navbar-btn" id="brainBtn" aria-label="開啟記憶庫">⚙</button>
+    </nav>
 
-            <!-- Paper / Document -->
-            <article class="paper">
-                <input 
-                    type="text" 
-                    class="document-title" 
-                    id="documentTitle"
-                    placeholder="為你的故事取個名字..."
+    <!-- Main Content -->
+    <main class="main-content">
+        <article class="paper">
+            <input
+                type="text"
+                class="document-title"
+                id="documentTitle"
+                placeholder="為你的故事取個名字..."
+                spellcheck="false"
+            >
+            <div class="editor-content" id="editorContent">
+                <!-- Paragraphs dynamically inserted -->
+            </div>
+        </article>
+    </main>
+
+    <!-- Input Area -->
+    <div class="input-area">
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea
+                    class="input-field"
+                    id="inputField"
+                    placeholder="繼續你的故事... (按 Enter 送出，Shift+Enter 換行)"
                     spellcheck="false"
-                >
-                <div class="editor-content" id="editorContent">
-                    <!-- Paragraphs will be dynamically inserted here -->
-                </div>
-            </article>
-        </main>
+                ></textarea>
+            </div>
+            <button class="submit-btn" id="submitBtn" aria-label="送出並續寫">▶</button>
+        </div>
+    </div>
 
-        <!-- Input Area -->
-        <div class="input-area">
-            <div class="input-container">
-                <div class="input-wrapper">
-                    <textarea 
-                        class="input-field" 
-                        id="inputField"
-                        placeholder="繼續你的故事... (按 Ctrl+Enter 送出並觸發 AI 續寫)"
-                        spellcheck="false"
-                    ></textarea>
-                    <div class="input-hint">
-                        <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 送出
-                    </div>
-                </div>
-                <button class="submit-btn" id="submitBtn">
-                    <span>續寫</span>
-                    <span>▶</span>
-                </button>
+    <!-- Drawer Overlay -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Left Drawer - Document List -->
+    <aside class="left-drawer" id="leftDrawer">
+        <div class="drawer-header">
+            <h2 class="drawer-title">我的文檔</h2>
+            <button class="drawer-close" id="closeLeftDrawer">×</button>
+        </div>
+        <div class="drawer-content">
+            <button class="new-doc-btn" id="newDocBtn">
+                <span>✨</span>
+                <span>新增文檔</span>
+            </button>
+            <div class="doc-list-title">最近編輯</div>
+            <div id="docList">
+                <!-- Document items dynamically inserted -->
             </div>
         </div>
+    </aside>
 
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2 class="sidebar-title">控制塔</h2>
-            </div>
+    <!-- Right/Bottom Panel - The Brain -->
+    <aside class="brain-panel" id="brainPanel">
+        <div class="brain-handle" style="display: none;"></div>
+        <div class="brain-header">
+            <h2 class="drawer-title">控制塔</h2>
+            <button class="drawer-close" id="closeBrainPanel">×</button>
+        </div>
+        <div class="brain-tabs">
+            <button class="brain-tab active" data-tab="memory">記憶庫</button>
+            <button class="brain-tab" data-tab="settings">設定</button>
+            <button class="brain-tab" data-tab="stats">統計</button>
+        </div>
+        <div class="brain-content">
+            <!-- Memory Tab -->
+            <div class="tab-panel active" id="memoryPanel">
+                <button class="checkpoint-btn" id="checkpointBtn">
+                    <span>✨</span>
+                    <span>本章結算 (Checkpoint)</span>
+                </button>
 
-            <div class="sidebar-tabs">
-                <button class="sidebar-tab active" data-tab="memory">記憶庫</button>
-                <button class="sidebar-tab" data-tab="settings">設定</button>
-                <button class="sidebar-tab" data-tab="stats">統計</button>
-            </div>
-
-            <div class="sidebar-content">
-                <!-- Memory Tab -->
-                <div class="tab-panel active" id="memoryPanel">
-                    <!-- Checkpoint Button -->
-                    <button class="checkpoint-btn" id="checkpointBtn">
-                        <span>✨</span>
-                        <span>本章結算 (Checkpoint)</span>
-                    </button>
-
-                    <!-- Story Anchors -->
-                    <div class="memory-section">
-                        <div class="memory-header">
-                            <h3 class="memory-title">
-                                <span class="icon">🎯</span>
-                                軌道 A：故事錨點
-                            </h3>
-                            <span class="memory-badge anchor">Story Anchors</span>
-                        </div>
-                        <textarea 
-                            class="memory-textarea" 
-                            id="storyAnchors"
-                            placeholder="記錄當下的物理與劇情狀態..."
-                            spellcheck="false"
-                        >{
+                <div class="memory-section">
+                    <div class="memory-header">
+                        <h3 class="memory-title">
+                            <span>🎯</span>
+                            <span>軌道 A：故事錨點</span>
+                        </h3>
+                        <span class="memory-badge anchor">Story Anchors</span>
+                    </div>
+                    <textarea
+                        class="memory-textarea"
+                        id="storyAnchors"
+                        placeholder="記錄當下的物理與劇情狀態..."
+                        spellcheck="false"
+                    >{
   "時間地點": "",
   "環境氛圍": {
     "光影": "",
@@ -1078,214 +1310,258 @@
   "當前衝突": "",
   "禁止發生的劇情": []
 }</textarea>
-                    </div>
+                </div>
 
-                    <!-- Style Fingerprint -->
-                    <div class="memory-section">
-                        <div class="memory-header">
-                            <h3 class="memory-title">
-                                <span class="icon">🖋️</span>
-                                軌道 B：文風指紋
-                            </h3>
-                            <span class="memory-badge style">Style Fingerprint</span>
-                        </div>
-                        <textarea 
-                            class="memory-textarea" 
-                            id="styleFingerprint"
-                            placeholder="鎖定角色的靈魂與寫作筆觸..."
-                            spellcheck="false"
-                        >{
+                <div class="memory-section">
+                    <div class="memory-header">
+                        <h3 class="memory-title">
+                            <span>🖋️</span>
+                            <span>軌道 B：文風指紋</span>
+                        </h3>
+                        <span class="memory-badge style">Style Fingerprint</span>
+                    </div>
+                    <textarea
+                        class="memory-textarea"
+                        id="styleFingerprint"
+                        placeholder="鎖定角色的靈魂與寫作筆觸..."
+                        spellcheck="false"
+                    >{
   "敘事節奏": "",
   "感官偏好": [],
   "禁忌與張力處理": "",
   "關鍵語氣樣本": []
 }</textarea>
-                    </div>
-                </div>
-
-                <!-- Settings Tab -->
-                <div class="tab-panel" id="settingsPanel">
-                    <!-- API Settings -->
-                    <div class="settings-group">
-                        <label class="settings-label">API 格式</label>
-                        <select class="settings-select" id="apiFormat">
-                            <option value="openrouter">OpenRouter</option>
-                            <option value="openai">OpenAI Compatible</option>
-                        </select>
-                    </div>
-
-                    <div class="settings-group">
-                        <label class="settings-label">API Endpoint</label>
-                        <input 
-                            type="text" 
-                            class="settings-input" 
-                            id="apiEndpoint"
-                            placeholder="https://openrouter.ai/api/v1/chat/completions"
-                        >
-                        <p class="settings-hint">OpenRouter 預設: https://openrouter.ai/api/v1/chat/completions</p>
-                    </div>
-
-                    <div class="settings-group">
-                        <label class="settings-label">API Key</label>
-                        <input 
-                            type="password" 
-                            class="settings-input" 
-                            id="apiKey"
-                            placeholder="sk-..."
-                        >
-                    </div>
-
-                    <div class="settings-group">
-                        <label class="settings-label">模型名稱</label>
-                        <input 
-                            type="text" 
-                            class="settings-input" 
-                            id="modelName"
-                            placeholder="anthropic/claude-sonnet-4"
-                        >
-                        <p class="settings-hint">例: anthropic/claude-sonnet-4, openai/gpt-4-turbo</p>
-                    </div>
-
-                    <div class="settings-group">
-                        <label class="settings-label">Temperature (創意度)</label>
-                        <input 
-                            type="range" 
-                            class="settings-input" 
-                            id="temperature"
-                            min="0" 
-                            max="2" 
-                            step="0.1" 
-                            value="0.8"
-                        >
-                        <p class="settings-hint">當前值: <span id="tempValue">0.8</span></p>
-                    </div>
-
-                    <!-- World Setting -->
-                    <div class="world-setting-section">
-                        <div class="settings-group">
-                            <label class="settings-label">🌍 世界觀設定</label>
-                            <textarea 
-                                class="settings-textarea" 
-                                id="worldSetting"
-                                placeholder="描述你的故事世界觀、背景設定、魔法系統等..."
-                                spellcheck="false"
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Custom System Prompt -->
-                    <div class="settings-group">
-                        <label class="settings-label">📝 自訂 System Prompt</label>
-                        <textarea 
-                            class="settings-textarea" 
-                            id="customPrompt"
-                            placeholder="設定 AI 的基礎行為指令..."
-                            spellcheck="false"
-                        >你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
-                        <p class="settings-hint">此內容會作為每次請求的基礎指令</p>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="action-buttons">
-                        <button class="action-btn" id="saveSettingsBtn">💾 儲存設定</button>
-                        <button class="action-btn danger" id="clearDataBtn">🗑️ 清除所有資料</button>
-                    </div>
-                </div>
-
-                <!-- Stats Tab -->
-                <div class="tab-panel" id="statsPanel">
-                    <div class="stats-bar">
-                        <div class="stat-item">
-                            <div class="stat-value" id="totalWords">0</div>
-                            <div class="stat-label">總字數</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="userWords">0</div>
-                            <div class="stat-label">用戶字數</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="aiWords">0</div>
-                            <div class="stat-label">AI 字數</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="paragraphCount">0</div>
-                            <div class="stat-label">段落數</div>
-                        </div>
-                    </div>
-
-                    <div class="settings-group">
-                        <label class="settings-label">📊 寫作歷程</label>
-                        <div id="writingHistory" style="font-size: 0.85rem; color: var(--ink-secondary); line-height: 1.8;">
-                            開始你的創作之旅吧！
-                        </div>
-                    </div>
                 </div>
             </div>
-        </aside>
-    </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-panel" id="settingsPanel">
+                <div class="settings-group">
+                    <label class="settings-label">API 格式</label>
+                    <select class="settings-select" id="apiFormat">
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="openai">OpenAI Compatible</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">API Endpoint</label>
+                    <input
+                        type="text"
+                        class="settings-input"
+                        id="apiEndpoint"
+                        placeholder="https://openrouter.ai/api/v1/chat/completions"
+                    >
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">API Key</label>
+                    <input
+                        type="password"
+                        class="settings-input"
+                        id="apiKey"
+                        placeholder="sk-..."
+                    >
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">模型名稱</label>
+                    <input
+                        type="text"
+                        class="settings-input"
+                        id="modelName"
+                        placeholder="anthropic/claude-sonnet-4"
+                    >
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">Temperature (創意度): <span id="tempValue">0.8</span></label>
+                    <input
+                        type="range"
+                        class="settings-input"
+                        id="temperature"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value="0.8"
+                        style="width: 100%;"
+                    >
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">🌍 世界觀設定</label>
+                    <textarea
+                        class="settings-textarea"
+                        id="worldSetting"
+                        placeholder="描述你的故事世界觀、背景設定、魔法系統等..."
+                        spellcheck="false"
+                    ></textarea>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">📝 自訂 System Prompt</label>
+                    <textarea
+                        class="settings-textarea"
+                        id="customPrompt"
+                        placeholder="設定 AI 的基礎行為指令..."
+                        spellcheck="false"
+                    >你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" id="saveSettingsBtn">💾 儲存設定</button>
+                    <button class="action-btn danger" id="clearDataBtn">🗑️ 清除所有資料</button>
+                </div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="tab-panel" id="statsPanel">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalWords">0</div>
+                        <div class="stat-label">總字數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="userWords">0</div>
+                        <div class="stat-label">用戶字數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="aiWords">0</div>
+                        <div class="stat-label">AI 字數</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="paragraphCount">0</div>
+                        <div class="stat-label">段落數</div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <label class="settings-label">📊 寫作歷程</label>
+                    <div id="writingHistory" style="font-family: var(--font-ui); font-size: 0.9rem; color: var(--ink-secondary); line-height: 1.8; padding: var(--spacing-md); background: var(--bg-app); border-radius: 8px;">
+                        開始你的創作之旅吧！
+                    </div>
+                </div>
+
+                <div class="action-buttons" style="margin-top: var(--spacing-lg);">
+                    <button class="action-btn" id="exportBtn">📄 匯出文檔</button>
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Confirm Modal -->
+    <!-- Modal for Title Edit -->
+    <div class="modal-overlay" id="titleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">編輯文檔標題</h3>
+                <button class="modal-close" id="closeTitleModal">×</button>
+            </div>
+            <div class="modal-body">
+                <input
+                    type="text"
+                    class="modal-input"
+                    id="titleInput"
+                    placeholder="輸入文檔標題..."
+                >
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" id="cancelTitleEdit">取消</button>
+                <button class="modal-btn primary" id="saveTitleEdit">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Confirmations -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">確認操作</h3>
-                <button class="modal-close" id="modalClose">&times;</button>
+                <h3 class="modal-title" id="confirmTitle">確認操作</h3>
+                <button class="modal-close" id="closeConfirmModal">×</button>
             </div>
             <div class="modal-body">
-                <p id="modalMessage">確定要執行此操作嗎？</p>
+                <p id="confirmMessage">確定要執行此操作嗎？</p>
             </div>
             <div class="modal-footer">
-                <button class="action-btn" id="modalCancel">取消</button>
-                <button class="action-btn danger" id="modalConfirm">確認</button>
+                <button class="modal-btn secondary" id="cancelConfirm">取消</button>
+                <button class="modal-btn danger" id="confirmAction">確認</button>
             </div>
         </div>
     </div>
 
     <script>
         // ============================================
-        // Application State & Configuration
+        // Application State & Storage Keys
         // ============================================
-        const APP_VERSION = '1.0.0';
+        const APP_VERSION = '2.0.0';
         const STORAGE_KEYS = {
-            DOCUMENT_TITLE: 'moyun_document_title',
-            PARAGRAPHS: 'moyun_paragraphs',
-            STORY_ANCHORS: 'moyun_story_anchors',
-            STYLE_FINGERPRINT: 'moyun_style_fingerprint',
-            SETTINGS: 'moyun_settings',
-            WORLD_SETTING: 'moyun_world_setting',
-            CUSTOM_PROMPT: 'moyun_custom_prompt'
+            GLOBAL_SETTINGS: 'moyun_global_settings',
+            DOC_INDEX: 'moyun_doc_index',
+            DOC_PREFIX: 'moyun_doc_'
         };
 
-        // Default Settings
+        // Global Settings
         const DEFAULT_SETTINGS = {
             apiFormat: 'openrouter',
             apiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
             apiKey: '',
             modelName: 'anthropic/claude-sonnet-4',
-            temperature: 0.8
+            temperature: 0.8,
+            fontSize: 16
         };
 
         // Application State
         let state = {
+            currentDocId: null,
+            documents: [],
+            globalSettings: { ...DEFAULT_SETTINGS },
+            isLoading: false,
+            lastScrollY: 0,
+            navbarVisible: true
+        };
+
+        // Current Document Data
+        let currentDoc = {
+            id: null,
+            title: '',
             paragraphs: [],
-            settings: { ...DEFAULT_SETTINGS },
-            isLoading: false
+            storyAnchors: '',
+            styleFingerprint: '',
+            worldSetting: '',
+            customPrompt: '',
+            lastModified: Date.now()
         };
 
         // ============================================
         // DOM Elements
         // ============================================
-        const elements = {
-            // Editor
+        const el = {
+            // Navbar
+            navbar: document.getElementById('navbar'),
+            menuBtn: document.getElementById('menuBtn'),
+            brainBtn: document.getElementById('brainBtn'),
+            navbarTitle: document.getElementById('navbarTitle'),
+
+            // Content
             documentTitle: document.getElementById('documentTitle'),
             editorContent: document.getElementById('editorContent'),
             inputField: document.getElementById('inputField'),
             submitBtn: document.getElementById('submitBtn'),
 
-            // Sidebar
+            // Drawers
+            drawerOverlay: document.getElementById('drawerOverlay'),
+            leftDrawer: document.getElementById('leftDrawer'),
+            closeLeftDrawer: document.getElementById('closeLeftDrawer'),
+            brainPanel: document.getElementById('brainPanel'),
+            closeBrainPanel: document.getElementById('closeBrainPanel'),
+
+            // Document List
+            docList: document.getElementById('docList'),
+            newDocBtn: document.getElementById('newDocBtn'),
+
+            // Memory
             storyAnchors: document.getElementById('storyAnchors'),
             styleFingerprint: document.getElementById('styleFingerprint'),
             checkpointBtn: document.getElementById('checkpointBtn'),
@@ -1299,6 +1575,8 @@
             tempValue: document.getElementById('tempValue'),
             worldSetting: document.getElementById('worldSetting'),
             customPrompt: document.getElementById('customPrompt'),
+            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+            clearDataBtn: document.getElementById('clearDataBtn'),
 
             // Stats
             totalWords: document.getElementById('totalWords'),
@@ -1306,64 +1584,47 @@
             aiWords: document.getElementById('aiWords'),
             paragraphCount: document.getElementById('paragraphCount'),
             writingHistory: document.getElementById('writingHistory'),
-
-            // Actions
             exportBtn: document.getElementById('exportBtn'),
-            newDocBtn: document.getElementById('newDocBtn'),
-            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-            clearDataBtn: document.getElementById('clearDataBtn'),
 
-            // Toast & Modal
+            // Modals
             toastContainer: document.getElementById('toastContainer'),
+            titleModal: document.getElementById('titleModal'),
+            titleInput: document.getElementById('titleInput'),
+            closeTitleModal: document.getElementById('closeTitleModal'),
+            cancelTitleEdit: document.getElementById('cancelTitleEdit'),
+            saveTitleEdit: document.getElementById('saveTitleEdit'),
             confirmModal: document.getElementById('confirmModal'),
-            modalTitle: document.getElementById('modalTitle'),
-            modalMessage: document.getElementById('modalMessage'),
-            modalCancel: document.getElementById('modalCancel'),
-            modalConfirm: document.getElementById('modalConfirm'),
-            modalClose: document.getElementById('modalClose')
+            confirmTitle: document.getElementById('confirmTitle'),
+            confirmMessage: document.getElementById('confirmMessage'),
+            closeConfirmModal: document.getElementById('closeConfirmModal'),
+            cancelConfirm: document.getElementById('cancelConfirm'),
+            confirmAction: document.getElementById('confirmAction')
         };
 
         // ============================================
         // Utility Functions
         // ============================================
-
-        // Generate unique ID
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2);
         }
 
-        // Count Chinese characters (including punctuation)
         function countWords(text) {
             if (!text) return 0;
-            // Count Chinese characters and other characters
-            const cleaned = text.replace(/\s/g, '');
-            return cleaned.length;
+            return text.replace(/\s/g, '').length;
         }
 
-        // Debounce function
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
 
-        // Parse Markdown safely
         function parseMarkdown(text) {
             if (!text) return '';
             try {
-                // Configure marked for safe rendering
-                marked.setOptions({
-                    breaks: true,
-                    gfm: true,
-                    headerIds: false,
-                    mangle: false
-                });
+                marked.setOptions({ breaks: true, gfm: true });
                 return marked.parse(text);
             } catch (e) {
                 console.error('Markdown parsing error:', e);
@@ -1371,57 +1632,17 @@
             }
         }
 
-        // ============================================
-        // Toast Notifications
-        // ============================================
-        function showToast(message, type = 'info', duration = 4000) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icons = {
-                success: '✓',
-                error: '✕',
-                warning: '⚠',
-                info: 'ℹ'
-            };
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
 
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type]}</span>
-                <span class="toast-message">${message}</span>
-                <button class="toast-close">&times;</button>
-            `;
+            if (diff < 60000) return '剛才';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} 分鐘前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小時前`;
+            if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`;
 
-            elements.toastContainer.appendChild(toast);
-
-            // Close button handler
-            toast.querySelector('.toast-close').addEventListener('click', () => {
-                removeToast(toast);
-            });
-
-            // Auto remove
-            setTimeout(() => removeToast(toast), duration);
-        }
-
-        function removeToast(toast) {
-            toast.style.animation = 'slideOut 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }
-
-        // ============================================
-        // Modal Functions
-        // ============================================
-        let modalCallback = null;
-
-        function showModal(title, message, onConfirm) {
-            elements.modalTitle.textContent = title;
-            elements.modalMessage.textContent = message;
-            elements.confirmModal.classList.add('active');
-            modalCallback = onConfirm;
-        }
-
-        function hideModal() {
-            elements.confirmModal.classList.remove('active');
-            modalCallback = null;
+            return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
         }
 
         // ============================================
@@ -1446,16 +1667,228 @@
             }
         }
 
-        // Auto-save with debounce
-        const autoSave = debounce(() => {
-            saveToStorage(STORAGE_KEYS.PARAGRAPHS, state.paragraphs);
-            saveToStorage(STORAGE_KEYS.DOCUMENT_TITLE, elements.documentTitle.value);
-            saveToStorage(STORAGE_KEYS.STORY_ANCHORS, elements.storyAnchors.value);
-            saveToStorage(STORAGE_KEYS.STYLE_FINGERPRINT, elements.styleFingerprint.value);
-            saveToStorage(STORAGE_KEYS.WORLD_SETTING, elements.worldSetting.value);
-            saveToStorage(STORAGE_KEYS.CUSTOM_PROMPT, elements.customPrompt.value);
-            console.log('Auto-saved at', new Date().toLocaleTimeString());
-        }, 1000);
+        // ============================================
+        // Multi-Document System
+        // ============================================
+        function loadGlobalSettings() {
+            const saved = loadFromStorage(STORAGE_KEYS.GLOBAL_SETTINGS);
+            if (saved) {
+                state.globalSettings = { ...DEFAULT_SETTINGS, ...saved };
+                applyGlobalSettings();
+            }
+        }
+
+        function saveGlobalSettings() {
+            state.globalSettings = {
+                apiFormat: el.apiFormat.value,
+                apiEndpoint: el.apiEndpoint.value,
+                apiKey: el.apiKey.value,
+                modelName: el.modelName.value,
+                temperature: parseFloat(el.temperature.value),
+                fontSize: state.globalSettings.fontSize
+            };
+            saveToStorage(STORAGE_KEYS.GLOBAL_SETTINGS, state.globalSettings);
+        }
+
+        function applyGlobalSettings() {
+            el.apiFormat.value = state.globalSettings.apiFormat;
+            el.apiEndpoint.value = state.globalSettings.apiEndpoint;
+            el.apiKey.value = state.globalSettings.apiKey;
+            el.modelName.value = state.globalSettings.modelName;
+            el.temperature.value = state.globalSettings.temperature;
+            el.tempValue.textContent = state.globalSettings.temperature;
+        }
+
+        function loadDocumentIndex() {
+            state.documents = loadFromStorage(STORAGE_KEYS.DOC_INDEX, []);
+        }
+
+        function saveDocumentIndex() {
+            saveToStorage(STORAGE_KEYS.DOC_INDEX, state.documents);
+        }
+
+        function saveCurrentDocument() {
+            if (!currentDoc.id) return;
+
+            currentDoc.title = el.documentTitle.value.trim() || '未命名文檔';
+            currentDoc.storyAnchors = el.storyAnchors.value;
+            currentDoc.styleFingerprint = el.styleFingerprint.value;
+            currentDoc.worldSetting = el.worldSetting.value;
+            currentDoc.customPrompt = el.customPrompt.value;
+            currentDoc.lastModified = Date.now();
+
+            // Get preview text
+            const previewText = currentDoc.paragraphs.length > 0
+                ? currentDoc.paragraphs[0].content.substring(0, 100)
+                : '尚無內容...';
+
+            // Update document index
+            const docIndex = state.documents.findIndex(d => d.id === currentDoc.id);
+            const indexEntry = {
+                id: currentDoc.id,
+                title: currentDoc.title,
+                lastModified: currentDoc.lastModified,
+                previewText: previewText
+            };
+
+            if (docIndex >= 0) {
+                state.documents[docIndex] = indexEntry;
+            } else {
+                state.documents.unshift(indexEntry);
+            }
+
+            // Save to storage
+            saveToStorage(STORAGE_KEYS.DOC_PREFIX + currentDoc.id, currentDoc);
+            saveDocumentIndex();
+
+            console.log('Document saved:', currentDoc.id);
+        }
+
+        const autoSaveDocument = debounce(() => {
+            saveCurrentDocument();
+        }, 1500);
+
+        function loadDocument(docId) {
+            // Save current document first
+            if (currentDoc.id) {
+                saveCurrentDocument();
+            }
+
+            // Load document data
+            const docData = loadFromStorage(STORAGE_KEYS.DOC_PREFIX + docId);
+            if (!docData) {
+                showToast('無法載入文檔', 'error');
+                return;
+            }
+
+            // Update current document
+            currentDoc = { ...docData };
+            state.currentDocId = docId;
+
+            // Update UI
+            el.documentTitle.value = currentDoc.title;
+            el.storyAnchors.value = currentDoc.storyAnchors || getDefaultAnchors();
+            el.styleFingerprint.value = currentDoc.styleFingerprint || getDefaultFingerprint();
+            el.worldSetting.value = currentDoc.worldSetting || '';
+            el.customPrompt.value = currentDoc.customPrompt || getDefaultPrompt();
+            el.navbarTitle.textContent = currentDoc.title;
+
+            // Render paragraphs
+            renderAllParagraphs();
+            updateStats();
+            updateDocumentList();
+
+            // Close drawers
+            closeAllDrawers();
+
+            showToast(`已載入：${currentDoc.title}`, 'success', 2000);
+        }
+
+        function createDocument() {
+            // Save current document
+            if (currentDoc.id) {
+                saveCurrentDocument();
+            }
+
+            // Create new document
+            const newId = generateId();
+            currentDoc = {
+                id: newId,
+                title: '未命名文檔',
+                paragraphs: [],
+                storyAnchors: getDefaultAnchors(),
+                styleFingerprint: getDefaultFingerprint(),
+                worldSetting: '',
+                customPrompt: getDefaultPrompt(),
+                lastModified: Date.now()
+            };
+            state.currentDocId = newId;
+
+            // Update UI
+            el.documentTitle.value = '';
+            el.editorContent.innerHTML = '';
+            el.storyAnchors.value = currentDoc.storyAnchors;
+            el.styleFingerprint.value = currentDoc.styleFingerprint;
+            el.worldSetting.value = currentDoc.worldSetting;
+            el.customPrompt.value = currentDoc.customPrompt;
+            el.navbarTitle.textContent = '墨韻 MòYùn';
+
+            // Save new document
+            saveCurrentDocument();
+            updateDocumentList();
+            updateStats();
+
+            // Close drawers
+            closeAllDrawers();
+
+            showToast('已建立新文檔', 'success');
+        }
+
+        function getDefaultAnchors() {
+            return `{
+  "時間地點": "",
+  "環境氛圍": {
+    "光影": "",
+    "氣味": "",
+    "聲音": ""
+  },
+  "角色狀態": {
+    "心理": "",
+    "姿勢": "",
+    "外觀": ""
+  },
+  "當前衝突": "",
+  "禁止發生的劇情": []
+}`;
+        }
+
+        function getDefaultFingerprint() {
+            return `{
+  "敘事節奏": "",
+  "感官偏好": [],
+  "禁忌與張力處理": "",
+  "關鍵語氣樣本": []
+}`;
+        }
+
+        function getDefaultPrompt() {
+            return '你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。';
+        }
+
+        function updateDocumentList() {
+            // Sort by last modified
+            const sortedDocs = [...state.documents].sort((a, b) => b.lastModified - a.lastModified);
+
+            if (sortedDocs.length === 0) {
+                el.docList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>尚無文檔</p>
+                    </div>
+                `;
+                return;
+            }
+
+            el.docList.innerHTML = sortedDocs.map(doc => `
+                <div class="doc-item ${doc.id === state.currentDocId ? 'active' : ''}" data-doc-id="${doc.id}">
+                    <div class="doc-item-title">${doc.title}</div>
+                    <div class="doc-item-meta">
+                        <span>${formatDate(doc.lastModified)}</span>
+                    </div>
+                    <div class="doc-item-preview">${doc.previewText}</div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.doc-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const docId = item.dataset.docId;
+                    if (docId !== state.currentDocId) {
+                        loadDocument(docId);
+                    }
+                });
+            });
+        }
 
         // ============================================
         // Paragraph Management
@@ -1464,20 +1897,17 @@
             const div = document.createElement('div');
             div.className = `paragraph ${paragraph.source}-paragraph`;
             div.dataset.id = paragraph.id;
-            
+
             div.innerHTML = `
-                <span class="paragraph-label">${paragraph.source === 'user' ? '你' : 'AI'}</span>
                 <div class="paragraph-content" contenteditable="true">${parseMarkdown(paragraph.content)}</div>
             `;
 
-            // Handle content editing
             const contentDiv = div.querySelector('.paragraph-content');
             contentDiv.addEventListener('blur', () => {
                 const newContent = contentDiv.innerText;
                 updateParagraphContent(paragraph.id, newContent);
             });
 
-            // Handle paste - strip formatting
             contentDiv.addEventListener('paste', (e) => {
                 e.preventDefault();
                 const text = e.clipboardData.getData('text/plain');
@@ -1495,36 +1925,34 @@
                 timestamp: Date.now()
             };
 
-            state.paragraphs.push(paragraph);
-            
+            currentDoc.paragraphs.push(paragraph);
+
             const paragraphEl = createParagraphElement(paragraph);
-            elements.editorContent.appendChild(paragraphEl);
-            
-            // Scroll to new paragraph
+            el.editorContent.appendChild(paragraphEl);
+
             paragraphEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            autoSave();
+
+            autoSaveDocument();
             updateStats();
-            
+
             return paragraph;
         }
 
         function updateParagraphContent(id, newContent) {
-            const paragraph = state.paragraphs.find(p => p.id === id);
+            const paragraph = currentDoc.paragraphs.find(p => p.id === id);
             if (paragraph) {
                 paragraph.content = newContent;
-                autoSave();
+                autoSaveDocument();
                 updateStats();
             }
         }
 
         function renderAllParagraphs() {
-            elements.editorContent.innerHTML = '';
-            state.paragraphs.forEach(paragraph => {
+            el.editorContent.innerHTML = '';
+            currentDoc.paragraphs.forEach(paragraph => {
                 const paragraphEl = createParagraphElement(paragraph);
-                elements.editorContent.appendChild(paragraphEl);
+                el.editorContent.appendChild(paragraphEl);
             });
-            updateStats();
         }
 
         // ============================================
@@ -1535,7 +1963,7 @@
             let userWords = 0;
             let aiWords = 0;
 
-            state.paragraphs.forEach(p => {
+            currentDoc.paragraphs.forEach(p => {
                 const words = countWords(p.content);
                 totalWords += words;
                 if (p.source === 'user') {
@@ -1545,30 +1973,110 @@
                 }
             });
 
-            elements.totalWords.textContent = totalWords.toLocaleString();
-            elements.userWords.textContent = userWords.toLocaleString();
-            elements.aiWords.textContent = aiWords.toLocaleString();
-            elements.paragraphCount.textContent = state.paragraphs.length;
+            el.totalWords.textContent = totalWords.toLocaleString();
+            el.userWords.textContent = userWords.toLocaleString();
+            el.aiWords.textContent = aiWords.toLocaleString();
+            el.paragraphCount.textContent = currentDoc.paragraphs.length;
 
-            // Update writing history
-            if (state.paragraphs.length > 0) {
+            if (currentDoc.paragraphs.length > 0) {
                 const ratio = userWords > 0 ? (aiWords / userWords).toFixed(2) : '∞';
-                elements.writingHistory.innerHTML = `
+                el.writingHistory.innerHTML = `
                     <p>📊 AI/用戶字數比: <strong>${ratio}</strong></p>
-                    <p>📝 平均段落長度: <strong>${Math.round(totalWords / state.paragraphs.length)}</strong> 字</p>
-                    <p>⏱️ 最後編輯: <strong>${new Date().toLocaleString('zh-TW')}</strong></p>
+                    <p>📝 平均段落長度: <strong>${Math.round(totalWords / currentDoc.paragraphs.length)}</strong> 字</p>
+                    <p>⏱️ 最後編輯: <strong>${new Date(currentDoc.lastModified).toLocaleString('zh-TW')}</strong></p>
                 `;
             }
+        }
+
+        // ============================================
+        // Smart Navbar
+        // ============================================
+        let lastScrollY = 0;
+        let ticking = false;
+
+        function updateNavbar() {
+            const currentScrollY = window.pageYOffset;
+
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                // Scrolling down
+                el.navbar.classList.add('hidden');
+            } else {
+                // Scrolling up
+                el.navbar.classList.remove('hidden');
+            }
+
+            lastScrollY = currentScrollY;
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(updateNavbar);
+                ticking = true;
+            }
+        });
+
+        // ============================================
+        // Drawer Management
+        // ============================================
+        function openLeftDrawer() {
+            el.leftDrawer.classList.add('active');
+            el.drawerOverlay.classList.add('active');
+        }
+
+        function closeLeftDrawer() {
+            el.leftDrawer.classList.remove('active');
+            el.drawerOverlay.classList.remove('active');
+        }
+
+        function openBrainPanel() {
+            el.brainPanel.classList.add('active');
+            el.drawerOverlay.classList.add('active');
+
+            // Show handle on mobile
+            if (window.innerWidth <= 768) {
+                document.querySelector('.brain-handle').style.display = 'block';
+            }
+        }
+
+        function closeBrainPanel() {
+            el.brainPanel.classList.remove('active');
+            el.drawerOverlay.classList.remove('active');
+        }
+
+        function closeAllDrawers() {
+            closeLeftDrawer();
+            closeBrainPanel();
+        }
+
+        // ============================================
+        // Tab Management
+        // ============================================
+        function initTabs() {
+            const tabs = document.querySelectorAll('.brain-tab');
+            const panels = document.querySelectorAll('.tab-panel');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+
+                    tabs.forEach(t => t.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    document.getElementById(`${targetTab}Panel`).classList.add('active');
+                });
+            });
         }
 
         // ============================================
         // API Communication
         // ============================================
         function buildSystemPrompt() {
-            const customPrompt = elements.customPrompt.value.trim();
-            const worldSetting = elements.worldSetting.value.trim();
-            const storyAnchors = elements.storyAnchors.value.trim();
-            const styleFingerprint = elements.styleFingerprint.value.trim();
+            const customPrompt = el.customPrompt.value.trim();
+            const worldSetting = el.worldSetting.value.trim();
+            const storyAnchors = el.storyAnchors.value.trim();
+            const styleFingerprint = el.styleFingerprint.value.trim();
 
             let systemPrompt = customPrompt;
 
@@ -1588,16 +2096,14 @@
         }
 
         function buildConversationHistory() {
-            // Get recent paragraphs (limit to prevent token overflow)
-            const recentParagraphs = state.paragraphs.slice(-20);
-            
+            const recentParagraphs = currentDoc.paragraphs.slice(-15);
             const messages = [];
             let currentRole = null;
             let currentContent = '';
 
             recentParagraphs.forEach(p => {
                 const role = p.source === 'user' ? 'user' : 'assistant';
-                
+
                 if (role === currentRole) {
                     currentContent += '\n\n' + p.content;
                 } else {
@@ -1617,7 +2123,7 @@
         }
 
         async function callAPI(userContent) {
-            const { apiEndpoint, apiKey, modelName, temperature } = state.settings;
+            const { apiEndpoint, apiKey, modelName, temperature } = state.globalSettings;
 
             if (!apiKey) {
                 throw new Error('請先在設定中填入 API Key');
@@ -1625,8 +2131,6 @@
 
             const systemPrompt = buildSystemPrompt();
             const conversationHistory = buildConversationHistory();
-
-            // Add new user message
             conversationHistory.push({ role: 'user', content: userContent });
 
             const requestBody = {
@@ -1635,7 +2139,7 @@
                     { role: 'system', content: systemPrompt },
                     ...conversationHistory
                 ],
-                temperature: parseFloat(temperature),
+                temperature: temperature,
                 max_tokens: 4096
             };
 
@@ -1644,10 +2148,9 @@
                 'Authorization': `Bearer ${apiKey}`
             };
 
-            // Add OpenRouter specific headers
-            if (state.settings.apiFormat === 'openrouter') {
+            if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
-                headers['X-Title'] = '墨韻 MòYùn - AI 協作寫作平台';
+                headers['X-Title'] = '墨韻 MòYùn';
             }
 
             const response = await fetch(apiEndpoint, {
@@ -1669,25 +2172,23 @@
         // Checkpoint System
         // ============================================
         async function performCheckpoint() {
-            if (state.paragraphs.length < 3) {
+            if (currentDoc.paragraphs.length < 3) {
                 showToast('內容太少，請先寫一些故事再結算', 'warning');
                 return;
             }
 
-            const { apiKey } = state.settings;
-            if (!apiKey) {
+            if (!state.globalSettings.apiKey) {
                 showToast('請先在設定中填入 API Key', 'error');
                 return;
             }
 
-            elements.checkpointBtn.disabled = true;
-            elements.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
+            el.checkpointBtn.disabled = true;
+            el.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
 
             try {
-                // Get recent content for analysis
-                const recentContent = state.paragraphs.slice(-10).map(p => p.content).join('\n\n');
+                const recentContent = currentDoc.paragraphs.slice(-10).map(p => p.content).join('\n\n');
 
-                const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊：
+                const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊。
 
 【故事片段】
 ${recentContent}
@@ -1699,7 +2200,7 @@ ${recentContent}
   "時間地點": "具體的時間與地點",
   "環境氛圍": {
     "光影": "光線描述",
-    "氣味": "氣味描述", 
+    "氣味": "氣味描述",
     "聲音": "聲音描述"
   },
   "角色狀態": {
@@ -1722,11 +2223,9 @@ ${recentContent}
 請直接回傳 JSON，不要加任何其他說明文字。`;
 
                 const response = await callAPI(analysisPrompt);
-
-                // Try to parse the JSON response
                 let analysisResult;
+
                 try {
-                    // Try to extract JSON from response
                     const jsonMatch = response.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         analysisResult = JSON.parse(jsonMatch[0]);
@@ -1739,53 +2238,48 @@ ${recentContent}
                     return;
                 }
 
-                // Update the memory fields
                 if (analysisResult.storyAnchors) {
-                    elements.storyAnchors.value = JSON.stringify(analysisResult.storyAnchors, null, 2);
+                    el.storyAnchors.value = JSON.stringify(analysisResult.storyAnchors, null, 2);
                 }
                 if (analysisResult.styleFingerprint) {
-                    elements.styleFingerprint.value = JSON.stringify(analysisResult.styleFingerprint, null, 2);
+                    el.styleFingerprint.value = JSON.stringify(analysisResult.styleFingerprint, null, 2);
                 }
 
-                autoSave();
+                autoSaveDocument();
                 showToast('✨ 本章結算完成！記憶庫已更新', 'success');
 
             } catch (error) {
                 console.error('Checkpoint error:', error);
                 showToast(`結算失敗: ${error.message}`, 'error');
             } finally {
-                elements.checkpointBtn.disabled = false;
-                elements.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (Checkpoint)</span>';
+                el.checkpointBtn.disabled = false;
+                el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (Checkpoint)</span>';
             }
         }
 
         // ============================================
-        // User Interaction Handlers
+        // User Actions
         // ============================================
         async function handleSubmit() {
-            const userContent = elements.inputField.value.trim();
-            
+            const userContent = el.inputField.value.trim();
+
             if (!userContent) {
                 showToast('請輸入一些內容', 'warning');
                 return;
             }
 
-            if (state.isLoading) {
-                return;
-            }
+            if (state.isLoading) return;
 
-            // Add user paragraph
             addParagraph(userContent, 'user');
-            elements.inputField.value = '';
+            el.inputField.value = '';
 
-            // Start AI continuation
             state.isLoading = true;
-            elements.submitBtn.classList.add('loading');
-            elements.submitBtn.disabled = true;
+            el.submitBtn.classList.add('loading');
+            el.submitBtn.disabled = true;
 
             try {
                 const aiResponse = await callAPI(userContent + '\n\n請繼續這個故事。');
-                
+
                 if (aiResponse) {
                     addParagraph(aiResponse, 'ai');
                     showToast('AI 續寫完成', 'success', 2000);
@@ -1795,26 +2289,24 @@ ${recentContent}
                 showToast(`續寫失敗: ${error.message}`, 'error');
             } finally {
                 state.isLoading = false;
-                elements.submitBtn.classList.remove('loading');
-                elements.submitBtn.disabled = false;
+                el.submitBtn.classList.remove('loading');
+                el.submitBtn.disabled = false;
             }
         }
 
         function handleExport() {
-            const title = elements.documentTitle.value || '未命名文檔';
+            const title = currentDoc.title || '未命名文檔';
             let content = `# ${title}\n\n`;
 
-            state.paragraphs.forEach(p => {
+            currentDoc.paragraphs.forEach(p => {
                 content += p.content + '\n\n';
             });
 
-            // Add metadata
             content += '\n---\n';
             content += `匯出時間: ${new Date().toLocaleString('zh-TW')}\n`;
             content += `總字數: ${countWords(content)}\n`;
-            content += `段落數: ${state.paragraphs.length}\n`;
+            content += `段落數: ${currentDoc.paragraphs.length}\n`;
 
-            // Create download
             const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1828,208 +2320,211 @@ ${recentContent}
             showToast('文檔已匯出', 'success');
         }
 
-        function handleNewDocument() {
-            showModal('新建文檔', '確定要新建文檔嗎？當前內容將被清除。', () => {
-                state.paragraphs = [];
-                elements.documentTitle.value = '';
-                elements.editorContent.innerHTML = '';
-                
-                // Reset memory
-                elements.storyAnchors.value = `{
-  "時間地點": "",
-  "環境氛圍": {
-    "光影": "",
-    "氣味": "",
-    "聲音": ""
-  },
-  "角色狀態": {
-    "心理": "",
-    "姿勢": "",
-    "外觀": ""
-  },
-  "當前衝突": "",
-  "禁止發生的劇情": []
-}`;
-                elements.styleFingerprint.value = `{
-  "敘事節奏": "",
-  "感官偏好": [],
-  "禁忌與張力處理": "",
-  "關鍵語氣樣本": []
-}`;
-
-                autoSave();
-                updateStats();
-                showToast('已新建文檔', 'success');
-                hideModal();
-            });
-        }
-
         function handleClearData() {
-            showModal('清除所有資料', '確定要清除所有資料嗎？此操作無法復原。', () => {
-                Object.values(STORAGE_KEYS).forEach(key => {
-                    localStorage.removeItem(key);
+            showConfirmModal('清除所有資料', '確定要清除所有文檔與設定嗎？此操作無法復原。', () => {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('moyun_')) {
+                        localStorage.removeItem(key);
+                    }
                 });
                 location.reload();
             });
         }
 
         // ============================================
-        // Tab Navigation
+        // Toast Notifications
         // ============================================
-        function initTabs() {
-            const tabs = document.querySelectorAll('.sidebar-tab');
-            const panels = document.querySelectorAll('.tab-panel');
+        function showToast(message, type = 'info', duration = 4000) {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const targetTab = tab.dataset.tab;
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
 
-                    tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close">×</button>
+            `;
 
-                    tab.classList.add('active');
-                    document.getElementById(`${targetTab}Panel`).classList.add('active');
-                });
+            el.toastContainer.appendChild(toast);
+
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                removeToast(toast);
+            });
+
+            setTimeout(() => removeToast(toast), duration);
+        }
+
+        function removeToast(toast) {
+            toast.style.animation = 'slideOutRight 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // ============================================
+        // Modal Management
+        // ============================================
+        let confirmCallback = null;
+
+        function showTitleModal() {
+            el.titleInput.value = currentDoc.title;
+            el.titleModal.classList.add('active');
+            el.titleInput.focus();
+        }
+
+        function hideTitleModal() {
+            el.titleModal.classList.remove('active');
+        }
+
+        function saveTitleEdit() {
+            const newTitle = el.titleInput.value.trim();
+            if (newTitle) {
+                el.documentTitle.value = newTitle;
+                el.navbarTitle.textContent = newTitle;
+                autoSaveDocument();
+            }
+            hideTitleModal();
+        }
+
+        function showConfirmModal(title, message, callback) {
+            el.confirmTitle.textContent = title;
+            el.confirmMessage.textContent = message;
+            el.confirmModal.classList.add('active');
+            confirmCallback = callback;
+        }
+
+        function hideConfirmModal() {
+            el.confirmModal.classList.remove('active');
+            confirmCallback = null;
+        }
+
+        // ============================================
+        // Event Listeners
+        // ============================================
+        function initEventListeners() {
+            // Navbar
+            el.menuBtn.addEventListener('click', openLeftDrawer);
+            el.brainBtn.addEventListener('click', openBrainPanel);
+            el.navbarTitle.addEventListener('click', showTitleModal);
+
+            // Drawers
+            el.drawerOverlay.addEventListener('click', closeAllDrawers);
+            el.closeLeftDrawer.addEventListener('click', closeLeftDrawer);
+            el.closeBrainPanel.addEventListener('click', closeBrainPanel);
+
+            // Documents
+            el.newDocBtn.addEventListener('click', createDocument);
+
+            // Input
+            el.inputField.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            });
+            el.submitBtn.addEventListener('click', handleSubmit);
+
+            // Document title
+            el.documentTitle.addEventListener('input', () => {
+                el.navbarTitle.textContent = el.documentTitle.value || '墨韻 MòYùn';
+                autoSaveDocument();
+            });
+
+            // Memory & Settings auto-save
+            el.storyAnchors.addEventListener('input', autoSaveDocument);
+            el.styleFingerprint.addEventListener('input', autoSaveDocument);
+            el.worldSetting.addEventListener('input', autoSaveDocument);
+            el.customPrompt.addEventListener('input', autoSaveDocument);
+
+            // Checkpoint
+            el.checkpointBtn.addEventListener('click', performCheckpoint);
+
+            // Settings
+            el.temperature.addEventListener('input', (e) => {
+                el.tempValue.textContent = e.target.value;
+            });
+
+            el.saveSettingsBtn.addEventListener('click', () => {
+                saveGlobalSettings();
+                showToast('設定已儲存', 'success');
+            });
+
+            el.clearDataBtn.addEventListener('click', handleClearData);
+
+            // Export
+            el.exportBtn.addEventListener('click', handleExport);
+
+            // Tabs
+            initTabs();
+
+            // Title Modal
+            el.closeTitleModal.addEventListener('click', hideTitleModal);
+            el.cancelTitleEdit.addEventListener('click', hideTitleModal);
+            el.saveTitleEdit.addEventListener('click', saveTitleEdit);
+            el.titleInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveTitleEdit();
+                }
+            });
+
+            // Confirm Modal
+            el.closeConfirmModal.addEventListener('click', hideConfirmModal);
+            el.cancelConfirm.addEventListener('click', hideConfirmModal);
+            el.confirmAction.addEventListener('click', () => {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                hideConfirmModal();
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveCurrentDocument();
+                    showToast('已儲存', 'success', 1500);
+                }
             });
         }
 
         // ============================================
         // Initialization
         // ============================================
-        function loadSavedData() {
-            // Load paragraphs
-            state.paragraphs = loadFromStorage(STORAGE_KEYS.PARAGRAPHS, []);
-            renderAllParagraphs();
-
-            // Load document title
-            elements.documentTitle.value = loadFromStorage(STORAGE_KEYS.DOCUMENT_TITLE, '');
-
-            // Load memory
-            const savedAnchors = loadFromStorage(STORAGE_KEYS.STORY_ANCHORS);
-            if (savedAnchors) {
-                elements.storyAnchors.value = savedAnchors;
-            }
-
-            const savedFingerprint = loadFromStorage(STORAGE_KEYS.STYLE_FINGERPRINT);
-            if (savedFingerprint) {
-                elements.styleFingerprint.value = savedFingerprint;
-            }
-
-            // Load world setting
-            const savedWorldSetting = loadFromStorage(STORAGE_KEYS.WORLD_SETTING);
-            if (savedWorldSetting) {
-                elements.worldSetting.value = savedWorldSetting;
-            }
-
-            // Load custom prompt
-            const savedCustomPrompt = loadFromStorage(STORAGE_KEYS.CUSTOM_PROMPT);
-            if (savedCustomPrompt) {
-                elements.customPrompt.value = savedCustomPrompt;
-            }
-
-            // Load settings
-            const savedSettings = loadFromStorage(STORAGE_KEYS.SETTINGS);
-            if (savedSettings) {
-                state.settings = { ...DEFAULT_SETTINGS, ...savedSettings };
-                elements.apiFormat.value = state.settings.apiFormat;
-                elements.apiEndpoint.value = state.settings.apiEndpoint;
-                elements.apiKey.value = state.settings.apiKey;
-                elements.modelName.value = state.settings.modelName;
-                elements.temperature.value = state.settings.temperature;
-                elements.tempValue.textContent = state.settings.temperature;
-            }
-        }
-
-        function initEventListeners() {
-            // Input field keyboard shortcut
-            elements.inputField.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                }
-            });
-
-            // Submit button
-            elements.submitBtn.addEventListener('click', handleSubmit);
-
-            // Checkpoint button
-            elements.checkpointBtn.addEventListener('click', performCheckpoint);
-
-            // Export button
-            elements.exportBtn.addEventListener('click', handleExport);
-
-            // New document button
-            elements.newDocBtn.addEventListener('click', handleNewDocument);
-
-            // Save settings button
-            elements.saveSettingsBtn.addEventListener('click', () => {
-                state.settings = {
-                    apiFormat: elements.apiFormat.value,
-                    apiEndpoint: elements.apiEndpoint.value,
-                    apiKey: elements.apiKey.value,
-                    modelName: elements.modelName.value,
-                    temperature: elements.temperature.value
-                };
-                saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
-                showToast('設定已儲存', 'success');
-            });
-
-            // Clear data button
-            elements.clearDataBtn.addEventListener('click', handleClearData);
-
-            // Temperature slider
-            elements.temperature.addEventListener('input', (e) => {
-                elements.tempValue.textContent = e.target.value;
-            });
-
-            // Auto-save triggers
-            elements.documentTitle.addEventListener('input', autoSave);
-            elements.storyAnchors.addEventListener('input', autoSave);
-            elements.styleFingerprint.addEventListener('input', autoSave);
-            elements.worldSetting.addEventListener('input', autoSave);
-            elements.customPrompt.addEventListener('input', autoSave);
-
-            // Modal handlers
-            elements.modalCancel.addEventListener('click', hideModal);
-            elements.modalClose.addEventListener('click', hideModal);
-            elements.modalConfirm.addEventListener('click', () => {
-                if (modalCallback) {
-                    modalCallback();
-                }
-            });
-            elements.confirmModal.addEventListener('click', (e) => {
-                if (e.target === elements.confirmModal) {
-                    hideModal();
-                }
-            });
-
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                // Ctrl+S to save
-                if (e.ctrlKey && e.key === 's') {
-                    e.preventDefault();
-                    autoSave();
-                    showToast('已儲存', 'success', 1500);
-                }
-            });
-        }
-
-        // Initialize the application
         function init() {
-            loadSavedData();
-            initTabs();
+            console.log(`墨韻 MòYùn v${APP_VERSION} 初始化中...`);
+
+            // Load global settings
+            loadGlobalSettings();
+
+            // Load document index
+            loadDocumentIndex();
+
+            // Load or create first document
+            if (state.documents.length > 0) {
+                const lastDoc = state.documents[0];
+                loadDocument(lastDoc.id);
+            } else {
+                createDocument();
+            }
+
+            // Initialize UI
             initEventListeners();
+            updateDocumentList();
             updateStats();
 
-            console.log(`墨韻 MòYùn v${APP_VERSION} 初始化完成`);
-            
-            // Show welcome message if no content
-            if (state.paragraphs.length === 0) {
+            console.log('墨韻 MòYùn 已啟動');
+
+            if (!state.globalSettings.apiKey) {
                 showToast('歡迎使用墨韻！請先在設定中填入 API Key', 'info', 5000);
             }
         }
 
-        // Start the application
+        // Start application
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
