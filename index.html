@@ -3,9 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="墨韻 MòYùn - AI 協作小說寫作平台，支援離線寫作與智能續寫">
     <meta name="theme-color" content="#F5F5F0">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- Apple iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="墨韻">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+
     <title>墨韻 MòYùn - AI 協作小說寫作平台</title>
     
     <!-- Google Fonts: LXGW WenKai TC -->
@@ -182,62 +195,92 @@
             transform: scale(0.95);
         }
 
-        /* Simple Settings Icon */
+        /* Settings Gear Icon */
         .settings-icon {
             width: 20px;
             height: 20px;
             position: relative;
             display: inline-block;
+            animation: rotate-icon 20s linear infinite;
         }
 
-        .settings-icon::before,
+        @keyframes rotate-icon {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .navbar-btn:hover .settings-icon {
+            animation: rotate-icon 2s linear infinite;
+        }
+
+        /* Outer gear circle with teeth */
+        .settings-icon::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            left: 0;
+            top: 0;
+            box-sizing: border-box;
+        }
+
+        /* Inner center circle */
         .settings-icon::after {
             content: '';
             position: absolute;
-            background: currentColor;
-            border-radius: 2px;
-        }
-
-        /* Horizontal line */
-        .settings-icon::before {
-            width: 20px;
-            height: 2px;
-            top: 4px;
-            left: 0;
-        }
-
-        /* Vertical line */
-        .settings-icon::after {
-            width: 20px;
-            height: 2px;
-            top: 9px;
-            left: 0;
-        }
-
-        .settings-icon span {
-            position: absolute;
-            width: 20px;
-            height: 2px;
-            background: currentColor;
-            border-radius: 2px;
-            bottom: 4px;
-            left: 0;
-        }
-
-        /* Sliders on lines */
-        .settings-icon .slider {
-            position: absolute;
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             background: currentColor;
             border-radius: 50%;
+            left: 50%;
             top: 50%;
-            transform: translateY(-50%);
+            transform: translate(-50%, -50%);
         }
 
-        .settings-icon .slider:nth-child(1) { left: 3px; top: 4px; }
-        .settings-icon .slider:nth-child(2) { right: 3px; top: 9px; }
-        .settings-icon .slider:nth-child(3) { left: 7px; bottom: 4px; }
+        /* Gear teeth (8 teeth around the circle) */
+        .settings-icon .tooth {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: currentColor;
+            left: 50%;
+            top: 50%;
+            transform-origin: center;
+        }
+
+        .settings-icon .tooth:nth-child(1) {
+            transform: translate(-50%, -50%) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(2) {
+            transform: translate(-50%, -50%) rotate(45deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(3) {
+            transform: translate(-50%, -50%) rotate(90deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(4) {
+            transform: translate(-50%, -50%) rotate(135deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(5) {
+            transform: translate(-50%, -50%) rotate(180deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(6) {
+            transform: translate(-50%, -50%) rotate(225deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(7) {
+            transform: translate(-50%, -50%) rotate(270deg) translateY(-10px);
+        }
+
+        .settings-icon .tooth:nth-child(8) {
+            transform: translate(-50%, -50%) rotate(315deg) translateY(-10px);
+        }
 
         .navbar-title {
             flex: 1;
@@ -1305,10 +1348,14 @@
             </div>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
                 <span class="settings-icon">
-                    <span></span>
-                    <span class="slider"></span>
-                    <span class="slider"></span>
-                    <span class="slider"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
+                    <span class="tooth"></span>
                 </span>
             </button>
         </nav>
@@ -2508,6 +2555,43 @@ ${recentContent}
 
         // Start
         document.addEventListener('DOMContentLoaded', init);
+
+        // ============================================
+        // PWA Service Worker Registration
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('✓ Service Worker 註冊成功:', registration.scope);
+
+                        // 檢查更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('發現新版本 Service Worker');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 新版本可用，提示用戶刷新
+                                    showToast('發現新版本，請重新整理頁面', 'info', 5000);
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('✗ Service Worker 註冊失敗:', error);
+                    });
+            });
+
+            // 監聽 Service Worker 控制變更
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
     </script>
 </body>
 </html>
