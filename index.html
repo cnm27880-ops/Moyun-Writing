@@ -1942,30 +1942,34 @@
             background: var(--accent-light);
         }
 
-        /* Eye Icon - Pure CSS */
+        /* Eye Icon - Pure CSS (修正版) */
         .eye-icon {
-            width: 20px;
-            height: 14px;
+            width: 22px;
+            height: 16px;
             position: relative;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .eye-icon::before {
             content: '';
             position: absolute;
             width: 20px;
-            height: 14px;
+            height: 12px;
             border: 2px solid currentColor;
-            border-radius: 75% 15%;
-            transform: rotate(0deg);
+            border-radius: 70% 70% 70% 70% / 50% 50% 50% 50%;
             box-sizing: border-box;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .eye-icon::after {
             content: '';
             position: absolute;
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             background: currentColor;
             border-radius: 50%;
             top: 50%;
@@ -3116,6 +3120,14 @@
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
+        // 安全函數：HTML 跳脫 (防止 XSS 攻擊)
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function debounce(fn, delay) {
             let timer;
             return (...args) => {
@@ -3189,7 +3201,19 @@
         function loadFromStorage(key, defaultValue = null) {
             try {
                 const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : defaultValue;
+                if (!data) return defaultValue;
+
+                const parsed = JSON.parse(data);
+
+                // 特殊處理：docIndex 必須是陣列
+                if (key === STORAGE.DOC_INDEX) {
+                    if (!Array.isArray(parsed)) {
+                        console.warn('loadFromStorage: DOC_INDEX 資料損壞，已重置為預設值');
+                        return defaultValue;
+                    }
+                }
+
+                return parsed;
             } catch (e) {
                 console.error('Storage load error:', e);
                 return defaultValue;
@@ -3457,6 +3481,12 @@
         // Render Functions
         // ============================================
         function renderDocList() {
+            // 防禦性檢查：確保 state.docIndex 是陣列
+            if (!Array.isArray(state.docIndex)) {
+                console.warn('renderDocList: state.docIndex 不是陣列，已重置為空陣列');
+                state.docIndex = [];
+            }
+
             if (state.docIndex.length === 0) {
                 el.docList.innerHTML = `
                     <div class="empty-state">
@@ -3466,17 +3496,17 @@
                 `;
                 return;
             }
-            
+
             el.docList.innerHTML = state.docIndex.map(doc => `
-                <div class="doc-item ${doc.id === state.currentDocId ? 'active' : ''}" data-id="${doc.id}">
-                    <div class="doc-item-title">${doc.title || '未命名文檔'}</div>
+                <div class="doc-item ${doc.id === state.currentDocId ? 'active' : ''}" data-id="${escapeHtml(doc.id)}">
+                    <div class="doc-item-title">${escapeHtml(doc.title) || '未命名文檔'}</div>
                     <div class="doc-item-meta">
                         <span>${formatDate(doc.lastModified)}</span>
                     </div>
-                    ${doc.previewText ? `<div class="doc-item-preview">${doc.previewText}</div>` : ''}
+                    ${doc.previewText ? `<div class="doc-item-preview">${escapeHtml(doc.previewText)}</div>` : ''}
                     <div class="doc-item-actions">
-                        <button class="doc-action-btn" data-action="open" data-id="${doc.id}">開啟</button>
-                        <button class="doc-action-btn danger" data-action="delete" data-id="${doc.id}">刪除</button>
+                        <button class="doc-action-btn" data-action="open" data-id="${escapeHtml(doc.id)}">開啟</button>
+                        <button class="doc-action-btn danger" data-action="delete" data-id="${escapeHtml(doc.id)}">刪除</button>
                     </div>
                 </div>
             `).join('');
@@ -3511,7 +3541,7 @@
             }
             
             el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => `
-                <div class="paragraph ${p.source}" data-id="${p.id}">
+                <div class="paragraph ${p.source === 'user' ? 'user' : 'ai'}" data-id="${escapeHtml(p.id)}">
                     <span class="paragraph-tag">${p.source === 'user' ? '你' : 'AI'}</span>
                     <div class="paragraph-content" contenteditable="true">${parseMarkdown(p.content)}</div>
                 </div>
@@ -3730,6 +3760,7 @@
             // 生成角色卡片 HTML
             const html = state.currentDoc.characters.map(character => {
                 const isFocused = character.id === state.currentDoc.focusCharacterId;
+                const charIdEscaped = escapeHtml(character.id);
                 const drivesHtml = Object.keys(CORE_DRIVES).map(driveId => {
                     const drive = CORE_DRIVES[driveId];
                     const isActive = character.drives[driveId] !== undefined;
@@ -3737,16 +3768,16 @@
 
                     return `
                         <div class="drive-item ${isActive ? 'active' : ''}" data-drive-id="${driveId}">
-                            <input type="checkbox" class="drive-checkbox" id="drive-${character.id}-${driveId}"
-                                   ${isActive ? 'checked' : ''} data-character-id="${character.id}" data-drive-id="${driveId}">
-                            <label class="drive-label" for="drive-${character.id}-${driveId}">
+                            <input type="checkbox" class="drive-checkbox" id="drive-${charIdEscaped}-${driveId}"
+                                   ${isActive ? 'checked' : ''} data-character-id="${charIdEscaped}" data-drive-id="${driveId}">
+                            <label class="drive-label" for="drive-${charIdEscaped}-${driveId}">
                                 <span class="drive-icon">${drive.icon}</span>
                                 <span>${drive.name}</span>
                             </label>
                             <div class="drive-slider-wrapper">
                                 <input type="range" class="drive-slider" min="0" max="100" value="${value}"
                                        style="--thumb-color: ${drive.color};"
-                                       data-character-id="${character.id}" data-drive-id="${driveId}">
+                                       data-character-id="${charIdEscaped}" data-drive-id="${driveId}">
                                 <span class="drive-value">${value}%</span>
                             </div>
                         </div>
@@ -3754,25 +3785,25 @@
                 }).join('');
 
                 return `
-                    <div class="character-card ${isFocused ? 'focused' : ''}" data-character-id="${character.id}">
+                    <div class="character-card ${isFocused ? 'focused' : ''}" data-character-id="${escapeHtml(character.id)}">
                         <div class="character-header">
-                            <input type="text" class="character-name-input" value="${character.name}"
-                                   placeholder="角色名稱" data-character-id="${character.id}">
+                            <input type="text" class="character-name-input" value="${escapeHtml(character.name)}"
+                                   placeholder="角色名稱" data-character-id="${escapeHtml(character.id)}">
                             <div class="character-actions">
                                 <button class="character-action-btn focus-btn ${isFocused ? 'active' : ''}"
-                                        title="設為焦點" data-action="focus" data-character-id="${character.id}">🎯</button>
+                                        title="設為焦點" data-action="focus" data-character-id="${escapeHtml(character.id)}">🎯</button>
                                 <button class="character-action-btn delete-btn" title="刪除角色"
-                                        data-action="delete" data-character-id="${character.id}">🗑️</button>
+                                        data-action="delete" data-character-id="${escapeHtml(character.id)}">🗑️</button>
                             </div>
                         </div>
                         <div class="sync-controls">
                             <label class="sync-toggle">
                                 <input type="checkbox" ${character.autoSync ? 'checked' : ''}
-                                       data-action="auto-sync" data-character-id="${character.id}">
+                                       data-action="auto-sync" data-character-id="${escapeHtml(character.id)}">
                                 <span class="sync-switch"></span>
                                 <span>自動同步</span>
                             </label>
-                            <button class="analyze-now-btn" data-action="analyze" data-character-id="${character.id}">
+                            <button class="analyze-now-btn" data-action="analyze" data-character-id="${escapeHtml(character.id)}"
                                 <span>🧠</span>
                                 <span>立即分析</span>
                             </button>
@@ -3895,7 +3926,7 @@
             }
 
             el.statusBar.classList.add('active');
-            el.statusFocus.innerHTML = `🎥 焦點：${focusCharacter.name}`;
+            el.statusFocus.innerHTML = `🎥 焦點：${escapeHtml(focusCharacter.name)}`;
 
             // 生成動力標籤（按權重排序）
             const sortedDrives = Object.entries(focusCharacter.drives)
@@ -4768,8 +4799,9 @@ ${selectedText}`;
                     // Sync all data
                     await storageManager.syncAllData();
 
-                    // Reload current document state
+                    // Reload current document state with safety check
                     state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+                    ensureDocIndexIsArray();
                     renderDocList();
 
                     if (state.docIndex.length > 0) {
@@ -4922,13 +4954,22 @@ ${selectedText}`;
         // ============================================
         // Initialization
         // ============================================
+        // 輔助函數：確保 docIndex 是有效陣列
+        function ensureDocIndexIsArray() {
+            if (!Array.isArray(state.docIndex)) {
+                console.warn('ensureDocIndexIsArray: state.docIndex 資料異常，已重置');
+                state.docIndex = [];
+            }
+        }
+
         function init() {
             // Load global settings
             loadGlobalSettings();
-            
-            // Load document index
+
+            // Load document index with safety check
             state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
-            
+            ensureDocIndexIsArray();
+
             // Initialize or load document
             if (state.docIndex.length === 0) {
                 // No documents - create first one
