@@ -1328,6 +1328,113 @@
         }
 
         /* ============================================
+           World Setting Library - 世界觀圖書館
+           ============================================ */
+        .world-library-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--bg-app);
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+        }
+
+        .world-library-row {
+            display: flex;
+            gap: var(--spacing-xs);
+            width: 100%;
+            align-items: center;
+        }
+
+        .world-select {
+            flex: 1;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-primary);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color var(--transition-fast);
+        }
+
+        .world-select:focus {
+            border-color: var(--accent);
+        }
+
+        .world-name-input {
+            flex: 1;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-primary);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color var(--transition-fast);
+        }
+
+        .world-name-input:focus {
+            border-color: var(--accent);
+        }
+
+        .world-name-input::placeholder {
+            color: var(--ink-muted);
+        }
+
+        .world-btn-group {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .world-btn {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .world-btn:hover {
+            background: var(--border-light);
+            color: var(--ink-primary);
+        }
+
+        .world-btn.save-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .world-btn.delete-btn:hover {
+            background: rgba(199, 92, 92, 0.1);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .world-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .world-library-hint {
+            font-size: 0.7rem;
+            color: var(--ink-muted);
+            text-align: center;
+            width: 100%;
+            margin-top: var(--spacing-xs);
+        }
+
+        /* ============================================
            Character Mindset Mixer - 角色心理混音台
            ============================================ */
         .director-section {
@@ -1846,6 +1953,22 @@
                 <div class="panel-section" id="settingsSection">
                     <div class="setting-group">
                         <label class="setting-label">🌍 世界觀設定</label>
+                        <!-- World Library Toolbar -->
+                        <div class="world-library-toolbar">
+                            <div class="world-library-row">
+                                <select class="world-select" id="worldLibrarySelect">
+                                    <option value="">-- 從圖書館選擇 --</option>
+                                </select>
+                            </div>
+                            <div class="world-library-row">
+                                <input type="text" class="world-name-input" id="worldNameInput" placeholder="輸入世界觀名稱...">
+                                <div class="world-btn-group">
+                                    <button class="world-btn save-btn" id="worldSaveBtn">💾 儲存</button>
+                                    <button class="world-btn delete-btn" id="worldDeleteBtn" disabled>🗑️ 刪除</button>
+                                </div>
+                            </div>
+                            <p class="world-library-hint">儲存常用世界觀，在不同文檔間快速切換</p>
+                        </div>
                         <textarea class="setting-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
                         <p class="setting-hint">此內容會作為每次請求的背景知識</p>
                     </div>
@@ -1996,7 +2119,8 @@
         const STORAGE = {
             GLOBAL_SETTINGS: 'moyun_global_settings',
             DOC_INDEX: 'moyun_doc_index',
-            DOC_PREFIX: 'moyun_doc_'
+            DOC_PREFIX: 'moyun_doc_',
+            WORLD_LIBRARY: 'moyun_world_library'  // 世界觀圖書館
         };
 
         const DEFAULT_GLOBAL_SETTINGS = {
@@ -2151,7 +2275,13 @@
             styleFingerprint: $('styleFingerprint'),
             worldSetting: $('worldSetting'),
             customPrompt: $('customPrompt'),
-            
+
+            // World Library
+            worldLibrarySelect: $('worldLibrarySelect'),
+            worldNameInput: $('worldNameInput'),
+            worldSaveBtn: $('worldSaveBtn'),
+            worldDeleteBtn: $('worldDeleteBtn'),
+
             // Settings
             apiFormat: $('apiFormat'),
             apiEndpoint: $('apiEndpoint'),
@@ -3398,6 +3528,126 @@ ${recentContent}
         }
 
         // ============================================
+        // World Setting Library - 世界觀圖書館
+        // ============================================
+        function loadWorldLibrary() {
+            return loadFromStorage(STORAGE.WORLD_LIBRARY, []);
+        }
+
+        function saveWorldLibrary(library) {
+            saveToStorage(STORAGE.WORLD_LIBRARY, library);
+        }
+
+        function renderWorldLibrarySelect() {
+            const library = loadWorldLibrary();
+            const select = el.worldLibrarySelect;
+
+            // 保留第一个默认选项，清除其他
+            select.innerHTML = '<option value="">-- 從圖書館選擇 --</option>';
+
+            library.forEach(world => {
+                const option = document.createElement('option');
+                option.value = world.id;
+                option.textContent = world.name;
+                select.appendChild(option);
+            });
+        }
+
+        function loadWorldFromLibrary(worldId) {
+            if (!worldId) {
+                // 清空选择时不改变 textarea
+                el.worldNameInput.value = '';
+                el.worldDeleteBtn.disabled = true;
+                return;
+            }
+
+            const library = loadWorldLibrary();
+            const world = library.find(w => w.id === worldId);
+
+            if (world) {
+                el.worldSetting.value = world.content;
+                el.worldNameInput.value = world.name;
+                el.worldDeleteBtn.disabled = false;
+                autoSave();
+                showToast(`已載入「${world.name}」`, 'success', 2000);
+            }
+        }
+
+        function saveWorldToLibrary() {
+            const name = el.worldNameInput.value.trim();
+            const content = el.worldSetting.value.trim();
+
+            if (!name) {
+                showToast('請輸入世界觀名稱', 'warning');
+                el.worldNameInput.focus();
+                return;
+            }
+
+            if (!content) {
+                showToast('世界觀內容不能為空', 'warning');
+                el.worldSetting.focus();
+                return;
+            }
+
+            const library = loadWorldLibrary();
+            const existingIndex = library.findIndex(w => w.name === name);
+
+            if (existingIndex !== -1) {
+                // 更新現有的
+                library[existingIndex].content = content;
+                saveWorldLibrary(library);
+                showToast(`已更新「${name}」`, 'success');
+
+                // 選中該項目
+                el.worldLibrarySelect.value = library[existingIndex].id;
+                el.worldDeleteBtn.disabled = false;
+            } else {
+                // 新增
+                const newWorld = {
+                    id: generateId(),
+                    name: name,
+                    content: content
+                };
+                library.push(newWorld);
+                saveWorldLibrary(library);
+
+                // 刷新下拉選單並選中
+                renderWorldLibrarySelect();
+                el.worldLibrarySelect.value = newWorld.id;
+                el.worldDeleteBtn.disabled = false;
+                showToast(`已儲存「${name}」到圖書館`, 'success');
+            }
+        }
+
+        function deleteWorldFromLibrary() {
+            const selectedId = el.worldLibrarySelect.value;
+
+            if (!selectedId) {
+                showToast('請先選擇要刪除的世界觀', 'warning');
+                return;
+            }
+
+            const library = loadWorldLibrary();
+            const world = library.find(w => w.id === selectedId);
+
+            if (!world) return;
+
+            showConfirmModal('刪除世界觀', `確定要從圖書館刪除「${world.name}」嗎？`, () => {
+                const updatedLibrary = library.filter(w => w.id !== selectedId);
+                saveWorldLibrary(updatedLibrary);
+
+                // 重置 UI
+                renderWorldLibrarySelect();
+                el.worldLibrarySelect.value = '';
+                el.worldNameInput.value = '';
+                el.worldDeleteBtn.disabled = true;
+
+                hideConfirmModal();
+                showToast(`已刪除「${world.name}」`, 'success');
+            });
+        }
+
+        // ============================================
         // Settings Management
         // ============================================
         function loadGlobalSettings() {
@@ -3470,7 +3720,14 @@ ${recentContent}
 
             // Add Character
             el.addCharacterBtn.addEventListener('click', createCharacter);
-            
+
+            // World Library
+            el.worldLibrarySelect.addEventListener('change', () => {
+                loadWorldFromLibrary(el.worldLibrarySelect.value);
+            });
+            el.worldSaveBtn.addEventListener('click', saveWorldToLibrary);
+            el.worldDeleteBtn.addEventListener('click', deleteWorldFromLibrary);
+
             // Settings
             el.saveSettingsBtn.addEventListener('click', saveGlobalSettings);
             el.clearAllBtn.addEventListener('click', clearAllData);
@@ -3572,6 +3829,7 @@ ${recentContent}
             initPanelTabs();
             initEventListeners();
             renderDocList();
+            renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
             
             console.log('墨韻 MòYùn v2.0 初始化完成');
             
