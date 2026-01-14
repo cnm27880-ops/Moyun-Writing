@@ -2,107 +2,114 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#F5F5F0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>墨韻 MòYùn - AI 協作小說寫作平台</title>
-
-    <!-- Google Fonts: 霞鶩文楷 LXGW WenKai TC -->
+    
+    <!-- Google Fonts: LXGW WenKai TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+    
     <style>
         /* ============================================
-           CSS Variables - Modern Zen Color Palette
+           CSS Variables - Modern Zen (Mobile Optimized)
            ============================================ */
         :root {
-            /* Core Colors */
+            /* Core Colors - Enhanced Contrast for Mobile */
             --bg-app: #F5F5F0;
             --bg-paper: #FFFFFF;
-            --ink-primary: #2C2C2C;
-            --ink-secondary: #666666;
-            --ink-muted: #999999;
+            --bg-drawer: #FAFAF8;
+            --ink-primary: #2A2A2A;
+            --ink-secondary: #555555;
+            --ink-muted: #888888;
             --accent: #6B8E23;
             --accent-hover: #5A7A1E;
-            --accent-light: rgba(107, 142, 35, 0.1);
+            --accent-light: rgba(107, 142, 35, 0.12);
             --ai-marker: #5D737E;
-            --ai-marker-light: rgba(93, 115, 126, 0.1);
+            --ai-marker-light: rgba(93, 115, 126, 0.12);
             --border: #E0E0D0;
             --border-light: #EEEEEA;
-
-            /* Semantic Colors */
+            --overlay: rgba(0, 0, 0, 0.5);
+            
+            /* Semantic */
             --success: #6B8E23;
             --warning: #D4A574;
             --error: #C75C5C;
             --info: #5D737E;
-
+            
             /* Shadows */
-            --shadow-paper: 0 2px 20px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.1);
-            --shadow-elevated: 0 4px 30px rgba(0, 0, 0, 0.12);
             --shadow-navbar: 0 2px 12px rgba(0, 0, 0, 0.08);
-            --shadow-drawer: -2px 0 16px rgba(0, 0, 0, 0.1);
-
-            /* Typography - 霞鶩文楷 */
-            --font-main: 'LXGW WenKai TC', serif;
+            --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.12);
+            --shadow-sheet: 0 -4px 30px rgba(0, 0, 0, 0.15);
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+            
+            /* Typography - LXGW WenKai TC */
+            --font-literary: 'LXGW WenKai TC', cursive;
             --font-ui: 'Noto Sans TC', sans-serif;
+            --font-size-base: 17px;
             --line-height: 1.9;
-            --paragraph-spacing: 1.6em;
-
+            
             /* Spacing */
             --navbar-height: 56px;
-            --drawer-width: 320px;
-            --brain-width: 420px;
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
             --spacing-xs: 0.5rem;
             --spacing-sm: 0.75rem;
             --spacing-md: 1rem;
             --spacing-lg: 1.5rem;
             --spacing-xl: 2rem;
-
+            
             /* Transitions */
-            --transition-fast: 180ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-normal: 280ms cubic-bezier(0.4, 0, 0.2, 1);
-            --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-
-            /* Z-index layers */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Z-Index Layers */
             --z-content: 1;
             --z-navbar: 100;
-            --z-drawer: 200;
-            --z-overlay: 300;
-            --z-modal: 400;
+            --z-overlay: 200;
+            --z-drawer: 300;
+            --z-sheet: 400;
             --z-toast: 500;
+            --z-modal: 600;
         }
 
         /* ============================================
-           Reset & Base Styles
+           Reset & Base
            ============================================ */
         *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html {
-            font-size: 16px;
+            font-size: var(--font-size-base);
             scroll-behavior: smooth;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
         }
 
         body {
-            font-family: var(--font-main);
+            font-family: var(--font-ui);
             background: var(--bg-app);
             color: var(--ink-primary);
             min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
-            position: relative;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
+            width: 6px;
+            height: 6px;
         }
 
         ::-webkit-scrollbar-track {
@@ -111,11 +118,16 @@
 
         ::-webkit-scrollbar-thumb {
             background: var(--border);
-            border-radius: 5px;
+            border-radius: 3px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--ink-muted);
+        /* ============================================
+           App Container
+           ============================================ */
+        .app {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
         /* ============================================
@@ -126,16 +138,19 @@
             top: 0;
             left: 0;
             right: 0;
-            height: var(--navbar-height);
+            height: calc(var(--navbar-height) + var(--safe-area-top));
+            padding-top: var(--safe-area-top);
             background: var(--bg-paper);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-light);
             box-shadow: var(--shadow-navbar);
+            z-index: var(--z-navbar);
+            transform: translateY(0);
+            transition: transform var(--transition-smooth);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 var(--spacing-md);
-            z-index: var(--z-navbar);
-            transition: transform var(--transition-normal);
+            padding-left: var(--spacing-md);
+            padding-right: var(--spacing-md);
         }
 
         .navbar.hidden {
@@ -143,328 +158,124 @@
         }
 
         .navbar-btn {
-            width: 40px;
-            height: 40px;
-            background: none;
-            border: none;
-            border-radius: 8px;
-            color: var(--ink-primary);
-            font-size: 1.5rem;
-            cursor: pointer;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background var(--transition-fast);
+            background: none;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.3rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
         }
 
         .navbar-btn:hover {
             background: var(--accent-light);
+            color: var(--accent);
         }
 
         .navbar-btn:active {
-            background: var(--border-light);
+            transform: scale(0.95);
         }
 
         .navbar-title {
             flex: 1;
             text-align: center;
-            font-family: var(--font-main);
+            padding: 0 var(--spacing-sm);
+        }
+
+        .navbar-title-text {
+            font-family: var(--font-literary);
             font-size: 1.1rem;
-            font-weight: 700;
+            font-weight: 400;
             color: var(--ink-primary);
             cursor: pointer;
-            padding: 0 var(--spacing-md);
-            white-space: nowrap;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 8px;
+            transition: background var(--transition-fast);
+            display: inline-block;
+            max-width: 200px;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .navbar-title:hover {
-            color: var(--accent);
-        }
-
-        /* ============================================
-           Main Content Area
-           ============================================ */
-        .main-content {
-            margin-top: var(--navbar-height);
-            padding: var(--spacing-xl) var(--spacing-md);
-            padding-bottom: 180px;
-            min-height: calc(100vh - var(--navbar-height));
-        }
-
-        .paper {
-            max-width: 780px;
-            margin: 0 auto;
-            background: var(--bg-paper);
-            border-radius: 8px;
-            box-shadow: var(--shadow-paper);
-            padding: var(--spacing-xl) calc(var(--spacing-xl) * 1.5);
-            min-height: 60vh;
-            position: relative;
-        }
-
-        .paper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent) 0%, var(--ai-marker) 100%);
-            border-radius: 8px 8px 0 0;
-            opacity: 0.7;
-        }
-
-        /* Document Title */
-        .document-title {
-            font-family: var(--font-main);
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: var(--ink-primary);
-            border: none;
-            outline: none;
-            width: 100%;
-            margin-bottom: var(--spacing-lg);
-            padding-bottom: var(--spacing-md);
-            border-bottom: 2px solid var(--border-light);
-            background: transparent;
-            transition: border-color var(--transition-fast);
-        }
-
-        .document-title:focus {
-            border-bottom-color: var(--accent);
-        }
-
-        .document-title::placeholder {
-            color: var(--ink-muted);
-            font-weight: 400;
-        }
-
-        /* Editor Content */
-        .editor-content {
-            font-family: var(--font-main);
-            font-size: 1.125rem;
-            line-height: var(--line-height);
-            color: var(--ink-primary);
-            min-height: 400px;
-        }
-
-        .editor-content:empty::before {
-            content: '在此開始你的故事...';
-            color: var(--ink-muted);
-            font-style: italic;
-        }
-
-        /* Paragraph Styling */
-        .paragraph {
-            position: relative;
-            padding: var(--spacing-sm) 0 var(--spacing-sm) var(--spacing-md);
-            margin-bottom: var(--spacing-md);
-            border-left: 3px solid transparent;
-            transition: all var(--transition-fast);
-            border-radius: 0 6px 6px 0;
-        }
-
-        .paragraph:hover {
+        .navbar-title-text:hover {
             background: var(--accent-light);
         }
 
-        .paragraph.user-paragraph {
-            border-left-color: var(--accent);
-        }
-
-        .paragraph.ai-paragraph {
-            border-left-color: var(--ai-marker);
-        }
-
-        .paragraph.ai-paragraph:hover {
-            background: var(--ai-marker-light);
-        }
-
-        .paragraph-content {
-            outline: none;
-            min-height: 1.5em;
-        }
-
-        .paragraph-content:focus {
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 4px;
-            padding: 4px;
-        }
-
         /* ============================================
-           Input Area (Fixed Bottom)
+           Overlay
            ============================================ */
-        .input-area {
+        .overlay {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-paper);
-            border-top: 1px solid var(--border);
-            padding: var(--spacing-lg);
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
-            z-index: 90;
+            inset: 0;
+            background: var(--overlay);
+            opacity: 0;
+            visibility: hidden;
+            z-index: var(--z-overlay);
+            transition: all var(--transition-smooth);
+            backdrop-filter: blur(2px);
         }
 
-        .input-container {
-            max-width: 780px;
-            margin: 0 auto;
-            display: flex;
-            gap: var(--spacing-md);
-            align-items: flex-end;
-        }
-
-        .input-wrapper {
-            flex: 1;
-            position: relative;
-        }
-
-        .input-field {
-            width: 100%;
-            min-height: 72px;
-            max-height: 160px;
-            padding: var(--spacing-md);
-            font-family: var(--font-main);
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            resize: none;
-            outline: none;
-            transition: all var(--transition-fast);
-        }
-
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-light);
-        }
-
-        .input-field::placeholder {
-            color: var(--ink-muted);
-        }
-
-        .submit-btn {
-            width: 52px;
-            height: 52px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .submit-btn:hover {
-            background: var(--accent-hover);
-            transform: scale(1.05);
-        }
-
-        .submit-btn:active {
-            transform: scale(0.98);
-        }
-
-        .submit-btn:disabled {
-            background: var(--border);
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .submit-btn.loading {
-            position: relative;
-            color: transparent;
-        }
-
-        .submit-btn.loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 2px solid white;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* ============================================
            Left Drawer - Document List
            ============================================ */
-        .drawer-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity var(--transition-normal), visibility var(--transition-normal);
-            z-index: var(--z-overlay);
-        }
-
-        .drawer-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .left-drawer {
+        .drawer-left {
             position: fixed;
             top: 0;
             left: 0;
-            bottom: 0;
-            width: var(--drawer-width);
-            background: var(--bg-paper);
-            box-shadow: var(--shadow-drawer);
-            transform: translateX(-100%);
-            transition: transform var(--transition-normal);
+            width: 300px;
+            max-width: 85vw;
+            height: 100%;
+            height: 100dvh;
+            background: var(--bg-drawer);
             z-index: var(--z-drawer);
+            transform: translateX(-100%);
+            transition: transform var(--transition-smooth);
             display: flex;
             flex-direction: column;
+            box-shadow: var(--shadow-drawer);
         }
 
-        .left-drawer.active {
+        .drawer-left.open {
             transform: translateX(0);
         }
 
         .drawer-header {
-            height: var(--navbar-height);
-            border-bottom: 1px solid var(--border);
+            padding: var(--spacing-lg);
+            padding-top: calc(var(--spacing-lg) + var(--safe-area-top));
+            border-bottom: 1px solid var(--border-light);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 var(--spacing-lg);
+            gap: var(--spacing-sm);
         }
 
-        .drawer-title {
-            font-family: var(--font-main);
-            font-size: 1.1rem;
+        .drawer-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: var(--font-literary);
             font-weight: 700;
-            color: var(--ink-primary);
+            font-size: 1.1rem;
         }
 
-        .drawer-close {
-            width: 32px;
-            height: 32px;
-            background: none;
-            border: none;
-            border-radius: 6px;
-            color: var(--ink-secondary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .drawer-close:hover {
-            background: var(--border-light);
+        .drawer-brand {
+            font-family: var(--font-literary);
+            font-size: 1.2rem;
             color: var(--ink-primary);
         }
 
@@ -477,25 +288,25 @@
         .new-doc-btn {
             width: 100%;
             padding: var(--spacing-md);
-            background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-family: var(--font-ui);
             font-size: 0.95rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-md);
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-lg);
         }
 
         .new-doc-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(107, 142, 35, 0.3);
+            background: var(--accent-hover);
+            transform: translateY(-1px);
         }
 
         .new-doc-btn:active {
@@ -503,29 +314,33 @@
         }
 
         .doc-list-title {
-            font-family: var(--font-ui);
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--ink-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             margin-bottom: var(--spacing-sm);
-            padding: 0 var(--spacing-xs);
+            padding-left: var(--spacing-xs);
+        }
+
+        .doc-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
         }
 
         .doc-item {
             padding: var(--spacing-md);
-            background: var(--bg-app);
-            border: 2px solid transparent;
-            border-radius: 8px;
-            margin-bottom: var(--spacing-sm);
+            background: var(--bg-paper);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
             cursor: pointer;
             transition: all var(--transition-fast);
         }
 
         .doc-item:hover {
-            border-color: var(--border);
-            background: var(--bg-paper);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-card);
         }
 
         .doc-item.active {
@@ -534,18 +349,17 @@
         }
 
         .doc-item-title {
-            font-family: var(--font-main);
+            font-family: var(--font-literary);
             font-size: 1rem;
-            font-weight: 700;
             color: var(--ink-primary);
             margin-bottom: var(--spacing-xs);
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .doc-item-meta {
-            font-family: var(--font-ui);
             font-size: 0.75rem;
             color: var(--ink-muted);
             display: flex;
@@ -553,145 +367,210 @@
         }
 
         .doc-item-preview {
-            font-family: var(--font-main);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--ink-secondary);
             margin-top: var(--spacing-xs);
-            line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            line-height: 1.5;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: var(--spacing-xl) var(--spacing-md);
-            color: var(--ink-muted);
+        .doc-item-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-sm);
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid var(--border-light);
         }
 
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: var(--spacing-md);
+        .doc-action-btn {
+            flex: 1;
+            padding: var(--spacing-xs);
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .doc-action-btn:hover {
+            background: var(--border-light);
+        }
+
+        .doc-action-btn.danger:hover {
+            background: rgba(199, 92, 92, 0.1);
+            border-color: var(--error);
+            color: var(--error);
         }
 
         /* ============================================
-           Right/Bottom Panel - The Brain
+           Right Panel - The Brain (Settings & Memory)
            ============================================ */
-        .brain-panel {
-            position: fixed;
-            background: var(--bg-paper);
-            box-shadow: var(--shadow-elevated);
-            z-index: var(--z-drawer);
-            transition: transform var(--transition-normal);
-            display: flex;
-            flex-direction: column;
-        }
-
         /* Desktop: Right Drawer */
-        @media (min-width: 769px) {
-            .brain-panel {
+        @media (min-width: 768px) {
+            .panel-right {
+                position: fixed;
                 top: 0;
                 right: 0;
-                bottom: 0;
-                width: var(--brain-width);
+                width: 400px;
+                max-width: 90vw;
+                height: 100%;
+                height: 100dvh;
+                background: var(--bg-drawer);
+                z-index: var(--z-drawer);
                 transform: translateX(100%);
+                transition: transform var(--transition-smooth);
+                display: flex;
+                flex-direction: column;
+                box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
             }
 
-            .brain-panel.active {
+            .panel-right.open {
                 transform: translateX(0);
+            }
+
+            .panel-header {
+                padding: var(--spacing-lg);
+                padding-top: calc(var(--spacing-lg) + var(--safe-area-top));
+                border-bottom: 1px solid var(--border-light);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
             }
         }
 
         /* Mobile: Bottom Sheet */
-        @media (max-width: 768px) {
-            .brain-panel {
+        @media (max-width: 767px) {
+            .panel-right {
+                position: fixed;
+                bottom: 0;
                 left: 0;
                 right: 0;
-                bottom: 0;
                 height: 85vh;
-                border-radius: 20px 20px 0 0;
+                height: 85dvh;
+                background: var(--bg-drawer);
+                z-index: var(--z-sheet);
                 transform: translateY(100%);
+                transition: transform var(--transition-smooth);
+                display: flex;
+                flex-direction: column;
+                border-radius: 20px 20px 0 0;
+                box-shadow: var(--shadow-sheet);
             }
 
-            .brain-panel.active {
+            .panel-right.open {
                 transform: translateY(0);
             }
 
-            .brain-handle {
-                width: 48px;
+            .panel-header {
+                padding: var(--spacing-md) var(--spacing-lg);
+                border-bottom: 1px solid var(--border-light);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .panel-header::before {
+                content: '';
+                position: absolute;
+                top: 8px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 40px;
                 height: 4px;
                 background: var(--border);
                 border-radius: 2px;
-                margin: var(--spacing-sm) auto;
             }
         }
 
-        .brain-header {
-            height: var(--navbar-height);
-            border-bottom: 1px solid var(--border);
+        .panel-title {
+            font-family: var(--font-literary);
+            font-size: 1.1rem;
+            color: var(--ink-primary);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 var(--spacing-lg);
-            flex-shrink: 0;
+            gap: var(--spacing-xs);
         }
 
-        .brain-tabs {
+        .panel-close {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            color: var(--ink-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .panel-close:hover {
+            background: var(--border-light);
+            color: var(--ink-primary);
+        }
+
+        .panel-tabs {
             display: flex;
             border-bottom: 1px solid var(--border-light);
-            flex-shrink: 0;
+            padding: 0 var(--spacing-md);
         }
 
-        .brain-tab {
+        .panel-tab {
             flex: 1;
-            padding: var(--spacing-md) var(--spacing-sm);
+            padding: var(--spacing-md);
             background: none;
             border: none;
             font-family: var(--font-ui);
             font-size: 0.85rem;
             color: var(--ink-secondary);
             cursor: pointer;
-            transition: all var(--transition-fast);
             position: relative;
+            transition: all var(--transition-fast);
         }
 
-        .brain-tab:hover {
+        .panel-tab:hover {
             color: var(--ink-primary);
-            background: var(--accent-light);
         }
 
-        .brain-tab.active {
+        .panel-tab.active {
             color: var(--accent);
-            font-weight: 600;
+            font-weight: 500;
         }
 
-        .brain-tab.active::after {
+        .panel-tab.active::after {
             content: '';
             position: absolute;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: var(--spacing-md);
+            right: var(--spacing-md);
             height: 2px;
             background: var(--accent);
+            border-radius: 1px;
         }
 
-        .brain-content {
+        .panel-content {
             flex: 1;
             overflow-y: auto;
             padding: var(--spacing-lg);
         }
 
-        .tab-panel {
+        .panel-section {
             display: none;
         }
 
-        .tab-panel.active {
+        .panel-section.active {
             display: block;
         }
 
-        /* Memory Section */
-        .memory-section {
+        /* Memory Section Styles */
+        .memory-block {
             margin-bottom: var(--spacing-xl);
         }
 
@@ -699,13 +578,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
         }
 
-        .memory-title {
-            font-family: var(--font-ui);
-            font-size: 0.95rem;
-            font-weight: 600;
+        .memory-label {
+            font-size: 0.9rem;
+            font-weight: 500;
             color: var(--ink-primary);
             display: flex;
             align-items: center;
@@ -713,11 +591,10 @@
         }
 
         .memory-badge {
-            font-family: var(--font-ui);
-            font-size: 0.7rem;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: 600;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
         }
 
         .memory-badge.anchor {
@@ -734,13 +611,13 @@
             width: 100%;
             min-height: 180px;
             padding: var(--spacing-md);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.8rem;
             line-height: 1.6;
             color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             resize: vertical;
             outline: none;
             transition: border-color var(--transition-fast);
@@ -756,17 +633,17 @@
             background: linear-gradient(135deg, var(--accent) 0%, #8AAD3A 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-family: var(--font-ui);
             font-size: 0.95rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
         }
 
         .checkpoint-btn:hover {
@@ -774,93 +651,122 @@
             box-shadow: 0 4px 15px rgba(107, 142, 35, 0.3);
         }
 
-        .checkpoint-btn:active {
-            transform: translateY(0);
-        }
-
         .checkpoint-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
         }
 
-        /* Settings Section */
-        .settings-group {
+        /* Settings Styles */
+        .setting-group {
             margin-bottom: var(--spacing-lg);
         }
 
-        .settings-label {
+        .setting-label {
             display: block;
-            font-family: var(--font-ui);
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--ink-primary);
-            margin-bottom: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
         }
 
-        .settings-input,
-        .settings-select {
+        .setting-input,
+        .setting-select {
             width: 100%;
             padding: var(--spacing-sm) var(--spacing-md);
             font-family: var(--font-ui);
             font-size: 0.9rem;
             color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             outline: none;
             transition: border-color var(--transition-fast);
         }
 
-        .settings-input:focus,
-        .settings-select:focus {
+        .setting-input:focus,
+        .setting-select:focus {
             border-color: var(--accent);
         }
 
-        .settings-textarea {
+        .setting-textarea {
             width: 100%;
-            min-height: 140px;
+            min-height: 120px;
             padding: var(--spacing-md);
-            font-family: var(--font-main);
+            font-family: var(--font-literary);
             font-size: 0.9rem;
-            line-height: 1.6;
+            line-height: 1.7;
             color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             resize: vertical;
             outline: none;
             transition: border-color var(--transition-fast);
         }
 
-        .settings-textarea:focus {
+        .setting-textarea:focus {
             border-color: var(--accent);
         }
 
-        .settings-hint {
-            font-family: var(--font-ui);
+        .setting-hint {
             font-size: 0.75rem;
             color: var(--ink-muted);
             margin-top: var(--spacing-xs);
         }
 
-        .action-buttons {
+        .setting-range-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .setting-range {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .setting-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform var(--transition-fast);
+        }
+
+        .setting-range::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .setting-range-value {
+            min-width: 40px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        .action-btns {
             display: flex;
             gap: var(--spacing-sm);
-            margin-top: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
         }
 
         .action-btn {
             flex: 1;
             padding: var(--spacing-sm) var(--spacing-md);
-            background: var(--bg-app);
+            background: var(--bg-paper);
             color: var(--ink-secondary);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             font-family: var(--font-ui);
             font-size: 0.85rem;
-            font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
         }
@@ -868,42 +774,243 @@
         .action-btn:hover {
             background: var(--border-light);
             color: var(--ink-primary);
-            border-color: var(--ink-secondary);
         }
 
         .action-btn.danger:hover {
             background: rgba(199, 92, 92, 0.1);
-            color: var(--error);
             border-color: var(--error);
+            color: var(--error);
         }
 
-        /* Statistics */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
+        /* ============================================
+           Main Content - Editor
+           ============================================ */
+        .main-content {
+            padding-top: calc(var(--navbar-height) + var(--safe-area-top));
+            padding-bottom: calc(160px + var(--safe-area-bottom));
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
-        .stat-card {
-            background: var(--bg-app);
-            padding: var(--spacing-md);
-            border-radius: 8px;
-            text-align: center;
+        .editor-container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: var(--spacing-lg);
         }
 
-        .stat-value {
-            font-family: var(--font-main);
+        @media (max-width: 767px) {
+            .editor-container {
+                padding: var(--spacing-md);
+            }
+        }
+
+        .editor-paper {
+            background: var(--bg-paper);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            padding: var(--spacing-xl);
+            min-height: 50vh;
+        }
+
+        @media (max-width: 767px) {
+            .editor-paper {
+                padding: var(--spacing-lg);
+                border-radius: 8px;
+            }
+        }
+
+        .editor-title-input {
+            width: 100%;
+            font-family: var(--font-literary);
             font-size: 1.5rem;
             font-weight: 700;
-            color: var(--accent);
+            color: var(--ink-primary);
+            background: none;
+            border: none;
+            outline: none;
+            padding-bottom: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-light);
         }
 
-        .stat-label {
-            font-family: var(--font-ui);
-            font-size: 0.75rem;
+        .editor-title-input::placeholder {
             color: var(--ink-muted);
-            margin-top: var(--spacing-xs);
+        }
+
+        .editor-body {
+            font-family: var(--font-literary);
+            font-size: 1.05rem;
+            line-height: var(--line-height);
+            color: var(--ink-primary);
+            min-height: 200px;
+        }
+
+        .editor-body:empty::before {
+            content: '在此開始你的故事...';
+            color: var(--ink-muted);
+            font-style: italic;
+        }
+
+        /* Paragraph Styles */
+        .paragraph {
+            position: relative;
+            padding: var(--spacing-sm) 0 var(--spacing-sm) var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            border-left: 3px solid transparent;
+            border-radius: 0 8px 8px 0;
+            transition: all var(--transition-fast);
+        }
+
+        .paragraph:hover {
+            background: var(--accent-light);
+        }
+
+        .paragraph.user {
+            border-left-color: var(--accent);
+        }
+
+        .paragraph.ai {
+            border-left-color: var(--ai-marker);
+        }
+
+        .paragraph.ai:hover {
+            background: var(--ai-marker-light);
+        }
+
+        .paragraph-content {
+            outline: none;
+            min-height: 1.5em;
+        }
+
+        .paragraph-content p {
+            margin-bottom: 1em;
+        }
+
+        .paragraph-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .paragraph-tag {
+            position: absolute;
+            left: -28px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.6rem;
+            color: var(--ink-muted);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+            writing-mode: vertical-rl;
+        }
+
+        @media (min-width: 768px) {
+            .paragraph:hover .paragraph-tag {
+                opacity: 1;
+            }
+        }
+
+        /* ============================================
+           Input Area - Fixed Bottom
+           ============================================ */
+        .input-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-paper);
+            border-top: 1px solid var(--border-light);
+            padding: var(--spacing-md);
+            padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
+            z-index: var(--z-navbar);
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-wrapper {
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: flex-end;
+        }
+
+        .input-field-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-field {
+            width: 100%;
+            min-height: 48px;
+            max-height: 150px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-family: var(--font-literary);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--ink-primary);
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            resize: none;
+            outline: none;
+            transition: border-color var(--transition-fast);
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+        }
+
+        .input-field::placeholder {
+            color: var(--ink-muted);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+
+        .send-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-btn.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .send-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* ============================================
@@ -911,25 +1018,28 @@
            ============================================ */
         .toast-container {
             position: fixed;
-            top: calc(var(--navbar-height) + var(--spacing-md));
-            right: var(--spacing-md);
+            top: calc(var(--navbar-height) + var(--safe-area-top) + var(--spacing-md));
+            left: 50%;
+            transform: translateX(-50%);
             z-index: var(--z-toast);
             display: flex;
             flex-direction: column;
             gap: var(--spacing-sm);
+            width: calc(100% - var(--spacing-lg) * 2);
+            max-width: 400px;
+            pointer-events: none;
         }
 
         .toast {
             padding: var(--spacing-md) var(--spacing-lg);
             background: var(--bg-paper);
-            border-radius: 10px;
-            box-shadow: var(--shadow-elevated);
+            border-radius: 12px;
+            box-shadow: var(--shadow-drawer);
             display: flex;
             align-items: center;
             gap: var(--spacing-sm);
-            animation: slideInRight 0.3s ease;
-            max-width: 360px;
-            min-width: 280px;
+            animation: toastIn 0.3s ease;
+            pointer-events: auto;
         }
 
         .toast.success { border-left: 4px solid var(--success); }
@@ -937,17 +1047,8 @@
         .toast.warning { border-left: 4px solid var(--warning); }
         .toast.info { border-left: 4px solid var(--info); }
 
-        .toast-icon {
-            font-size: 1.3rem;
-            flex-shrink: 0;
-        }
-
-        .toast-message {
-            font-family: var(--font-ui);
-            font-size: 0.9rem;
-            color: var(--ink-primary);
-            flex: 1;
-        }
+        .toast-icon { font-size: 1.1rem; }
+        .toast-message { flex: 1; font-size: 0.9rem; color: var(--ink-primary); }
 
         .toast-close {
             background: none;
@@ -955,44 +1056,32 @@
             color: var(--ink-muted);
             cursor: pointer;
             padding: 4px;
-            font-size: 1.2rem;
-            line-height: 1;
+            font-size: 1rem;
         }
 
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
         }
 
         /* ============================================
-           Modal
+           Modal - Title Edit
            ============================================ */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--overlay);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: var(--z-modal);
-            backdrop-filter: blur(3px);
+            padding: var(--spacing-lg);
+            backdrop-filter: blur(2px);
         }
 
         .modal-overlay.active {
@@ -1002,23 +1091,15 @@
         .modal {
             background: var(--bg-paper);
             border-radius: 16px;
-            box-shadow: var(--shadow-elevated);
-            max-width: 480px;
-            width: 90%;
-            max-height: 80vh;
-            overflow: hidden;
-            animation: modalIn 0.3s ease;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-drawer);
+            animation: modalIn 0.25s ease;
         }
 
         @keyframes modalIn {
-            from {
-                transform: scale(0.9);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .modal-header {
@@ -1030,37 +1111,51 @@
         }
 
         .modal-title {
-            font-family: var(--font-main);
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-family: var(--font-literary);
+            font-size: 1.1rem;
             color: var(--ink-primary);
         }
 
         .modal-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: none;
             border: none;
-            font-size: 1.5rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
             color: var(--ink-muted);
             cursor: pointer;
-            padding: 4px;
-            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: var(--border-light);
         }
 
         .modal-body {
             padding: var(--spacing-lg);
-            overflow-y: auto;
-            max-height: 60vh;
         }
 
-        .modal-body p {
-            font-family: var(--font-main);
+        .modal-input {
+            width: 100%;
+            padding: var(--spacing-md);
+            font-family: var(--font-literary);
             font-size: 1rem;
-            line-height: 1.6;
-            color: var(--ink-secondary);
+            color: var(--ink-primary);
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
         }
 
         .modal-footer {
-            padding: var(--spacing-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
             border-top: 1px solid var(--border-light);
             display: flex;
             justify-content: flex-end;
@@ -1069,233 +1164,125 @@
 
         .modal-btn {
             padding: var(--spacing-sm) var(--spacing-lg);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-family: var(--font-ui);
             font-size: 0.9rem;
-            font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
         }
 
-        .modal-btn.primary {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .modal-btn.primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .modal-btn.secondary {
-            background: transparent;
+        .modal-btn.cancel {
+            background: none;
+            border: 1px solid var(--border);
             color: var(--ink-secondary);
         }
 
-        .modal-btn.secondary:hover {
+        .modal-btn.cancel:hover {
             background: var(--border-light);
-            color: var(--ink-primary);
         }
 
-        .modal-btn.danger {
-            background: var(--error);
+        .modal-btn.confirm {
+            background: var(--accent);
+            border: none;
             color: white;
-            border-color: var(--error);
         }
 
-        .modal-btn.danger:hover {
-            background: #B34A4A;
-        }
-
-        /* Title Edit Modal */
-        .modal-input {
-            width: 100%;
-            padding: var(--spacing-md);
-            font-family: var(--font-main);
-            font-size: 1.1rem;
-            color: var(--ink-primary);
-            background: var(--bg-app);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            outline: none;
-            transition: border-color var(--transition-fast);
-        }
-
-        .modal-input:focus {
-            border-color: var(--accent);
+        .modal-btn.confirm:hover {
+            background: var(--accent-hover);
         }
 
         /* ============================================
-           Utility Classes
+           Empty State
            ============================================ */
-        .hidden {
-            display: none !important;
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--ink-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 0.9rem;
         }
 
         /* ============================================
-           Responsive Adjustments
+           Utility
            ============================================ */
-        @media (max-width: 768px) {
-            :root {
-                --drawer-width: 280px;
-                --spacing-xl: 1.5rem;
-            }
-
-            .navbar-title {
-                font-size: 1rem;
-            }
-
-            .paper {
-                padding: var(--spacing-lg) var(--spacing-md);
-            }
-
-            .document-title {
-                font-size: 1.5rem;
-            }
-
-            .editor-content {
-                font-size: 1.05rem;
-            }
-
-            .input-area {
-                padding: var(--spacing-md);
-            }
-
-            .input-field {
-                font-size: 0.95rem;
-            }
-
-            .submit-btn {
-                width: 48px;
-                height: 48px;
-            }
-
-            .toast-container {
-                left: var(--spacing-sm);
-                right: var(--spacing-sm);
-            }
-
-            .toast {
-                max-width: 100%;
-            }
-        }
-
-        @media (max-width: 480px) {
-            :root {
-                --drawer-width: 260px;
-            }
-
-            .navbar-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 1.3rem;
-            }
-
-            .paper {
-                padding: var(--spacing-md);
-            }
-
-            .document-title {
-                font-size: 1.3rem;
-            }
-        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <!-- Smart Floating Navbar -->
-    <nav class="navbar" id="navbar">
-        <button class="navbar-btn" id="menuBtn" aria-label="開啟選單">☰</button>
-        <h1 class="navbar-title" id="navbarTitle">墨韻 MòYùn</h1>
-        <button class="navbar-btn" id="brainBtn" aria-label="開啟記憶庫">⚙</button>
-    </nav>
+    <div class="app">
+        <!-- Overlay -->
+        <div class="overlay" id="overlay"></div>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <article class="paper">
-            <input
-                type="text"
-                class="document-title"
-                id="documentTitle"
-                placeholder="為你的故事取個名字..."
-                spellcheck="false"
-            >
-            <div class="editor-content" id="editorContent">
-                <!-- Paragraphs dynamically inserted -->
-            </div>
-        </article>
-    </main>
-
-    <!-- Input Area -->
-    <div class="input-area">
-        <div class="input-container">
-            <div class="input-wrapper">
-                <textarea
-                    class="input-field"
-                    id="inputField"
-                    placeholder="繼續你的故事... (按 Enter 送出，Shift+Enter 換行)"
-                    spellcheck="false"
-                ></textarea>
-            </div>
-            <button class="submit-btn" id="submitBtn" aria-label="送出並續寫">▶</button>
-        </div>
-    </div>
-
-    <!-- Drawer Overlay -->
-    <div class="drawer-overlay" id="drawerOverlay"></div>
-
-    <!-- Left Drawer - Document List -->
-    <aside class="left-drawer" id="leftDrawer">
-        <div class="drawer-header">
-            <h2 class="drawer-title">我的文檔</h2>
-            <button class="drawer-close" id="closeLeftDrawer">×</button>
-        </div>
-        <div class="drawer-content">
-            <button class="new-doc-btn" id="newDocBtn">
-                <span>✨</span>
-                <span>新增文檔</span>
+        <!-- Smart Floating Navbar -->
+        <nav class="navbar" id="navbar">
+            <button class="navbar-btn" id="menuBtn" aria-label="開啟文檔列表">
+                <span>☰</span>
             </button>
-            <div class="doc-list-title">最近編輯</div>
-            <div id="docList">
-                <!-- Document items dynamically inserted -->
+            <div class="navbar-title">
+                <span class="navbar-title-text" id="navTitle">未命名文檔</span>
             </div>
-        </div>
-    </aside>
+            <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
+                <span>⚙️</span>
+            </button>
+        </nav>
 
-    <!-- Right/Bottom Panel - The Brain -->
-    <aside class="brain-panel" id="brainPanel">
-        <div class="brain-handle" style="display: none;"></div>
-        <div class="brain-header">
-            <h2 class="drawer-title">控制塔</h2>
-            <button class="drawer-close" id="closeBrainPanel">×</button>
-        </div>
-        <div class="brain-tabs">
-            <button class="brain-tab active" data-tab="memory">記憶庫</button>
-            <button class="brain-tab" data-tab="settings">設定</button>
-            <button class="brain-tab" data-tab="stats">統計</button>
-        </div>
-        <div class="brain-content">
-            <!-- Memory Tab -->
-            <div class="tab-panel active" id="memoryPanel">
-                <button class="checkpoint-btn" id="checkpointBtn">
+        <!-- Left Drawer - Document List -->
+        <aside class="drawer-left" id="drawerLeft">
+            <div class="drawer-header">
+                <div class="drawer-logo">墨</div>
+                <span class="drawer-brand">墨韻 MòYùn</span>
+            </div>
+            <div class="drawer-content">
+                <button class="new-doc-btn" id="newDocBtn">
                     <span>✨</span>
-                    <span>本章結算 (Checkpoint)</span>
+                    <span>新增文檔</span>
                 </button>
+                <div class="doc-list-title">我的文檔</div>
+                <div class="doc-list" id="docList">
+                    <!-- Document items will be rendered here -->
+                </div>
+            </div>
+        </aside>
 
-                <div class="memory-section">
-                    <div class="memory-header">
-                        <h3 class="memory-title">
-                            <span>🎯</span>
-                            <span>軌道 A：故事錨點</span>
-                        </h3>
-                        <span class="memory-badge anchor">Story Anchors</span>
-                    </div>
-                    <textarea
-                        class="memory-textarea"
-                        id="storyAnchors"
-                        placeholder="記錄當下的物理與劇情狀態..."
-                        spellcheck="false"
-                    >{
+        <!-- Right Panel - The Brain -->
+        <aside class="panel-right" id="panelRight">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <span>🧠</span>
+                    <span>控制塔</span>
+                </h2>
+                <button class="panel-close" id="panelClose">×</button>
+            </div>
+            <div class="panel-tabs">
+                <button class="panel-tab active" data-panel="memory">記憶庫</button>
+                <button class="panel-tab" data-panel="world">世界觀</button>
+                <button class="panel-tab" data-panel="settings">設定</button>
+            </div>
+            <div class="panel-content">
+                <!-- Memory Section -->
+                <div class="panel-section active" id="memorySection">
+                    <button class="checkpoint-btn" id="checkpointBtn">
+                        <span>✨</span>
+                        <span>本章結算 (Checkpoint)</span>
+                    </button>
+
+                    <div class="memory-block">
+                        <div class="memory-header">
+                            <span class="memory-label">
+                                <span>🎯</span>
+                                <span>軌道 A：故事錨點</span>
+                            </span>
+                            <span class="memory-badge anchor">Anchors</span>
+                        </div>
+                        <textarea class="memory-textarea" id="storyAnchors" spellcheck="false">{
   "時間地點": "",
   "環境氛圍": {
     "光影": "",
@@ -1310,350 +1297,320 @@
   "當前衝突": "",
   "禁止發生的劇情": []
 }</textarea>
-                </div>
-
-                <div class="memory-section">
-                    <div class="memory-header">
-                        <h3 class="memory-title">
-                            <span>🖋️</span>
-                            <span>軌道 B：文風指紋</span>
-                        </h3>
-                        <span class="memory-badge style">Style Fingerprint</span>
                     </div>
-                    <textarea
-                        class="memory-textarea"
-                        id="styleFingerprint"
-                        placeholder="鎖定角色的靈魂與寫作筆觸..."
-                        spellcheck="false"
-                    >{
+
+                    <div class="memory-block">
+                        <div class="memory-header">
+                            <span class="memory-label">
+                                <span>🖋️</span>
+                                <span>軌道 B：文風指紋</span>
+                            </span>
+                            <span class="memory-badge style">Style</span>
+                        </div>
+                        <textarea class="memory-textarea" id="styleFingerprint" spellcheck="false">{
   "敘事節奏": "",
   "感官偏好": [],
   "禁忌與張力處理": "",
   "關鍵語氣樣本": []
 }</textarea>
+                    </div>
+                </div>
+
+                <!-- World Section -->
+                <div class="panel-section" id="worldSection">
+                    <div class="setting-group">
+                        <label class="setting-label">🌍 世界觀設定</label>
+                        <textarea class="setting-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
+                        <p class="setting-hint">此內容會作為每次請求的背景知識</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">📝 自訂 System Prompt</label>
+                        <textarea class="setting-textarea" id="customPrompt" spellcheck="false">你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
+                        <p class="setting-hint">此內容會作為 AI 的基礎行為指令</p>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="panel-section" id="settingsSection">
+                    <div class="setting-group">
+                        <label class="setting-label">API 格式</label>
+                        <select class="setting-select" id="apiFormat">
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="openai">OpenAI Compatible</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">API Endpoint</label>
+                        <input type="text" class="setting-input" id="apiEndpoint" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                        <p class="setting-hint">OpenRouter 預設端點</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">API Key</label>
+                        <input type="password" class="setting-input" id="apiKey" placeholder="sk-...">
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">模型名稱</label>
+                        <input type="text" class="setting-input" id="modelName" placeholder="anthropic/claude-sonnet-4">
+                        <p class="setting-hint">例: anthropic/claude-sonnet-4</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Temperature (創意度)</label>
+                        <div class="setting-range-wrapper">
+                            <input type="range" class="setting-range" id="temperature" min="0" max="2" step="0.1" value="0.8">
+                            <span class="setting-range-value" id="tempValue">0.8</span>
+                        </div>
+                    </div>
+
+                    <div class="action-btns">
+                        <button class="action-btn" id="saveSettingsBtn">💾 儲存設定</button>
+                        <button class="action-btn danger" id="clearAllBtn">🗑️ 清除全部</button>
+                    </div>
                 </div>
             </div>
+        </aside>
 
-            <!-- Settings Tab -->
-            <div class="tab-panel" id="settingsPanel">
-                <div class="settings-group">
-                    <label class="settings-label">API 格式</label>
-                    <select class="settings-select" id="apiFormat">
-                        <option value="openrouter">OpenRouter</option>
-                        <option value="openai">OpenAI Compatible</option>
-                    </select>
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">API Endpoint</label>
-                    <input
-                        type="text"
-                        class="settings-input"
-                        id="apiEndpoint"
-                        placeholder="https://openrouter.ai/api/v1/chat/completions"
-                    >
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">API Key</label>
-                    <input
-                        type="password"
-                        class="settings-input"
-                        id="apiKey"
-                        placeholder="sk-..."
-                    >
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">模型名稱</label>
-                    <input
-                        type="text"
-                        class="settings-input"
-                        id="modelName"
-                        placeholder="anthropic/claude-sonnet-4"
-                    >
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">Temperature (創意度): <span id="tempValue">0.8</span></label>
-                    <input
-                        type="range"
-                        class="settings-input"
-                        id="temperature"
-                        min="0"
-                        max="2"
-                        step="0.1"
-                        value="0.8"
-                        style="width: 100%;"
-                    >
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">🌍 世界觀設定</label>
-                    <textarea
-                        class="settings-textarea"
-                        id="worldSetting"
-                        placeholder="描述你的故事世界觀、背景設定、魔法系統等..."
-                        spellcheck="false"
-                    ></textarea>
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">📝 自訂 System Prompt</label>
-                    <textarea
-                        class="settings-textarea"
-                        id="customPrompt"
-                        placeholder="設定 AI 的基礎行為指令..."
-                        spellcheck="false"
-                    >你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
-                </div>
-
-                <div class="action-buttons">
-                    <button class="action-btn" id="saveSettingsBtn">💾 儲存設定</button>
-                    <button class="action-btn danger" id="clearDataBtn">🗑️ 清除所有資料</button>
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="editor-container">
+                <div class="editor-paper">
+                    <input type="text" class="editor-title-input" id="editorTitle" placeholder="為你的故事取個名字..." spellcheck="false">
+                    <div class="editor-body" id="editorBody">
+                        <!-- Paragraphs rendered here -->
+                    </div>
                 </div>
             </div>
+        </main>
 
-            <!-- Stats Tab -->
-            <div class="tab-panel" id="statsPanel">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalWords">0</div>
-                        <div class="stat-label">總字數</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="userWords">0</div>
-                        <div class="stat-label">用戶字數</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="aiWords">0</div>
-                        <div class="stat-label">AI 字數</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="paragraphCount">0</div>
-                        <div class="stat-label">段落數</div>
-                    </div>
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <div class="input-field-wrapper">
+                    <textarea class="input-field" id="inputField" placeholder="繼續你的故事..." rows="1" spellcheck="false"></textarea>
                 </div>
+                <button class="send-btn" id="sendBtn" aria-label="送出">
+                    <span>➤</span>
+                </button>
+            </div>
+        </div>
 
-                <div class="settings-group">
-                    <label class="settings-label">📊 寫作歷程</label>
-                    <div id="writingHistory" style="font-family: var(--font-ui); font-size: 0.9rem; color: var(--ink-secondary); line-height: 1.8; padding: var(--spacing-md); background: var(--bg-app); border-radius: 8px;">
-                        開始你的創作之旅吧！
-                    </div>
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Title Edit Modal -->
+        <div class="modal-overlay" id="titleModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">編輯標題</h3>
+                    <button class="modal-close" id="titleModalClose">×</button>
                 </div>
-
-                <div class="action-buttons" style="margin-top: var(--spacing-lg);">
-                    <button class="action-btn" id="exportBtn">📄 匯出文檔</button>
+                <div class="modal-body">
+                    <input type="text" class="modal-input" id="titleModalInput" placeholder="輸入新標題...">
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn cancel" id="titleModalCancel">取消</button>
+                    <button class="modal-btn confirm" id="titleModalConfirm">確認</button>
                 </div>
             </div>
         </div>
-    </aside>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Modal for Title Edit -->
-    <div class="modal-overlay" id="titleModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title">編輯文檔標題</h3>
-                <button class="modal-close" id="closeTitleModal">×</button>
-            </div>
-            <div class="modal-body">
-                <input
-                    type="text"
-                    class="modal-input"
-                    id="titleInput"
-                    placeholder="輸入文檔標題..."
-                >
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn secondary" id="cancelTitleEdit">取消</button>
-                <button class="modal-btn primary" id="saveTitleEdit">確定</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal for Confirmations -->
-    <div class="modal-overlay" id="confirmModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="confirmTitle">確認操作</h3>
-                <button class="modal-close" id="closeConfirmModal">×</button>
-            </div>
-            <div class="modal-body">
-                <p id="confirmMessage">確定要執行此操作嗎？</p>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn secondary" id="cancelConfirm">取消</button>
-                <button class="modal-btn danger" id="confirmAction">確認</button>
+        <!-- Confirm Modal -->
+        <div class="modal-overlay" id="confirmModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="confirmModalTitle">確認</h3>
+                    <button class="modal-close" id="confirmModalClose">×</button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmModalMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn cancel" id="confirmModalCancel">取消</button>
+                    <button class="modal-btn confirm" id="confirmModalConfirm">確認</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         // ============================================
-        // Application State & Storage Keys
+        // Constants & Storage Keys
         // ============================================
-        const APP_VERSION = '2.0.0';
-        const STORAGE_KEYS = {
+        const STORAGE = {
             GLOBAL_SETTINGS: 'moyun_global_settings',
             DOC_INDEX: 'moyun_doc_index',
             DOC_PREFIX: 'moyun_doc_'
         };
 
-        // Global Settings
-        const DEFAULT_SETTINGS = {
+        const DEFAULT_GLOBAL_SETTINGS = {
             apiFormat: 'openrouter',
             apiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
             apiKey: '',
             modelName: 'anthropic/claude-sonnet-4',
-            temperature: 0.8,
-            fontSize: 16
+            temperature: 0.8
         };
 
+        const DEFAULT_DOC_DATA = {
+            title: '未命名文檔',
+            paragraphs: [],
+            storyAnchors: `{
+  "時間地點": "",
+  "環境氛圍": {
+    "光影": "",
+    "氣味": "",
+    "聲音": ""
+  },
+  "角色狀態": {
+    "心理": "",
+    "姿勢": "",
+    "外觀": ""
+  },
+  "當前衝突": "",
+  "禁止發生的劇情": []
+}`,
+            styleFingerprint: `{
+  "敘事節奏": "",
+  "感官偏好": [],
+  "禁忌與張力處理": "",
+  "關鍵語氣樣本": []
+}`,
+            worldSetting: '',
+            customPrompt: '你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。'
+        };
+
+        // ============================================
         // Application State
+        // ============================================
         let state = {
             currentDocId: null,
-            documents: [],
-            globalSettings: { ...DEFAULT_SETTINGS },
+            docIndex: [],
+            globalSettings: { ...DEFAULT_GLOBAL_SETTINGS },
+            currentDoc: null,
             isLoading: false,
             lastScrollY: 0,
-            navbarVisible: true
-        };
-
-        // Current Document Data
-        let currentDoc = {
-            id: null,
-            title: '',
-            paragraphs: [],
-            storyAnchors: '',
-            styleFingerprint: '',
-            worldSetting: '',
-            customPrompt: '',
-            lastModified: Date.now()
+            navbarHidden: false
         };
 
         // ============================================
         // DOM Elements
         // ============================================
+        const $ = id => document.getElementById(id);
+        const $$ = sel => document.querySelectorAll(sel);
+
         const el = {
-            // Navbar
-            navbar: document.getElementById('navbar'),
-            menuBtn: document.getElementById('menuBtn'),
-            brainBtn: document.getElementById('brainBtn'),
-            navbarTitle: document.getElementById('navbarTitle'),
-
-            // Content
-            documentTitle: document.getElementById('documentTitle'),
-            editorContent: document.getElementById('editorContent'),
-            inputField: document.getElementById('inputField'),
-            submitBtn: document.getElementById('submitBtn'),
-
-            // Drawers
-            drawerOverlay: document.getElementById('drawerOverlay'),
-            leftDrawer: document.getElementById('leftDrawer'),
-            closeLeftDrawer: document.getElementById('closeLeftDrawer'),
-            brainPanel: document.getElementById('brainPanel'),
-            closeBrainPanel: document.getElementById('closeBrainPanel'),
-
-            // Document List
-            docList: document.getElementById('docList'),
-            newDocBtn: document.getElementById('newDocBtn'),
-
-            // Memory
-            storyAnchors: document.getElementById('storyAnchors'),
-            styleFingerprint: document.getElementById('styleFingerprint'),
-            checkpointBtn: document.getElementById('checkpointBtn'),
-
+            // Navigation
+            navbar: $('navbar'),
+            menuBtn: $('menuBtn'),
+            navTitle: $('navTitle'),
+            brainBtn: $('brainBtn'),
+            
+            // Overlay
+            overlay: $('overlay'),
+            
+            // Left Drawer
+            drawerLeft: $('drawerLeft'),
+            newDocBtn: $('newDocBtn'),
+            docList: $('docList'),
+            
+            // Right Panel
+            panelRight: $('panelRight'),
+            panelClose: $('panelClose'),
+            checkpointBtn: $('checkpointBtn'),
+            storyAnchors: $('storyAnchors'),
+            styleFingerprint: $('styleFingerprint'),
+            worldSetting: $('worldSetting'),
+            customPrompt: $('customPrompt'),
+            
             // Settings
-            apiFormat: document.getElementById('apiFormat'),
-            apiEndpoint: document.getElementById('apiEndpoint'),
-            apiKey: document.getElementById('apiKey'),
-            modelName: document.getElementById('modelName'),
-            temperature: document.getElementById('temperature'),
-            tempValue: document.getElementById('tempValue'),
-            worldSetting: document.getElementById('worldSetting'),
-            customPrompt: document.getElementById('customPrompt'),
-            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
-            clearDataBtn: document.getElementById('clearDataBtn'),
-
-            // Stats
-            totalWords: document.getElementById('totalWords'),
-            userWords: document.getElementById('userWords'),
-            aiWords: document.getElementById('aiWords'),
-            paragraphCount: document.getElementById('paragraphCount'),
-            writingHistory: document.getElementById('writingHistory'),
-            exportBtn: document.getElementById('exportBtn'),
-
-            // Modals
-            toastContainer: document.getElementById('toastContainer'),
-            titleModal: document.getElementById('titleModal'),
-            titleInput: document.getElementById('titleInput'),
-            closeTitleModal: document.getElementById('closeTitleModal'),
-            cancelTitleEdit: document.getElementById('cancelTitleEdit'),
-            saveTitleEdit: document.getElementById('saveTitleEdit'),
-            confirmModal: document.getElementById('confirmModal'),
-            confirmTitle: document.getElementById('confirmTitle'),
-            confirmMessage: document.getElementById('confirmMessage'),
-            closeConfirmModal: document.getElementById('closeConfirmModal'),
-            cancelConfirm: document.getElementById('cancelConfirm'),
-            confirmAction: document.getElementById('confirmAction')
+            apiFormat: $('apiFormat'),
+            apiEndpoint: $('apiEndpoint'),
+            apiKey: $('apiKey'),
+            modelName: $('modelName'),
+            temperature: $('temperature'),
+            tempValue: $('tempValue'),
+            saveSettingsBtn: $('saveSettingsBtn'),
+            clearAllBtn: $('clearAllBtn'),
+            
+            // Editor
+            editorTitle: $('editorTitle'),
+            editorBody: $('editorBody'),
+            inputField: $('inputField'),
+            sendBtn: $('sendBtn'),
+            
+            // Toasts
+            toastContainer: $('toastContainer'),
+            
+            // Title Modal
+            titleModal: $('titleModal'),
+            titleModalInput: $('titleModalInput'),
+            titleModalClose: $('titleModalClose'),
+            titleModalCancel: $('titleModalCancel'),
+            titleModalConfirm: $('titleModalConfirm'),
+            
+            // Confirm Modal
+            confirmModal: $('confirmModal'),
+            confirmModalTitle: $('confirmModalTitle'),
+            confirmModalMessage: $('confirmModalMessage'),
+            confirmModalClose: $('confirmModalClose'),
+            confirmModalCancel: $('confirmModalCancel'),
+            confirmModalConfirm: $('confirmModalConfirm')
         };
 
         // ============================================
         // Utility Functions
         // ============================================
         function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
-        function countWords(text) {
-            if (!text) return 0;
-            return text.replace(/\s/g, '').length;
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), wait);
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
             };
+        }
+
+        function countChars(text) {
+            return text ? text.replace(/\s/g, '').length : 0;
+        }
+
+        function formatDate(timestamp) {
+            const d = new Date(timestamp);
+            const now = new Date();
+            const diff = now - d;
+            
+            if (diff < 60000) return '剛剛';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} 分鐘前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小時前`;
+            if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`;
+            
+            return d.toLocaleDateString('zh-TW');
         }
 
         function parseMarkdown(text) {
             if (!text) return '';
             try {
-                marked.setOptions({ breaks: true, gfm: true });
+                marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
                 return marked.parse(text);
             } catch (e) {
-                console.error('Markdown parsing error:', e);
                 return text.replace(/\n/g, '<br>');
             }
         }
 
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-
-            if (diff < 60000) return '剛才';
-            if (diff < 3600000) return `${Math.floor(diff / 60000)} 分鐘前`;
-            if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小時前`;
-            if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`;
-
-            return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
-        }
-
         // ============================================
-        // LocalStorage Functions
+        // Storage Functions
         // ============================================
         function saveToStorage(key, data) {
             try {
                 localStorage.setItem(key, JSON.stringify(data));
             } catch (e) {
                 console.error('Storage save error:', e);
-                showToast('儲存失敗，請檢查瀏覽器儲存空間', 'error');
+                showToast('儲存失敗', 'error');
             }
         }
 
@@ -1667,404 +1624,368 @@
             }
         }
 
-        // ============================================
-        // Multi-Document System
-        // ============================================
-        function loadGlobalSettings() {
-            const saved = loadFromStorage(STORAGE_KEYS.GLOBAL_SETTINGS);
-            if (saved) {
-                state.globalSettings = { ...DEFAULT_SETTINGS, ...saved };
-                applyGlobalSettings();
+        function removeFromStorage(key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.error('Storage remove error:', e);
             }
         }
 
-        function saveGlobalSettings() {
-            state.globalSettings = {
-                apiFormat: el.apiFormat.value,
-                apiEndpoint: el.apiEndpoint.value,
-                apiKey: el.apiKey.value,
-                modelName: el.modelName.value,
-                temperature: parseFloat(el.temperature.value),
-                fontSize: state.globalSettings.fontSize
-            };
-            saveToStorage(STORAGE_KEYS.GLOBAL_SETTINGS, state.globalSettings);
+        // ============================================
+        // Toast Notifications
+        // ============================================
+        function showToast(message, type = 'info', duration = 3000) {
+            const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close">×</button>
+            `;
+            
+            el.toastContainer.appendChild(toast);
+            toast.querySelector('.toast-close').onclick = () => removeToast(toast);
+            setTimeout(() => removeToast(toast), duration);
         }
 
-        function applyGlobalSettings() {
-            el.apiFormat.value = state.globalSettings.apiFormat;
-            el.apiEndpoint.value = state.globalSettings.apiEndpoint;
-            el.apiKey.value = state.globalSettings.apiKey;
-            el.modelName.value = state.globalSettings.modelName;
-            el.temperature.value = state.globalSettings.temperature;
-            el.tempValue.textContent = state.globalSettings.temperature;
+        function removeToast(toast) {
+            toast.style.animation = 'toastOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
         }
 
-        function loadDocumentIndex() {
-            state.documents = loadFromStorage(STORAGE_KEYS.DOC_INDEX, []);
+        // ============================================
+        // Modal Functions
+        // ============================================
+        let confirmCallback = null;
+
+        function showTitleModal() {
+            el.titleModalInput.value = state.currentDoc?.title || '';
+            el.titleModal.classList.add('active');
+            el.titleModalInput.focus();
+            el.titleModalInput.select();
         }
 
-        function saveDocumentIndex() {
-            saveToStorage(STORAGE_KEYS.DOC_INDEX, state.documents);
+        function hideTitleModal() {
+            el.titleModal.classList.remove('active');
         }
 
-        function saveCurrentDocument() {
-            if (!currentDoc.id) return;
+        function showConfirmModal(title, message, onConfirm) {
+            el.confirmModalTitle.textContent = title;
+            el.confirmModalMessage.textContent = message;
+            el.confirmModal.classList.add('active');
+            confirmCallback = onConfirm;
+        }
 
-            currentDoc.title = el.documentTitle.value.trim() || '未命名文檔';
-            currentDoc.storyAnchors = el.storyAnchors.value;
-            currentDoc.styleFingerprint = el.styleFingerprint.value;
-            currentDoc.worldSetting = el.worldSetting.value;
-            currentDoc.customPrompt = el.customPrompt.value;
-            currentDoc.lastModified = Date.now();
+        function hideConfirmModal() {
+            el.confirmModal.classList.remove('active');
+            confirmCallback = null;
+        }
 
-            // Get preview text
-            const previewText = currentDoc.paragraphs.length > 0
-                ? currentDoc.paragraphs[0].content.substring(0, 100)
-                : '尚無內容...';
+        // ============================================
+        // Drawer & Panel Controls
+        // ============================================
+        function openDrawerLeft() {
+            el.drawerLeft.classList.add('open');
+            el.overlay.classList.add('active');
+        }
 
-            // Update document index
-            const docIndex = state.documents.findIndex(d => d.id === currentDoc.id);
-            const indexEntry = {
-                id: currentDoc.id,
-                title: currentDoc.title,
-                lastModified: currentDoc.lastModified,
-                previewText: previewText
-            };
+        function closeDrawerLeft() {
+            el.drawerLeft.classList.remove('open');
+            el.overlay.classList.remove('active');
+        }
 
-            if (docIndex >= 0) {
-                state.documents[docIndex] = indexEntry;
-            } else {
-                state.documents.unshift(indexEntry);
+        function openPanelRight() {
+            el.panelRight.classList.add('open');
+            el.overlay.classList.add('active');
+        }
+
+        function closePanelRight() {
+            el.panelRight.classList.remove('open');
+            el.overlay.classList.remove('active');
+        }
+
+        function closeAllPanels() {
+            closeDrawerLeft();
+            closePanelRight();
+        }
+
+        // ============================================
+        // Navbar Scroll Behavior
+        // ============================================
+        const handleScroll = debounce(() => {
+            const currentScrollY = window.scrollY;
+            const threshold = 10;
+            
+            if (currentScrollY > state.lastScrollY + threshold && currentScrollY > 100) {
+                // Scrolling down
+                if (!state.navbarHidden) {
+                    el.navbar.classList.add('hidden');
+                    state.navbarHidden = true;
+                }
+            } else if (currentScrollY < state.lastScrollY - threshold || currentScrollY < 50) {
+                // Scrolling up
+                if (state.navbarHidden) {
+                    el.navbar.classList.remove('hidden');
+                    state.navbarHidden = false;
+                }
             }
+            
+            state.lastScrollY = currentScrollY;
+        }, 50);
 
+        // ============================================
+        // Document Management
+        // ============================================
+        function createDocument() {
+            // Save current document first
+            if (state.currentDocId) {
+                saveCurrentDocument();
+            }
+            
+            // Generate new document
+            const newId = generateId();
+            const newDoc = {
+                ...JSON.parse(JSON.stringify(DEFAULT_DOC_DATA)),
+                createdAt: Date.now(),
+                lastModified: Date.now()
+            };
+            
             // Save to storage
-            saveToStorage(STORAGE_KEYS.DOC_PREFIX + currentDoc.id, currentDoc);
-            saveDocumentIndex();
-
-            console.log('Document saved:', currentDoc.id);
+            saveToStorage(STORAGE.DOC_PREFIX + newId, newDoc);
+            
+            // Update index
+            state.docIndex.unshift({
+                id: newId,
+                title: newDoc.title,
+                lastModified: newDoc.lastModified,
+                previewText: ''
+            });
+            saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
+            
+            // Load new document
+            loadDocument(newId);
+            renderDocList();
+            
+            showToast('已建立新文檔', 'success');
+            closeDrawerLeft();
         }
-
-        const autoSaveDocument = debounce(() => {
-            saveCurrentDocument();
-        }, 1500);
 
         function loadDocument(docId) {
             // Save current document first
-            if (currentDoc.id) {
+            if (state.currentDocId && state.currentDocId !== docId) {
                 saveCurrentDocument();
             }
-
+            
             // Load document data
-            const docData = loadFromStorage(STORAGE_KEYS.DOC_PREFIX + docId);
+            const docData = loadFromStorage(STORAGE.DOC_PREFIX + docId);
             if (!docData) {
-                showToast('無法載入文檔', 'error');
+                showToast('文檔不存在', 'error');
                 return;
             }
-
-            // Update current document
-            currentDoc = { ...docData };
+            
             state.currentDocId = docId;
-
+            state.currentDoc = docData;
+            
             // Update UI
-            el.documentTitle.value = currentDoc.title;
-            el.storyAnchors.value = currentDoc.storyAnchors || getDefaultAnchors();
-            el.styleFingerprint.value = currentDoc.styleFingerprint || getDefaultFingerprint();
-            el.worldSetting.value = currentDoc.worldSetting || '';
-            el.customPrompt.value = currentDoc.customPrompt || getDefaultPrompt();
-            el.navbarTitle.textContent = currentDoc.title;
-
+            el.editorTitle.value = docData.title;
+            el.navTitle.textContent = docData.title || '未命名文檔';
+            el.storyAnchors.value = docData.storyAnchors || DEFAULT_DOC_DATA.storyAnchors;
+            el.styleFingerprint.value = docData.styleFingerprint || DEFAULT_DOC_DATA.styleFingerprint;
+            el.worldSetting.value = docData.worldSetting || '';
+            el.customPrompt.value = docData.customPrompt || DEFAULT_DOC_DATA.customPrompt;
+            
             // Render paragraphs
-            renderAllParagraphs();
-            updateStats();
-            updateDocumentList();
-
-            // Close drawers
-            closeAllDrawers();
-
-            showToast(`已載入：${currentDoc.title}`, 'success', 2000);
+            renderParagraphs();
+            renderDocList();
+            closeDrawerLeft();
         }
 
-        function createDocument() {
-            // Save current document
-            if (currentDoc.id) {
-                saveCurrentDocument();
+        function saveCurrentDocument() {
+            if (!state.currentDocId || !state.currentDoc) return;
+            
+            // Update document data
+            state.currentDoc.title = el.editorTitle.value || '未命名文檔';
+            state.currentDoc.storyAnchors = el.storyAnchors.value;
+            state.currentDoc.styleFingerprint = el.styleFingerprint.value;
+            state.currentDoc.worldSetting = el.worldSetting.value;
+            state.currentDoc.customPrompt = el.customPrompt.value;
+            state.currentDoc.lastModified = Date.now();
+            
+            // Generate preview text
+            const previewText = state.currentDoc.paragraphs
+                .slice(0, 2)
+                .map(p => p.content)
+                .join(' ')
+                .substring(0, 100);
+            
+            // Save to storage
+            saveToStorage(STORAGE.DOC_PREFIX + state.currentDocId, state.currentDoc);
+            
+            // Update index
+            const indexItem = state.docIndex.find(d => d.id === state.currentDocId);
+            if (indexItem) {
+                indexItem.title = state.currentDoc.title;
+                indexItem.lastModified = state.currentDoc.lastModified;
+                indexItem.previewText = previewText;
+                saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
             }
+            
+            // Update navbar title
+            el.navTitle.textContent = state.currentDoc.title || '未命名文檔';
+        }
 
-            // Create new document
-            const newId = generateId();
-            currentDoc = {
-                id: newId,
-                title: '未命名文檔',
-                paragraphs: [],
-                storyAnchors: getDefaultAnchors(),
-                styleFingerprint: getDefaultFingerprint(),
-                worldSetting: '',
-                customPrompt: getDefaultPrompt(),
-                lastModified: Date.now()
-            };
-            state.currentDocId = newId;
+        function deleteDocument(docId) {
+            showConfirmModal('刪除文檔', '確定要刪除此文檔嗎？此操作無法復原。', () => {
+                // Remove from storage
+                removeFromStorage(STORAGE.DOC_PREFIX + docId);
+                
+                // Update index
+                state.docIndex = state.docIndex.filter(d => d.id !== docId);
+                saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
+                
+                // If deleted current document, load another or create new
+                if (docId === state.currentDocId) {
+                    if (state.docIndex.length > 0) {
+                        loadDocument(state.docIndex[0].id);
+                    } else {
+                        createDocument();
+                    }
+                }
+                
+                renderDocList();
+                hideConfirmModal();
+                showToast('文檔已刪除', 'success');
+            });
+        }
 
-            // Update UI
-            el.documentTitle.value = '';
-            el.editorContent.innerHTML = '';
-            el.storyAnchors.value = currentDoc.storyAnchors;
-            el.styleFingerprint.value = currentDoc.styleFingerprint;
-            el.worldSetting.value = currentDoc.worldSetting;
-            el.customPrompt.value = currentDoc.customPrompt;
-            el.navbarTitle.textContent = '墨韻 MòYùn';
-
-            // Save new document
+        const autoSave = debounce(() => {
             saveCurrentDocument();
-            updateDocumentList();
-            updateStats();
+            console.log('Auto-saved:', new Date().toLocaleTimeString());
+        }, 1000);
 
-            // Close drawers
-            closeAllDrawers();
-
-            showToast('已建立新文檔', 'success');
-        }
-
-        function getDefaultAnchors() {
-            return `{
-  "時間地點": "",
-  "環境氛圍": {
-    "光影": "",
-    "氣味": "",
-    "聲音": ""
-  },
-  "角色狀態": {
-    "心理": "",
-    "姿勢": "",
-    "外觀": ""
-  },
-  "當前衝突": "",
-  "禁止發生的劇情": []
-}`;
-        }
-
-        function getDefaultFingerprint() {
-            return `{
-  "敘事節奏": "",
-  "感官偏好": [],
-  "禁忌與張力處理": "",
-  "關鍵語氣樣本": []
-}`;
-        }
-
-        function getDefaultPrompt() {
-            return '你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。';
-        }
-
-        function updateDocumentList() {
-            // Sort by last modified
-            const sortedDocs = [...state.documents].sort((a, b) => b.lastModified - a.lastModified);
-
-            if (sortedDocs.length === 0) {
+        // ============================================
+        // Render Functions
+        // ============================================
+        function renderDocList() {
+            if (state.docIndex.length === 0) {
                 el.docList.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">📝</div>
-                        <p>尚無文檔</p>
+                        <div class="empty-state-icon">📚</div>
+                        <p class="empty-state-text">尚無文檔</p>
                     </div>
                 `;
                 return;
             }
-
-            el.docList.innerHTML = sortedDocs.map(doc => `
-                <div class="doc-item ${doc.id === state.currentDocId ? 'active' : ''}" data-doc-id="${doc.id}">
-                    <div class="doc-item-title">${doc.title}</div>
+            
+            el.docList.innerHTML = state.docIndex.map(doc => `
+                <div class="doc-item ${doc.id === state.currentDocId ? 'active' : ''}" data-id="${doc.id}">
+                    <div class="doc-item-title">${doc.title || '未命名文檔'}</div>
                     <div class="doc-item-meta">
                         <span>${formatDate(doc.lastModified)}</span>
                     </div>
-                    <div class="doc-item-preview">${doc.previewText}</div>
+                    ${doc.previewText ? `<div class="doc-item-preview">${doc.previewText}</div>` : ''}
+                    <div class="doc-item-actions">
+                        <button class="doc-action-btn" data-action="open" data-id="${doc.id}">開啟</button>
+                        <button class="doc-action-btn danger" data-action="delete" data-id="${doc.id}">刪除</button>
+                    </div>
                 </div>
             `).join('');
-
-            // Add click handlers
-            document.querySelectorAll('.doc-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const docId = item.dataset.docId;
-                    if (docId !== state.currentDocId) {
-                        loadDocument(docId);
+            
+            // Bind events
+            el.docList.querySelectorAll('.doc-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.doc-action-btn')) return;
+                    loadDocument(item.dataset.id);
+                });
+            });
+            
+            el.docList.querySelectorAll('.doc-action-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = btn.dataset.action;
+                    const id = btn.dataset.id;
+                    
+                    if (action === 'open') {
+                        loadDocument(id);
+                    } else if (action === 'delete') {
+                        deleteDocument(id);
                     }
                 });
             });
         }
 
-        // ============================================
-        // Paragraph Management
-        // ============================================
-        function createParagraphElement(paragraph) {
-            const div = document.createElement('div');
-            div.className = `paragraph ${paragraph.source}-paragraph`;
-            div.dataset.id = paragraph.id;
-
-            div.innerHTML = `
-                <div class="paragraph-content" contenteditable="true">${parseMarkdown(paragraph.content)}</div>
-            `;
-
-            const contentDiv = div.querySelector('.paragraph-content');
-            contentDiv.addEventListener('blur', () => {
-                const newContent = contentDiv.innerText;
-                updateParagraphContent(paragraph.id, newContent);
+        function renderParagraphs() {
+            if (!state.currentDoc?.paragraphs?.length) {
+                el.editorBody.innerHTML = '';
+                return;
+            }
+            
+            el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => `
+                <div class="paragraph ${p.source}" data-id="${p.id}">
+                    <span class="paragraph-tag">${p.source === 'user' ? '你' : 'AI'}</span>
+                    <div class="paragraph-content" contenteditable="true">${parseMarkdown(p.content)}</div>
+                </div>
+            `).join('');
+            
+            // Bind edit events
+            el.editorBody.querySelectorAll('.paragraph-content').forEach(content => {
+                const paraId = content.parentElement.dataset.id;
+                
+                content.addEventListener('blur', () => {
+                    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+                    if (para) {
+                        para.content = content.innerText;
+                        autoSave();
+                    }
+                });
+                
+                content.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                });
             });
-
-            contentDiv.addEventListener('paste', (e) => {
-                e.preventDefault();
-                const text = e.clipboardData.getData('text/plain');
-                document.execCommand('insertText', false, text);
-            });
-
-            return div;
         }
 
         function addParagraph(content, source = 'user') {
+            if (!state.currentDoc) return;
+            
             const paragraph = {
                 id: generateId(),
                 content: content.trim(),
                 source: source,
                 timestamp: Date.now()
             };
-
-            currentDoc.paragraphs.push(paragraph);
-
-            const paragraphEl = createParagraphElement(paragraph);
-            el.editorContent.appendChild(paragraphEl);
-
-            paragraphEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            autoSaveDocument();
-            updateStats();
-
-            return paragraph;
-        }
-
-        function updateParagraphContent(id, newContent) {
-            const paragraph = currentDoc.paragraphs.find(p => p.id === id);
-            if (paragraph) {
-                paragraph.content = newContent;
-                autoSaveDocument();
-                updateStats();
-            }
-        }
-
-        function renderAllParagraphs() {
-            el.editorContent.innerHTML = '';
-            currentDoc.paragraphs.forEach(paragraph => {
-                const paragraphEl = createParagraphElement(paragraph);
-                el.editorContent.appendChild(paragraphEl);
-            });
-        }
-
-        // ============================================
-        // Statistics
-        // ============================================
-        function updateStats() {
-            let totalWords = 0;
-            let userWords = 0;
-            let aiWords = 0;
-
-            currentDoc.paragraphs.forEach(p => {
-                const words = countWords(p.content);
-                totalWords += words;
-                if (p.source === 'user') {
-                    userWords += words;
-                } else {
-                    aiWords += words;
-                }
-            });
-
-            el.totalWords.textContent = totalWords.toLocaleString();
-            el.userWords.textContent = userWords.toLocaleString();
-            el.aiWords.textContent = aiWords.toLocaleString();
-            el.paragraphCount.textContent = currentDoc.paragraphs.length;
-
-            if (currentDoc.paragraphs.length > 0) {
-                const ratio = userWords > 0 ? (aiWords / userWords).toFixed(2) : '∞';
-                el.writingHistory.innerHTML = `
-                    <p>📊 AI/用戶字數比: <strong>${ratio}</strong></p>
-                    <p>📝 平均段落長度: <strong>${Math.round(totalWords / currentDoc.paragraphs.length)}</strong> 字</p>
-                    <p>⏱️ 最後編輯: <strong>${new Date(currentDoc.lastModified).toLocaleString('zh-TW')}</strong></p>
-                `;
+            
+            state.currentDoc.paragraphs.push(paragraph);
+            renderParagraphs();
+            autoSave();
+            
+            // Scroll to new paragraph
+            const newPara = el.editorBody.querySelector(`[data-id="${paragraph.id}"]`);
+            if (newPara) {
+                newPara.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
         // ============================================
-        // Smart Navbar
+        // Panel Tabs
         // ============================================
-        let lastScrollY = 0;
-        let ticking = false;
-
-        function updateNavbar() {
-            const currentScrollY = window.pageYOffset;
-
-            if (currentScrollY > lastScrollY && currentScrollY > 100) {
-                // Scrolling down
-                el.navbar.classList.add('hidden');
-            } else {
-                // Scrolling up
-                el.navbar.classList.remove('hidden');
-            }
-
-            lastScrollY = currentScrollY;
-            ticking = false;
-        }
-
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                window.requestAnimationFrame(updateNavbar);
-                ticking = true;
-            }
-        });
-
-        // ============================================
-        // Drawer Management
-        // ============================================
-        function openLeftDrawer() {
-            el.leftDrawer.classList.add('active');
-            el.drawerOverlay.classList.add('active');
-        }
-
-        function closeLeftDrawer() {
-            el.leftDrawer.classList.remove('active');
-            el.drawerOverlay.classList.remove('active');
-        }
-
-        function openBrainPanel() {
-            el.brainPanel.classList.add('active');
-            el.drawerOverlay.classList.add('active');
-
-            // Show handle on mobile
-            if (window.innerWidth <= 768) {
-                document.querySelector('.brain-handle').style.display = 'block';
-            }
-        }
-
-        function closeBrainPanel() {
-            el.brainPanel.classList.remove('active');
-            el.drawerOverlay.classList.remove('active');
-        }
-
-        function closeAllDrawers() {
-            closeLeftDrawer();
-            closeBrainPanel();
-        }
-
-        // ============================================
-        // Tab Management
-        // ============================================
-        function initTabs() {
-            const tabs = document.querySelectorAll('.brain-tab');
-            const panels = document.querySelectorAll('.tab-panel');
-
+        function initPanelTabs() {
+            const tabs = $$('.panel-tab');
+            const sections = $$('.panel-section');
+            
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    const targetTab = tab.dataset.tab;
-
+                    const target = tab.dataset.panel;
+                    
                     tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
-
+                    sections.forEach(s => s.classList.remove('active'));
+                    
                     tab.classList.add('active');
-                    document.getElementById(`${targetTab}Panel`).classList.add('active');
+                    $(`${target}Section`).classList.add('active');
                 });
             });
         }
@@ -2073,37 +1994,38 @@
         // API Communication
         // ============================================
         function buildSystemPrompt() {
-            const customPrompt = el.customPrompt.value.trim();
-            const worldSetting = el.worldSetting.value.trim();
-            const storyAnchors = el.storyAnchors.value.trim();
-            const styleFingerprint = el.styleFingerprint.value.trim();
-
-            let systemPrompt = customPrompt;
-
-            if (worldSetting) {
-                systemPrompt += `\n\n【世界觀設定】\n${worldSetting}`;
+            const parts = [];
+            
+            if (el.customPrompt.value.trim()) {
+                parts.push(el.customPrompt.value.trim());
             }
-
-            if (storyAnchors) {
-                systemPrompt += `\n\n【故事錨點 - 當前狀態】\n${storyAnchors}`;
+            
+            if (el.worldSetting.value.trim()) {
+                parts.push(`【世界觀設定】\n${el.worldSetting.value.trim()}`);
             }
-
-            if (styleFingerprint) {
-                systemPrompt += `\n\n【文風指紋 - 寫作風格】\n${styleFingerprint}`;
+            
+            if (el.storyAnchors.value.trim()) {
+                parts.push(`【故事錨點 - 當前狀態】\n${el.storyAnchors.value.trim()}`);
             }
-
-            return systemPrompt;
+            
+            if (el.styleFingerprint.value.trim()) {
+                parts.push(`【文風指紋 - 寫作風格】\n${el.styleFingerprint.value.trim()}`);
+            }
+            
+            return parts.join('\n\n');
         }
 
         function buildConversationHistory() {
-            const recentParagraphs = currentDoc.paragraphs.slice(-15);
+            if (!state.currentDoc?.paragraphs) return [];
+            
+            const recent = state.currentDoc.paragraphs.slice(-20);
             const messages = [];
             let currentRole = null;
             let currentContent = '';
-
-            recentParagraphs.forEach(p => {
+            
+            recent.forEach(p => {
                 const role = p.source === 'user' ? 'user' : 'assistant';
-
+                
                 if (role === currentRole) {
                     currentContent += '\n\n' + p.content;
                 } else {
@@ -2114,81 +2036,106 @@
                     currentContent = p.content;
                 }
             });
-
+            
             if (currentRole) {
                 messages.push({ role: currentRole, content: currentContent });
             }
-
+            
             return messages;
         }
 
         async function callAPI(userContent) {
             const { apiEndpoint, apiKey, modelName, temperature } = state.globalSettings;
-
+            
             if (!apiKey) {
                 throw new Error('請先在設定中填入 API Key');
             }
-
+            
             const systemPrompt = buildSystemPrompt();
-            const conversationHistory = buildConversationHistory();
-            conversationHistory.push({ role: 'user', content: userContent });
-
-            const requestBody = {
-                model: modelName,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    ...conversationHistory
-                ],
-                temperature: temperature,
-                max_tokens: 4096
-            };
-
+            const history = buildConversationHistory();
+            history.push({ role: 'user', content: userContent });
+            
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             };
-
+            
             if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
                 headers['X-Title'] = '墨韻 MòYùn';
             }
-
+            
             const response = await fetch(apiEndpoint, {
                 method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody)
+                headers,
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        ...history
+                    ],
+                    temperature: parseFloat(temperature),
+                    max_tokens: 4096
+                })
             });
-
+            
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || `API 請求失敗 (${response.status})`);
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
             }
-
+            
             const data = await response.json();
             return data.choices[0]?.message?.content || '';
         }
 
-        // ============================================
-        // Checkpoint System
-        // ============================================
+        async function handleSubmit() {
+            const content = el.inputField.value.trim();
+            if (!content || state.isLoading) return;
+            
+            addParagraph(content, 'user');
+            el.inputField.value = '';
+            el.inputField.style.height = 'auto';
+            
+            state.isLoading = true;
+            el.sendBtn.classList.add('loading');
+            el.sendBtn.disabled = true;
+            
+            try {
+                const response = await callAPI(content + '\n\n請繼續這個故事。');
+                if (response) {
+                    addParagraph(response, 'ai');
+                    showToast('AI 續寫完成', 'success', 2000);
+                }
+            } catch (error) {
+                showToast(`續寫失敗: ${error.message}`, 'error');
+            } finally {
+                state.isLoading = false;
+                el.sendBtn.classList.remove('loading');
+                el.sendBtn.disabled = false;
+            }
+        }
+
         async function performCheckpoint() {
-            if (currentDoc.paragraphs.length < 3) {
-                showToast('內容太少，請先寫一些故事再結算', 'warning');
+            if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 3) {
+                showToast('內容太少，請先寫一些故事', 'warning');
                 return;
             }
-
+            
             if (!state.globalSettings.apiKey) {
-                showToast('請先在設定中填入 API Key', 'error');
+                showToast('請先設定 API Key', 'error');
                 return;
             }
-
+            
             el.checkpointBtn.disabled = true;
             el.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
-
+            
             try {
-                const recentContent = currentDoc.paragraphs.slice(-10).map(p => p.content).join('\n\n');
-
-                const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊。
+                const recentContent = state.currentDoc.paragraphs
+                    .slice(-10)
+                    .map(p => p.content)
+                    .join('\n\n');
+                
+                const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊：
 
 【故事片段】
 ${recentContent}
@@ -2209,7 +2156,7 @@ ${recentContent}
     "外觀": "外觀描述"
   },
   "當前衝突": "主要衝突或張力",
-  "禁止發生的劇情": ["不應該發生的情節1", "情節2"]
+  "禁止發生的劇情": ["不應該發生的情節"]
 }
 
 2. "styleFingerprint" (文風指紋)：
@@ -2217,39 +2164,28 @@ ${recentContent}
   "敘事節奏": "描述節奏特點",
   "感官偏好": ["主要感官描寫類型"],
   "禁忌與張力處理": "如何處理敏感或緊張情節",
-  "關鍵語氣樣本": ["摘錄1-2個代表性句子"]
+  "關鍵語氣樣本": ["摘錄代表性句子"]
 }
 
-請直接回傳 JSON，不要加任何其他說明文字。`;
+請直接回傳 JSON，不要加任何其他說明。`;
 
                 const response = await callAPI(analysisPrompt);
-                let analysisResult;
-
-                try {
-                    const jsonMatch = response.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        analysisResult = JSON.parse(jsonMatch[0]);
-                    } else {
-                        throw new Error('無法解析回應');
+                
+                const jsonMatch = response.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
+                    
+                    if (result.storyAnchors) {
+                        el.storyAnchors.value = JSON.stringify(result.storyAnchors, null, 2);
                     }
-                } catch (parseError) {
-                    console.error('JSON parse error:', parseError);
-                    showToast('分析結果格式異常，請手動調整', 'warning');
-                    return;
+                    if (result.styleFingerprint) {
+                        el.styleFingerprint.value = JSON.stringify(result.styleFingerprint, null, 2);
+                    }
+                    
+                    autoSave();
+                    showToast('✨ 本章結算完成！', 'success');
                 }
-
-                if (analysisResult.storyAnchors) {
-                    el.storyAnchors.value = JSON.stringify(analysisResult.storyAnchors, null, 2);
-                }
-                if (analysisResult.styleFingerprint) {
-                    el.styleFingerprint.value = JSON.stringify(analysisResult.styleFingerprint, null, 2);
-                }
-
-                autoSaveDocument();
-                showToast('✨ 本章結算完成！記憶庫已更新', 'success');
-
             } catch (error) {
-                console.error('Checkpoint error:', error);
                 showToast(`結算失敗: ${error.message}`, 'error');
             } finally {
                 el.checkpointBtn.disabled = false;
@@ -2258,230 +2194,138 @@ ${recentContent}
         }
 
         // ============================================
-        // User Actions
+        // Settings Management
         // ============================================
-        async function handleSubmit() {
-            const userContent = el.inputField.value.trim();
-
-            if (!userContent) {
-                showToast('請輸入一些內容', 'warning');
-                return;
+        function loadGlobalSettings() {
+            const saved = loadFromStorage(STORAGE.GLOBAL_SETTINGS);
+            if (saved) {
+                state.globalSettings = { ...DEFAULT_GLOBAL_SETTINGS, ...saved };
             }
-
-            if (state.isLoading) return;
-
-            addParagraph(userContent, 'user');
-            el.inputField.value = '';
-
-            state.isLoading = true;
-            el.submitBtn.classList.add('loading');
-            el.submitBtn.disabled = true;
-
-            try {
-                const aiResponse = await callAPI(userContent + '\n\n請繼續這個故事。');
-
-                if (aiResponse) {
-                    addParagraph(aiResponse, 'ai');
-                    showToast('AI 續寫完成', 'success', 2000);
-                }
-            } catch (error) {
-                console.error('API Error:', error);
-                showToast(`續寫失敗: ${error.message}`, 'error');
-            } finally {
-                state.isLoading = false;
-                el.submitBtn.classList.remove('loading');
-                el.submitBtn.disabled = false;
-            }
+            
+            // Update UI
+            el.apiFormat.value = state.globalSettings.apiFormat;
+            el.apiEndpoint.value = state.globalSettings.apiEndpoint;
+            el.apiKey.value = state.globalSettings.apiKey;
+            el.modelName.value = state.globalSettings.modelName;
+            el.temperature.value = state.globalSettings.temperature;
+            el.tempValue.textContent = state.globalSettings.temperature;
         }
 
-        function handleExport() {
-            const title = currentDoc.title || '未命名文檔';
-            let content = `# ${title}\n\n`;
-
-            currentDoc.paragraphs.forEach(p => {
-                content += p.content + '\n\n';
-            });
-
-            content += '\n---\n';
-            content += `匯出時間: ${new Date().toLocaleString('zh-TW')}\n`;
-            content += `總字數: ${countWords(content)}\n`;
-            content += `段落數: ${currentDoc.paragraphs.length}\n`;
-
-            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${title}.md`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            showToast('文檔已匯出', 'success');
+        function saveGlobalSettings() {
+            state.globalSettings = {
+                apiFormat: el.apiFormat.value,
+                apiEndpoint: el.apiEndpoint.value,
+                apiKey: el.apiKey.value,
+                modelName: el.modelName.value,
+                temperature: el.temperature.value
+            };
+            saveToStorage(STORAGE.GLOBAL_SETTINGS, state.globalSettings);
+            showToast('設定已儲存', 'success');
         }
 
-        function handleClearData() {
-            showConfirmModal('清除所有資料', '確定要清除所有文檔與設定嗎？此操作無法復原。', () => {
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('moyun_')) {
-                        localStorage.removeItem(key);
-                    }
-                });
+        function clearAllData() {
+            showConfirmModal('清除所有資料', '確定要清除所有資料嗎？此操作無法復原。', () => {
+                // Clear all moyun_ keys
+                Object.keys(localStorage)
+                    .filter(k => k.startsWith('moyun_'))
+                    .forEach(k => localStorage.removeItem(k));
+                
+                hideConfirmModal();
                 location.reload();
             });
         }
 
         // ============================================
-        // Toast Notifications
+        // Auto-resize Textarea
         // ============================================
-        function showToast(message, type = 'info', duration = 4000) {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-
-            const icons = {
-                success: '✓',
-                error: '✕',
-                warning: '⚠',
-                info: 'ℹ'
-            };
-
-            toast.innerHTML = `
-                <span class="toast-icon">${icons[type]}</span>
-                <span class="toast-message">${message}</span>
-                <button class="toast-close">×</button>
-            `;
-
-            el.toastContainer.appendChild(toast);
-
-            toast.querySelector('.toast-close').addEventListener('click', () => {
-                removeToast(toast);
-            });
-
-            setTimeout(() => removeToast(toast), duration);
-        }
-
-        function removeToast(toast) {
-            toast.style.animation = 'slideOutRight 0.3s ease forwards';
-            setTimeout(() => toast.remove(), 300);
-        }
-
-        // ============================================
-        // Modal Management
-        // ============================================
-        let confirmCallback = null;
-
-        function showTitleModal() {
-            el.titleInput.value = currentDoc.title;
-            el.titleModal.classList.add('active');
-            el.titleInput.focus();
-        }
-
-        function hideTitleModal() {
-            el.titleModal.classList.remove('active');
-        }
-
-        function saveTitleEdit() {
-            const newTitle = el.titleInput.value.trim();
-            if (newTitle) {
-                el.documentTitle.value = newTitle;
-                el.navbarTitle.textContent = newTitle;
-                autoSaveDocument();
-            }
-            hideTitleModal();
-        }
-
-        function showConfirmModal(title, message, callback) {
-            el.confirmTitle.textContent = title;
-            el.confirmMessage.textContent = message;
-            el.confirmModal.classList.add('active');
-            confirmCallback = callback;
-        }
-
-        function hideConfirmModal() {
-            el.confirmModal.classList.remove('active');
-            confirmCallback = null;
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
         }
 
         // ============================================
         // Event Listeners
         // ============================================
         function initEventListeners() {
-            // Navbar
-            el.menuBtn.addEventListener('click', openLeftDrawer);
-            el.brainBtn.addEventListener('click', openBrainPanel);
-            el.navbarTitle.addEventListener('click', showTitleModal);
-
-            // Drawers
-            el.drawerOverlay.addEventListener('click', closeAllDrawers);
-            el.closeLeftDrawer.addEventListener('click', closeLeftDrawer);
-            el.closeBrainPanel.addEventListener('click', closeBrainPanel);
-
-            // Documents
+            // Navbar buttons
+            el.menuBtn.addEventListener('click', openDrawerLeft);
+            el.brainBtn.addEventListener('click', openPanelRight);
+            el.navTitle.addEventListener('click', showTitleModal);
+            
+            // Overlay
+            el.overlay.addEventListener('click', closeAllPanels);
+            
+            // Panel close
+            el.panelClose.addEventListener('click', closePanelRight);
+            
+            // New document
             el.newDocBtn.addEventListener('click', createDocument);
-
-            // Input
+            
+            // Checkpoint
+            el.checkpointBtn.addEventListener('click', performCheckpoint);
+            
+            // Settings
+            el.saveSettingsBtn.addEventListener('click', saveGlobalSettings);
+            el.clearAllBtn.addEventListener('click', clearAllData);
+            el.temperature.addEventListener('input', (e) => {
+                el.tempValue.textContent = e.target.value;
+            });
+            
+            // Editor title
+            el.editorTitle.addEventListener('input', () => {
+                el.navTitle.textContent = el.editorTitle.value || '未命名文檔';
+                autoSave();
+            });
+            
+            // Memory & settings auto-save
+            [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt].forEach(textarea => {
+                textarea.addEventListener('input', autoSave);
+            });
+            
+            // Input field
+            el.inputField.addEventListener('input', () => autoResizeTextarea(el.inputField));
             el.inputField.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     handleSubmit();
                 }
             });
-            el.submitBtn.addEventListener('click', handleSubmit);
-
-            // Document title
-            el.documentTitle.addEventListener('input', () => {
-                el.navbarTitle.textContent = el.documentTitle.value || '墨韻 MòYùn';
-                autoSaveDocument();
+            
+            // Send button
+            el.sendBtn.addEventListener('click', handleSubmit);
+            
+            // Title modal
+            el.titleModalClose.addEventListener('click', hideTitleModal);
+            el.titleModalCancel.addEventListener('click', hideTitleModal);
+            el.titleModalConfirm.addEventListener('click', () => {
+                const newTitle = el.titleModalInput.value.trim() || '未命名文檔';
+                el.editorTitle.value = newTitle;
+                el.navTitle.textContent = newTitle;
+                autoSave();
+                hideTitleModal();
             });
-
-            // Memory & Settings auto-save
-            el.storyAnchors.addEventListener('input', autoSaveDocument);
-            el.styleFingerprint.addEventListener('input', autoSaveDocument);
-            el.worldSetting.addEventListener('input', autoSaveDocument);
-            el.customPrompt.addEventListener('input', autoSaveDocument);
-
-            // Checkpoint
-            el.checkpointBtn.addEventListener('click', performCheckpoint);
-
-            // Settings
-            el.temperature.addEventListener('input', (e) => {
-                el.tempValue.textContent = e.target.value;
-            });
-
-            el.saveSettingsBtn.addEventListener('click', () => {
-                saveGlobalSettings();
-                showToast('設定已儲存', 'success');
-            });
-
-            el.clearDataBtn.addEventListener('click', handleClearData);
-
-            // Export
-            el.exportBtn.addEventListener('click', handleExport);
-
-            // Tabs
-            initTabs();
-
-            // Title Modal
-            el.closeTitleModal.addEventListener('click', hideTitleModal);
-            el.cancelTitleEdit.addEventListener('click', hideTitleModal);
-            el.saveTitleEdit.addEventListener('click', saveTitleEdit);
-            el.titleInput.addEventListener('keydown', (e) => {
+            el.titleModalInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveTitleEdit();
+                    el.titleModalConfirm.click();
                 }
             });
-
-            // Confirm Modal
-            el.closeConfirmModal.addEventListener('click', hideConfirmModal);
-            el.cancelConfirm.addEventListener('click', hideConfirmModal);
-            el.confirmAction.addEventListener('click', () => {
-                if (confirmCallback) {
-                    confirmCallback();
-                }
-                hideConfirmModal();
+            el.titleModal.addEventListener('click', (e) => {
+                if (e.target === el.titleModal) hideTitleModal();
             });
-
+            
+            // Confirm modal
+            el.confirmModalClose.addEventListener('click', hideConfirmModal);
+            el.confirmModalCancel.addEventListener('click', hideConfirmModal);
+            el.confirmModalConfirm.addEventListener('click', () => {
+                if (confirmCallback) confirmCallback();
+            });
+            el.confirmModal.addEventListener('click', (e) => {
+                if (e.target === el.confirmModal) hideConfirmModal();
+            });
+            
+            // Scroll behavior
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if (e.ctrlKey && e.key === 's') {
@@ -2489,6 +2333,16 @@ ${recentContent}
                     saveCurrentDocument();
                     showToast('已儲存', 'success', 1500);
                 }
+                if (e.key === 'Escape') {
+                    closeAllPanels();
+                    hideTitleModal();
+                    hideConfirmModal();
+                }
+            });
+            
+            // Before unload
+            window.addEventListener('beforeunload', () => {
+                saveCurrentDocument();
             });
         }
 
@@ -2496,35 +2350,35 @@ ${recentContent}
         // Initialization
         // ============================================
         function init() {
-            console.log(`墨韻 MòYùn v${APP_VERSION} 初始化中...`);
-
             // Load global settings
             loadGlobalSettings();
-
+            
             // Load document index
-            loadDocumentIndex();
-
-            // Load or create first document
-            if (state.documents.length > 0) {
-                const lastDoc = state.documents[0];
-                loadDocument(lastDoc.id);
-            } else {
+            state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+            
+            // Initialize or load document
+            if (state.docIndex.length === 0) {
+                // No documents - create first one
                 createDocument();
+            } else {
+                // Load most recent document
+                loadDocument(state.docIndex[0].id);
             }
-
+            
             // Initialize UI
+            initPanelTabs();
             initEventListeners();
-            updateDocumentList();
-            updateStats();
-
-            console.log('墨韻 MòYùn 已啟動');
-
+            renderDocList();
+            
+            console.log('墨韻 MòYùn v2.0 初始化完成');
+            
+            // Welcome toast
             if (!state.globalSettings.apiKey) {
-                showToast('歡迎使用墨韻！請先在設定中填入 API Key', 'info', 5000);
+                showToast('歡迎！請先在設定中填入 API Key', 'info', 5000);
             }
         }
 
-        // Start application
+        // Start
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
