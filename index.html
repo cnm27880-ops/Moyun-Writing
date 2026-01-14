@@ -28,7 +28,12 @@
     
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+
+    <!-- Firebase SDK (compat version for easier migration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
     <style>
         /* ============================================
            CSS Variables - Modern Zen (Mobile Optimized)
@@ -113,10 +118,12 @@
             font-family: var(--font-ui);
             background: var(--bg-app);
             color: var(--ink-primary);
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Custom Scrollbar */
@@ -139,8 +146,11 @@
            ============================================ */
         .app {
             position: relative;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         /* ============================================
@@ -922,20 +932,29 @@
            ============================================ */
         .main-content {
             padding-top: calc(var(--navbar-height) + var(--safe-area-top));
-            padding-bottom: calc(160px + var(--safe-area-bottom));
-            min-height: 100vh;
-            min-height: 100dvh;
+            padding-bottom: calc(var(--safe-area-bottom));
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .editor-container {
             max-width: 720px;
             margin: 0 auto;
             padding: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
         }
 
         @media (max-width: 767px) {
             .editor-container {
-                padding: var(--spacing-md);
+                padding: 0;
+                max-width: 100%;
             }
         }
 
@@ -944,13 +963,17 @@
             border-radius: 12px;
             box-shadow: var(--shadow-card);
             padding: var(--spacing-xl);
-            min-height: 50vh;
+            flex: 1;
+            min-height: 0;
         }
 
+        /* Mobile: Infinite paper - no side margins, full width */
         @media (max-width: 767px) {
             .editor-paper {
                 padding: var(--spacing-lg);
-                border-radius: 8px;
+                border-radius: 0;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+                margin: 0;
             }
         }
 
@@ -1039,25 +1062,34 @@
             padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
             z-index: var(--z-navbar);
             box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+            transition: transform var(--transition-smooth), opacity var(--transition-smooth);
+        }
+
+        .input-area.hidden-focus {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .input-wrapper {
             max-width: 720px;
             margin: 0 auto;
             display: flex;
+            flex-direction: column;
             gap: var(--spacing-sm);
-            align-items: flex-end;
+            width: 100%;
         }
 
         .input-field-wrapper {
             flex: 1;
             position: relative;
+            width: 100%;
         }
 
         .input-field {
             width: 100%;
             min-height: 48px;
-            max-height: 150px;
+            max-height: 50vh;
             padding: var(--spacing-sm) var(--spacing-md);
             font-family: var(--font-literary);
             font-size: 1rem;
@@ -1068,7 +1100,8 @@
             border-radius: 12px;
             resize: none;
             outline: none;
-            transition: border-color var(--transition-fast);
+            transition: border-color var(--transition-fast), height var(--transition-fast);
+            overflow-y: auto;
         }
 
         .input-field:focus {
@@ -1814,6 +1847,365 @@
         }
 
         /* ============================================
+           Text Selection Floating Menu
+           ============================================ */
+        .selection-menu {
+            position: fixed;
+            display: none;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: var(--spacing-xs);
+            gap: var(--spacing-xs);
+            z-index: var(--z-modal);
+            animation: menuFadeIn 0.15s ease;
+        }
+
+        .selection-menu.active {
+            display: flex;
+        }
+
+        @keyframes menuFadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .selection-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: none;
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .selection-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .selection-btn.refine:hover {
+            background: rgba(255, 193, 7, 0.15);
+            color: #F9A825;
+        }
+
+        .selection-btn.expand:hover {
+            background: rgba(76, 175, 80, 0.15);
+            color: #43A047;
+        }
+
+        .selection-btn.delete-text:hover {
+            background: rgba(199, 92, 92, 0.15);
+            color: var(--error);
+        }
+
+        .selection-btn .btn-icon {
+            font-size: 1rem;
+        }
+
+        /* ============================================
+           Focus Mode (Reading Mode)
+           ============================================ */
+        .focus-mode-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 12px;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .focus-mode-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .focus-mode-btn:active {
+            transform: scale(0.95);
+        }
+
+        .focus-mode-btn.active {
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        /* Eye Icon - Pure CSS */
+        .eye-icon {
+            width: 20px;
+            height: 14px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .eye-icon::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-radius: 75% 15%;
+            transform: rotate(0deg);
+            box-sizing: border-box;
+        }
+
+        .eye-icon::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: currentColor;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* ============================================
+           User Panel - Login/Sync Status
+           ============================================ */
+        .user-panel {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-paper);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            color: var(--ink-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+
+        .login-btn:hover {
+            border-color: var(--ink-secondary);
+            background: var(--bg-app);
+        }
+
+        /* Google Icon - Pure CSS */
+        .google-icon {
+            width: 18px;
+            height: 18px;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--ink-primary);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--border);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--ink-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+        }
+
+        .sync-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .sync-dot.syncing {
+            background: var(--warning);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .sync-dot.error {
+            background: var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .logout-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            color: var(--ink-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .logout-btn:hover {
+            background: rgba(199, 92, 92, 0.1);
+            color: var(--error);
+        }
+
+        /* Logout Icon - Pure CSS */
+        .logout-icon {
+            width: 16px;
+            height: 14px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .logout-icon::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-right: none;
+            border-radius: 3px 0 0 3px;
+            left: 0;
+            top: 0;
+            box-sizing: border-box;
+        }
+
+        .logout-icon::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 2px;
+            background: currentColor;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .logout-icon .arrow {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid currentColor;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+
+        /* Focus mode styles */
+        body.focus-mode .navbar {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.focus-mode .input-area {
+            transform: translateY(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.focus-mode .main-content {
+            padding-top: var(--spacing-lg);
+            padding-bottom: var(--spacing-lg);
+        }
+
+        /* Exit focus mode overlay */
+        .focus-mode-exit {
+            position: fixed;
+            inset: 0;
+            z-index: calc(var(--z-navbar) - 1);
+            cursor: pointer;
+            display: none;
+        }
+
+        body.focus-mode .focus-mode-exit {
+            display: block;
+        }
+
+        /* Focus mode hint */
+        .focus-hint {
+            position: fixed;
+            bottom: var(--spacing-lg);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--bg-paper);
+            border-radius: 20px;
+            box-shadow: var(--shadow-card);
+            font-size: 0.8rem;
+            color: var(--ink-muted);
+            opacity: 0;
+            transition: opacity var(--transition-smooth);
+            pointer-events: none;
+            z-index: var(--z-navbar);
+        }
+
+        body.focus-mode .focus-hint {
+            animation: hintFade 3s ease forwards;
+        }
+
+        @keyframes hintFade {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }
@@ -1832,6 +2224,9 @@
             <div class="navbar-title">
                 <span class="navbar-title-text" id="navTitle">未命名文檔</span>
             </div>
+            <button class="focus-mode-btn" id="focusModeBtn" aria-label="閱讀模式" title="閱讀模式">
+                <span class="eye-icon"></span>
+            </button>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
                 <span class="settings-icon">
                     <span class="tooth"></span>
@@ -1851,6 +2246,30 @@
             <div class="drawer-header">
                 <div class="drawer-logo">墨</div>
                 <span class="drawer-brand">墨韻 MòYùn</span>
+            </div>
+            <!-- User Panel - Login/Sync Status -->
+            <div class="user-panel" id="userPanel">
+                <!-- Logged Out State -->
+                <button class="login-btn" id="loginBtn">
+                    <span class="google-icon">G</span>
+                    <span>登入以同步</span>
+                </button>
+                <!-- Logged In State (hidden by default) -->
+                <div class="user-info hidden" id="userInfo">
+                    <div class="user-avatar" id="userAvatar">
+                        <img src="" alt="Avatar" id="userAvatarImg">
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">使用者</div>
+                        <div class="sync-status">
+                            <span class="sync-dot" id="syncDot"></span>
+                            <span id="syncText">已同步</span>
+                        </div>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn" title="登出">
+                        <span class="logout-icon"><span class="arrow"></span></span>
+                    </button>
+                </div>
             </div>
             <div class="drawer-content">
                 <button class="new-doc-btn" id="newDocBtn">
@@ -2054,7 +2473,7 @@
         </main>
 
         <!-- Input Area -->
-        <div class="input-area">
+        <div class="input-area" id="inputArea">
             <div class="input-wrapper">
                 <!-- Status Bar for Character Mindset -->
                 <div class="status-bar" id="statusBar">
@@ -2073,6 +2492,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Text Selection Menu -->
+        <div class="selection-menu" id="selectionMenu">
+            <button class="selection-btn refine" id="refineBtn">
+                <span class="btn-icon">✨</span>
+                <span>潤飾</span>
+            </button>
+            <button class="selection-btn expand" id="expandBtn">
+                <span class="btn-icon">➕</span>
+                <span>擴寫</span>
+            </button>
+            <button class="selection-btn delete-text" id="deleteTextBtn">
+                <span class="btn-icon">❌</span>
+                <span>刪除</span>
+            </button>
+        </div>
+
+        <!-- Focus Mode Exit Overlay -->
+        <div class="focus-mode-exit" id="focusModeExit"></div>
+        <div class="focus-hint">點擊任意處退出閱讀模式</div>
 
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
@@ -2113,6 +2552,327 @@
     </div>
 
     <script>
+        // ============================================
+        // Firebase Configuration
+        // ============================================
+        // 請填入您的 Firebase 專案設定
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase (only if config is set)
+        let firebaseApp = null;
+        let firebaseAuth = null;
+        let firebaseDB = null;
+
+        function isFirebaseConfigured() {
+            return firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY";
+        }
+
+        if (isFirebaseConfigured()) {
+            try {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+                firebaseAuth = firebase.auth();
+                firebaseDB = firebase.database();
+                console.log('✓ Firebase 初始化成功');
+            } catch (error) {
+                console.error('✗ Firebase 初始化失敗:', error);
+            }
+        } else {
+            console.log('ℹ Firebase 尚未設定，使用本地儲存模式');
+        }
+
+        // ============================================
+        // StorageManager - Hybrid Storage Class
+        // ============================================
+        class StorageManager {
+            constructor() {
+                this.user = null;
+                this.syncStatus = 'idle'; // idle, syncing, synced, error
+                this.listeners = [];
+            }
+
+            // Add listener for sync status changes
+            onSyncStatusChange(callback) {
+                this.listeners.push(callback);
+            }
+
+            // Notify listeners of sync status change
+            notifySyncStatus(status) {
+                this.syncStatus = status;
+                this.listeners.forEach(cb => cb(status));
+            }
+
+            // Set current user
+            setUser(user) {
+                this.user = user;
+            }
+
+            // Check if user is logged in
+            isLoggedIn() {
+                return this.user !== null;
+            }
+
+            // Get user ID
+            getUserId() {
+                return this.user?.uid || null;
+            }
+
+            // ============================================
+            // Local Storage Operations
+            // ============================================
+            saveLocal(key, data) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                    return true;
+                } catch (error) {
+                    console.error('Local save error:', error);
+                    return false;
+                }
+            }
+
+            loadLocal(key, defaultValue = null) {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : defaultValue;
+                } catch (error) {
+                    console.error('Local load error:', error);
+                    return defaultValue;
+                }
+            }
+
+            removeLocal(key) {
+                try {
+                    localStorage.removeItem(key);
+                    return true;
+                } catch (error) {
+                    console.error('Local remove error:', error);
+                    return false;
+                }
+            }
+
+            // ============================================
+            // Firebase Operations
+            // ============================================
+            async saveCloud(path, data) {
+                if (!this.isLoggedIn() || !firebaseDB) return false;
+
+                try {
+                    this.notifySyncStatus('syncing');
+                    const dataWithTimestamp = {
+                        ...data,
+                        _lastModified: Date.now()
+                    };
+                    await firebaseDB.ref(`users/${this.getUserId()}/${path}`).set(dataWithTimestamp);
+                    this.notifySyncStatus('synced');
+                    return true;
+                } catch (error) {
+                    console.error('Cloud save error:', error);
+                    this.notifySyncStatus('error');
+                    return false;
+                }
+            }
+
+            async loadCloud(path) {
+                if (!this.isLoggedIn() || !firebaseDB) return null;
+
+                try {
+                    const snapshot = await firebaseDB.ref(`users/${this.getUserId()}/${path}`).once('value');
+                    return snapshot.val();
+                } catch (error) {
+                    console.error('Cloud load error:', error);
+                    return null;
+                }
+            }
+
+            async removeCloud(path) {
+                if (!this.isLoggedIn() || !firebaseDB) return false;
+
+                try {
+                    await firebaseDB.ref(`users/${this.getUserId()}/${path}`).remove();
+                    return true;
+                } catch (error) {
+                    console.error('Cloud remove error:', error);
+                    return false;
+                }
+            }
+
+            // ============================================
+            // Hybrid Operations (Local + Cloud)
+            // ============================================
+            async save(key, data, cloudPath = null) {
+                // Always save to local
+                this.saveLocal(key, data);
+
+                // If logged in, also save to cloud
+                if (this.isLoggedIn() && cloudPath) {
+                    await this.saveCloud(cloudPath, data);
+                }
+            }
+
+            async load(key, cloudPath = null, defaultValue = null) {
+                const localData = this.loadLocal(key, defaultValue);
+
+                // If not logged in, return local data
+                if (!this.isLoggedIn() || !cloudPath) {
+                    return localData;
+                }
+
+                // If logged in, try to get cloud data
+                const cloudData = await this.loadCloud(cloudPath);
+
+                if (!cloudData) {
+                    return localData;
+                }
+
+                // Compare timestamps and return newer data
+                const localTimestamp = localData?._lastModified || 0;
+                const cloudTimestamp = cloudData?._lastModified || 0;
+
+                if (cloudTimestamp > localTimestamp) {
+                    // Cloud is newer, update local
+                    this.saveLocal(key, cloudData);
+                    return cloudData;
+                } else if (localTimestamp > cloudTimestamp && localData) {
+                    // Local is newer, update cloud
+                    await this.saveCloud(cloudPath, localData);
+                    return localData;
+                }
+
+                return localData || cloudData;
+            }
+
+            async remove(key, cloudPath = null) {
+                this.removeLocal(key);
+                if (this.isLoggedIn() && cloudPath) {
+                    await this.removeCloud(cloudPath);
+                }
+            }
+
+            // ============================================
+            // Full Sync Operation
+            // ============================================
+            async syncAllData() {
+                if (!this.isLoggedIn()) return;
+
+                this.notifySyncStatus('syncing');
+
+                try {
+                    // Sync global settings
+                    await this.syncSettings();
+
+                    // Sync document index
+                    await this.syncDocIndex();
+
+                    // Sync world library
+                    await this.syncWorldLibrary();
+
+                    this.notifySyncStatus('synced');
+                    return true;
+                } catch (error) {
+                    console.error('Full sync error:', error);
+                    this.notifySyncStatus('error');
+                    return false;
+                }
+            }
+
+            async syncSettings() {
+                const localSettings = this.loadLocal(STORAGE.GLOBAL_SETTINGS);
+                const cloudSettings = await this.loadCloud('settings');
+
+                if (cloudSettings && !localSettings) {
+                    this.saveLocal(STORAGE.GLOBAL_SETTINGS, cloudSettings);
+                    return cloudSettings;
+                } else if (localSettings && !cloudSettings) {
+                    await this.saveCloud('settings', localSettings);
+                    return localSettings;
+                } else if (localSettings && cloudSettings) {
+                    // Compare and use newer
+                    const localTime = localSettings._lastModified || 0;
+                    const cloudTime = cloudSettings._lastModified || 0;
+
+                    if (cloudTime > localTime) {
+                        this.saveLocal(STORAGE.GLOBAL_SETTINGS, cloudSettings);
+                        return cloudSettings;
+                    } else {
+                        await this.saveCloud('settings', localSettings);
+                        return localSettings;
+                    }
+                }
+                return localSettings;
+            }
+
+            async syncDocIndex() {
+                const localIndex = this.loadLocal(STORAGE.DOC_INDEX, []);
+                const cloudIndex = await this.loadCloud('docs/index');
+
+                if (!cloudIndex && localIndex.length > 0) {
+                    // Upload local docs to cloud
+                    await this.saveCloud('docs/index', localIndex);
+                    for (const doc of localIndex) {
+                        const docData = this.loadLocal(STORAGE.DOC_PREFIX + doc.id);
+                        if (docData) {
+                            await this.saveCloud(`docs/${doc.id}`, docData);
+                        }
+                    }
+                } else if (cloudIndex && localIndex.length === 0) {
+                    // Download cloud docs to local
+                    this.saveLocal(STORAGE.DOC_INDEX, cloudIndex);
+                    for (const doc of cloudIndex) {
+                        const docData = await this.loadCloud(`docs/${doc.id}`);
+                        if (docData) {
+                            this.saveLocal(STORAGE.DOC_PREFIX + doc.id, docData);
+                        }
+                    }
+                } else if (cloudIndex && localIndex.length > 0) {
+                    // Merge: combine unique docs from both
+                    const mergedIndex = [...localIndex];
+                    const localIds = new Set(localIndex.map(d => d.id));
+
+                    for (const cloudDoc of cloudIndex) {
+                        if (!localIds.has(cloudDoc.id)) {
+                            mergedIndex.push(cloudDoc);
+                            const docData = await this.loadCloud(`docs/${cloudDoc.id}`);
+                            if (docData) {
+                                this.saveLocal(STORAGE.DOC_PREFIX + cloudDoc.id, docData);
+                            }
+                        }
+                    }
+
+                    // Sort by last modified
+                    mergedIndex.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
+
+                    this.saveLocal(STORAGE.DOC_INDEX, mergedIndex);
+                    await this.saveCloud('docs/index', mergedIndex);
+                }
+            }
+
+            async syncWorldLibrary() {
+                const localLibrary = this.loadLocal(STORAGE.WORLD_LIBRARY, {});
+                const cloudLibrary = await this.loadCloud('worldLibrary');
+
+                if (cloudLibrary && Object.keys(localLibrary).length === 0) {
+                    this.saveLocal(STORAGE.WORLD_LIBRARY, cloudLibrary);
+                } else if (Object.keys(localLibrary).length > 0 && !cloudLibrary) {
+                    await this.saveCloud('worldLibrary', localLibrary);
+                } else if (cloudLibrary && Object.keys(localLibrary).length > 0) {
+                    // Merge libraries
+                    const merged = { ...cloudLibrary, ...localLibrary };
+                    this.saveLocal(STORAGE.WORLD_LIBRARY, merged);
+                    await this.saveCloud('worldLibrary', merged);
+                }
+            }
+        }
+
+        // Create global storage manager instance
+        const storageManager = new StorageManager();
+
         // ============================================
         // Constants & Storage Keys
         // ============================================
@@ -2321,7 +3081,31 @@
             confirmModalMessage: $('confirmModalMessage'),
             confirmModalClose: $('confirmModalClose'),
             confirmModalCancel: $('confirmModalCancel'),
-            confirmModalConfirm: $('confirmModalConfirm')
+            confirmModalConfirm: $('confirmModalConfirm'),
+
+            // Focus Mode
+            focusModeBtn: $('focusModeBtn'),
+            focusModeExit: $('focusModeExit'),
+
+            // Selection Menu
+            selectionMenu: $('selectionMenu'),
+            refineBtn: $('refineBtn'),
+            expandBtn: $('expandBtn'),
+            deleteTextBtn: $('deleteTextBtn'),
+
+            // Input Area
+            inputArea: $('inputArea'),
+
+            // User Panel (Cloud Sync)
+            userPanel: $('userPanel'),
+            loginBtn: $('loginBtn'),
+            userInfo: $('userInfo'),
+            userAvatar: $('userAvatar'),
+            userAvatarImg: $('userAvatarImg'),
+            userName: $('userName'),
+            syncDot: $('syncDot'),
+            syncText: $('syncText'),
+            logoutBtn: $('logoutBtn')
         };
 
         // ============================================
@@ -2367,11 +3151,34 @@
         }
 
         // ============================================
-        // Storage Functions
+        // Storage Functions (with Cloud Sync)
         // ============================================
+        function getCloudPath(key) {
+            // Map local storage keys to cloud paths
+            if (key === STORAGE.GLOBAL_SETTINGS) return 'settings';
+            if (key === STORAGE.DOC_INDEX) return 'docs/index';
+            if (key === STORAGE.WORLD_LIBRARY) return 'worldLibrary';
+            if (key.startsWith(STORAGE.DOC_PREFIX)) {
+                const docId = key.replace(STORAGE.DOC_PREFIX, '');
+                return `docs/${docId}`;
+            }
+            return null;
+        }
+
         function saveToStorage(key, data) {
             try {
-                localStorage.setItem(key, JSON.stringify(data));
+                // Add timestamp for sync comparison
+                const dataWithTimestamp = {
+                    ...data,
+                    _lastModified: Date.now()
+                };
+                localStorage.setItem(key, JSON.stringify(dataWithTimestamp));
+
+                // If logged in, also sync to cloud
+                const cloudPath = getCloudPath(key);
+                if (storageManager.isLoggedIn() && cloudPath) {
+                    storageManager.saveCloud(cloudPath, dataWithTimestamp);
+                }
             } catch (e) {
                 console.error('Storage save error:', e);
                 showToast('儲存失敗', 'error');
@@ -2391,6 +3198,12 @@
         function removeFromStorage(key) {
             try {
                 localStorage.removeItem(key);
+
+                // If logged in, also remove from cloud
+                const cloudPath = getCloudPath(key);
+                if (storageManager.isLoggedIn() && cloudPath) {
+                    storageManager.removeCloud(cloudPath);
+                }
             } catch (e) {
                 console.error('Storage remove error:', e);
             }
@@ -3694,7 +4507,282 @@ ${recentContent}
         // ============================================
         function autoResizeTextarea(textarea) {
             textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+            const maxHeight = window.innerHeight * 0.5; // 50vh max
+            textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+        }
+
+        // ============================================
+        // Focus Mode (Reading Mode)
+        // ============================================
+        let isFocusMode = false;
+
+        function toggleFocusMode() {
+            isFocusMode = !isFocusMode;
+            document.body.classList.toggle('focus-mode', isFocusMode);
+            el.focusModeBtn.classList.toggle('active', isFocusMode);
+        }
+
+        function exitFocusMode() {
+            if (isFocusMode) {
+                isFocusMode = false;
+                document.body.classList.remove('focus-mode');
+                el.focusModeBtn.classList.remove('active');
+            }
+        }
+
+        // ============================================
+        // Text Selection Menu
+        // ============================================
+        let selectedText = '';
+        let selectedRange = null;
+
+        function showSelectionMenu(x, y) {
+            const menu = el.selectionMenu;
+            menu.classList.add('active');
+
+            // Position menu near selection
+            const menuRect = menu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Adjust position to keep menu in viewport
+            let posX = x - menuRect.width / 2;
+            let posY = y - menuRect.height - 10;
+
+            if (posX < 10) posX = 10;
+            if (posX + menuRect.width > viewportWidth - 10) {
+                posX = viewportWidth - menuRect.width - 10;
+            }
+            if (posY < 10) {
+                posY = y + 25; // Show below if no room above
+            }
+
+            menu.style.left = posX + 'px';
+            menu.style.top = posY + 'px';
+        }
+
+        function hideSelectionMenu() {
+            el.selectionMenu.classList.remove('active');
+        }
+
+        function handleTextSelection() {
+            const selection = window.getSelection();
+            const text = selection.toString().trim();
+
+            if (text.length > 0 && el.editorBody.contains(selection.anchorNode)) {
+                selectedText = text;
+                selectedRange = selection.getRangeAt(0).cloneRange();
+
+                // Get selection coordinates
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top;
+
+                showSelectionMenu(x, y);
+            } else {
+                hideSelectionMenu();
+                selectedText = '';
+                selectedRange = null;
+            }
+        }
+
+        function deleteSelectedText() {
+            if (selectedRange && state.currentDoc) {
+                // Find and update the paragraph containing the selection
+                const paragraphs = state.currentDoc.paragraphs;
+                const selectionText = selectedText;
+
+                for (let i = 0; i < paragraphs.length; i++) {
+                    if (paragraphs[i].content.includes(selectionText)) {
+                        paragraphs[i].content = paragraphs[i].content.replace(selectionText, '');
+                        break;
+                    }
+                }
+
+                renderEditor();
+                autoSave();
+                hideSelectionMenu();
+                showToast('已刪除選取文字', 'success', 1500);
+            }
+        }
+
+        async function refineSelectedText() {
+            if (!selectedText || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            hideSelectionMenu();
+            showToast('正在潤飾文字...', 'info', 2000);
+
+            const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+            try {
+                const response = await callAPI([{ role: 'user', content: prompt }]);
+                if (response && state.currentDoc) {
+                    const paragraphs = state.currentDoc.paragraphs;
+                    for (let i = 0; i < paragraphs.length; i++) {
+                        if (paragraphs[i].content.includes(selectedText)) {
+                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            break;
+                        }
+                    }
+                    renderEditor();
+                    autoSave();
+                    showToast('潤飾完成', 'success', 1500);
+                }
+            } catch (error) {
+                showToast('潤飾失敗：' + error.message, 'error');
+            }
+        }
+
+        async function expandSelectedText() {
+            if (!selectedText || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            hideSelectionMenu();
+            showToast('正在擴寫文字...', 'info', 2000);
+
+            const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+            try {
+                const response = await callAPI([{ role: 'user', content: prompt }]);
+                if (response && state.currentDoc) {
+                    const paragraphs = state.currentDoc.paragraphs;
+                    for (let i = 0; i < paragraphs.length; i++) {
+                        if (paragraphs[i].content.includes(selectedText)) {
+                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            break;
+                        }
+                    }
+                    renderEditor();
+                    autoSave();
+                    showToast('擴寫完成', 'success', 1500);
+                }
+            } catch (error) {
+                showToast('擴寫失敗：' + error.message, 'error');
+            }
+        }
+
+        // ============================================
+        // Authentication Functions
+        // ============================================
+        async function signInWithGoogle() {
+            if (!firebaseAuth) {
+                showToast('Firebase 尚未設定，請先填入設定', 'warning');
+                return;
+            }
+
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await firebaseAuth.signInWithPopup(provider);
+                console.log('✓ 登入成功:', result.user.email);
+            } catch (error) {
+                console.error('登入失敗:', error);
+                if (error.code === 'auth/popup-closed-by-user') {
+                    showToast('登入已取消', 'info');
+                } else {
+                    showToast('登入失敗：' + error.message, 'error');
+                }
+            }
+        }
+
+        async function signOut() {
+            if (!firebaseAuth) return;
+
+            try {
+                await firebaseAuth.signOut();
+                console.log('✓ 已登出');
+                showToast('已登出', 'info');
+            } catch (error) {
+                console.error('登出失敗:', error);
+                showToast('登出失敗', 'error');
+            }
+        }
+
+        function updateUserUI(user) {
+            if (user) {
+                // Logged in
+                el.loginBtn.classList.add('hidden');
+                el.userInfo.classList.remove('hidden');
+                el.userName.textContent = user.displayName || user.email;
+                if (user.photoURL) {
+                    el.userAvatarImg.src = user.photoURL;
+                } else {
+                    el.userAvatarImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="35" r="25" fill="%23888"/><circle cx="50" cy="100" r="40" fill="%23888"/></svg>';
+                }
+            } else {
+                // Logged out
+                el.loginBtn.classList.remove('hidden');
+                el.userInfo.classList.add('hidden');
+            }
+        }
+
+        function updateSyncStatusUI(status) {
+            const dot = el.syncDot;
+            const text = el.syncText;
+
+            dot.classList.remove('syncing', 'error');
+
+            switch (status) {
+                case 'syncing':
+                    dot.classList.add('syncing');
+                    text.textContent = '同步中...';
+                    break;
+                case 'synced':
+                    text.textContent = '已同步';
+                    break;
+                case 'error':
+                    dot.classList.add('error');
+                    text.textContent = '同步失敗';
+                    break;
+                default:
+                    text.textContent = '已同步';
+            }
+        }
+
+        // Initialize Auth State Listener
+        function initAuthListener() {
+            if (!firebaseAuth) {
+                // Firebase not configured, hide login panel or show message
+                return;
+            }
+
+            firebaseAuth.onAuthStateChanged(async (user) => {
+                storageManager.setUser(user);
+                updateUserUI(user);
+
+                if (user) {
+                    showToast('歡迎回來，' + (user.displayName || '使用者'), 'success');
+
+                    // Sync all data
+                    await storageManager.syncAllData();
+
+                    // Reload current document state
+                    state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+                    renderDocList();
+
+                    if (state.docIndex.length > 0) {
+                        loadDocument(state.docIndex[0].id);
+                    }
+
+                    // Reload global settings
+                    loadGlobalSettings();
+                    renderWorldLibrarySelect();
+                }
+            });
+
+            // Listen for sync status changes
+            storageManager.onSyncStatusChange(updateSyncStatusUI);
         }
 
         // ============================================
@@ -3708,7 +4796,11 @@ ${recentContent}
             
             // Overlay
             el.overlay.addEventListener('click', closeAllPanels);
-            
+
+            // Login/Logout
+            el.loginBtn.addEventListener('click', signInWithGoogle);
+            el.logoutBtn.addEventListener('click', signOut);
+
             // Panel close
             el.panelClose.addEventListener('click', closePanelRight);
             
@@ -3786,6 +4878,24 @@ ${recentContent}
             // Scroll behavior
             window.addEventListener('scroll', handleScroll, { passive: true });
             
+            // Focus Mode
+            el.focusModeBtn.addEventListener('click', toggleFocusMode);
+            el.focusModeExit.addEventListener('click', exitFocusMode);
+
+            // Selection Menu
+            document.addEventListener('mouseup', debounce(handleTextSelection, 100));
+            document.addEventListener('touchend', debounce(handleTextSelection, 100));
+            el.deleteTextBtn.addEventListener('click', deleteSelectedText);
+            el.refineBtn.addEventListener('click', refineSelectedText);
+            el.expandBtn.addEventListener('click', expandSelectedText);
+
+            // Hide selection menu on click outside
+            document.addEventListener('mousedown', (e) => {
+                if (!el.selectionMenu.contains(e.target)) {
+                    hideSelectionMenu();
+                }
+            });
+
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if (e.ctrlKey && e.key === 's') {
@@ -3797,6 +4907,8 @@ ${recentContent}
                     closeAllPanels();
                     hideTitleModal();
                     hideConfirmModal();
+                    exitFocusMode();
+                    hideSelectionMenu();
                 }
             });
             
@@ -3830,8 +4942,9 @@ ${recentContent}
             initEventListeners();
             renderDocList();
             renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
-            
-            console.log('墨韻 MòYùn v2.0 初始化完成');
+            initAuthListener();  // 初始化 Firebase 認證監聽
+
+            console.log('墨韻 MòYùn v2.1 初始化完成 (支援雲端同步)');
             
             // Welcome toast
             if (!state.globalSettings.apiKey) {
