@@ -278,120 +278,6 @@
             character.autoSync = enabled;
             autoSave();
         }
-        function bindCharacterEvents() {
-            // 角色名稱輸入
-            el.characterList.querySelectorAll('.character-name-input').forEach(input => {
-                input.addEventListener('blur', () => {
-                    updateCharacterName(input.dataset.characterId, input.value);
-                });
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        input.blur();
-                    }
-                });
-            });
-
-            // 角色操作按鈕
-            el.characterList.querySelectorAll('.character-action-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const action = btn.dataset.action;
-                    const characterId = btn.dataset.characterId;
-
-                    if (action === 'focus') {
-                        setFocusCharacter(characterId);
-                    } else if (action === 'delete') {
-                        deleteCharacter(characterId);
-                    }
-                });
-            });
-
-            // 自動同步開關
-            el.characterList.querySelectorAll('[data-action="auto-sync"]').forEach(checkbox => {
-                checkbox.addEventListener('change', () => {
-                    toggleCharacterAutoSync(checkbox.dataset.characterId, checkbox.checked);
-                });
-            });
-
-            // 立即分析按鈕
-            el.characterList.querySelectorAll('[data-action="analyze"]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    analyzeCharacterState(btn.dataset.characterId);
-                });
-            });
-
-            // 動力 Checkbox
-            el.characterList.querySelectorAll('.drive-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', () => {
-                    const characterId = checkbox.dataset.characterId;
-                    const driveId = checkbox.dataset.driveId;
-                    const driveItem = checkbox.closest('.drive-item');
-                    const slider = driveItem.querySelector('.drive-slider');
-
-                    driveItem.classList.toggle('active', checkbox.checked);
-                    updateCharacterDrive(characterId, driveId, parseInt(slider.value), checkbox.checked);
-                });
-            });
-
-            // 動力滑桿
-            el.characterList.querySelectorAll('.drive-slider').forEach(slider => {
-                // 設置滑桿顏色
-                const driveId = slider.dataset.driveId;
-                const drive = CORE_DRIVES[driveId];
-                slider.style.setProperty('--thumb-color', drive.color);
-
-                // 添加動態 style 來設置滑桿顏色
-                const updateSliderStyle = () => {
-                    slider.style.background = `linear-gradient(to right, ${drive.color} 0%, ${drive.color} ${slider.value}%, var(--border) ${slider.value}%, var(--border) 100%)`;
-                };
-                updateSliderStyle();
-
-                slider.addEventListener('mousedown', () => {
-                    state.isSliderDragging = true;
-                });
-
-                slider.addEventListener('mouseup', () => {
-                    state.isSliderDragging = false;
-                });
-
-                slider.addEventListener('input', () => {
-                    const valueDisplay = slider.parentElement.querySelector('.drive-value');
-                    valueDisplay.textContent = slider.value + '%';
-                    updateSliderStyle();
-
-                    const characterId = slider.dataset.characterId;
-                    const driveId = slider.dataset.driveId;
-                    const checkbox = slider.closest('.drive-item').querySelector('.drive-checkbox');
-
-                    if (checkbox.checked) {
-                        updateCharacterDrive(characterId, driveId, parseInt(slider.value), true);
-                    }
-                });
-            });
-        }
-
-        function updateStatusBar() {
-            const focusCharacter = state.currentDoc?.characters?.find(
-                c => c.id === state.currentDoc.focusCharacterId
-            );
-
-            if (!focusCharacter || Object.keys(focusCharacter.drives).length === 0) {
-                el.statusBar.classList.remove('active');
-                return;
-            }
-
-            el.statusBar.classList.add('active');
-            el.statusFocus.innerHTML = `🎥 焦點：${escapeHtml(focusCharacter.name)}`;
-
-            // 生成動力標籤（按權重排序）
-            const sortedDrives = Object.entries(focusCharacter.drives)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 4);  // 最多顯示 4 個
-
-            el.statusDrives.innerHTML = sortedDrives.map(([driveId, value]) => {
-                const drive = CORE_DRIVES[driveId];
-                return `<span class="status-drive-tag">${drive.icon}${drive.name.slice(0,2)} ${value}%</span>`;
-            }).join('');
-        }
         async function analyzeCharacterState(characterId) {
             const character = state.currentDoc?.characters?.find(c => c.id === characterId);
             if (!character) return;
@@ -817,44 +703,7 @@ ${drivesDescription}
             updateStyleTagsUI();
         }
 
-        function updateStyleTagsUI() {
-            if (!el.styleTagBar) return;
-            el.styleTagBar.querySelectorAll('.style-tag').forEach(btn => {
-                const tagId = btn.dataset.style;
-                if (state.activeStyleTags.has(tagId)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        function toggleDirectorMode() {
-            state.directorMode = !state.directorMode;
-            updateDirectorModeUI();
-            // 顯示 Toast 提示
-            if (state.directorMode) {
-                showToast('🎬 導演模式：輸入指令來控制劇情', 'info', 2000);
-            }
-        }
-
-        function updateDirectorModeUI() {
-            if (!el.directorModeToggle || !el.inputField) return;
-
-            if (state.directorMode) {
-                el.directorModeToggle.classList.add('active');
-                if (el.inputFieldWrapper) {
-                    el.inputFieldWrapper.classList.add('director-mode');
-                }
-                el.inputField.placeholder = '輸入劇情指令 (System Instruction)...';
-            } else {
-                el.directorModeToggle.classList.remove('active');
-                if (el.inputFieldWrapper) {
-                    el.inputFieldWrapper.classList.remove('director-mode');
-                }
-                el.inputField.placeholder = '繼續你的故事...';
-            }
-        }
+        // updateStyleTagsUI, toggleDirectorMode, updateDirectorModeUI 已統一移至 ui.js
 
         function getActiveStylePrompts() {
             const prompts = [];
@@ -1006,23 +855,7 @@ ${recentContent}
             saveToStorage(STORAGE.WORLD_LIBRARY, library);
         }
 
-        function renderWorldLibrarySelect() {
-            const rawLibrary = loadWorldLibrary();
-            const select = el.worldLibrarySelect;
-
-            // 保留第一个默认选项，清除其他
-            select.innerHTML = '<option value="">-- 從圖書館選擇 --</option>';
-
-            // 確保資料是陣列格式（相容 LocalStorage Array 和 Firebase Object）
-            const library = Array.isArray(rawLibrary) ? rawLibrary : Object.values(rawLibrary || {});
-
-            library.forEach(world => {
-                const option = document.createElement('option');
-                option.value = world.id;
-                option.textContent = world.name;
-                select.appendChild(option);
-            });
-        }
+        // renderWorldLibrarySelect 已統一移至 ui.js
 
         function loadWorldFromLibrary(worldId) {
             if (!worldId) {
@@ -1319,9 +1152,9 @@ ${recentContent}
                         // 獲取選取範圍的座標
                         const rect = range.getBoundingClientRect();
 
-                        // 計算選單顯示位置（選取範圍的中心點）
+                        // 計算選單顯示位置（選取範圍的中心點，使用視窗座標）
                         const x = rect.left + rect.width / 2;
-                        const y = rect.top + window.scrollY;
+                        const y = rect.top; // 不需加 scrollY，因為選單使用 position: fixed
 
                         console.log('📝 文字選取:', text.substring(0, 30) + '...', '座標:', x, y);
                         showSelectionMenu(x, y);
@@ -1349,7 +1182,7 @@ ${recentContent}
                     }
                 }
 
-                renderEditor();
+                renderParagraphs();
                 autoSave();
                 hideSelectionMenu();
                 showToast('已刪除選取文字', 'success', 1500);
@@ -1380,7 +1213,7 @@ ${selectedText}`;
                             break;
                         }
                     }
-                    renderEditor();
+                    renderParagraphs();
                     autoSave();
                     showToast('潤飾完成', 'success', 1500);
                 }
@@ -1413,7 +1246,7 @@ ${selectedText}`;
                             break;
                         }
                     }
-                    renderEditor();
+                    renderParagraphs();
                     autoSave();
                     showToast('擴寫完成', 'success', 1500);
                 }
