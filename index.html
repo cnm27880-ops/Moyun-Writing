@@ -2754,6 +2754,24 @@
             // ============================================
             saveLocal(key, data) {
                 try {
+                    // 防呆機制：保護 docIndex 不被空陣列意外覆蓋
+                    if (key === STORAGE.DOC_INDEX) {
+                        if (Array.isArray(data) && data.length === 0) {
+                            const existingData = localStorage.getItem(key);
+                            if (existingData) {
+                                try {
+                                    const existing = JSON.parse(existingData);
+                                    if (Array.isArray(existing) && existing.length > 0) {
+                                        console.warn('StorageManager.saveLocal: 阻止空陣列覆蓋現有 docIndex 資料');
+                                        return false; // 拒絕寫入
+                                    }
+                                } catch (e) {
+                                    // 如果解析失敗，允許寫入
+                                }
+                            }
+                        }
+                    }
+
                     localStorage.setItem(key, JSON.stringify(data));
                     return true;
                 } catch (error) {
@@ -2849,34 +2867,37 @@
             }
 
             async load(key, cloudPath = null, defaultValue = null) {
+                // Local-First 原則：永遠優先讀取本地數據
                 const localData = this.loadLocal(key, defaultValue);
 
-                // If not logged in, return local data
+                // 如果未登入或沒有指定雲端路徑，直接返回本地數據
                 if (!this.isLoggedIn() || !cloudPath) {
                     return localData;
                 }
 
-                // If logged in, try to get cloud data
+                // 如果已登入，嘗試獲取雲端數據進行比對
                 const cloudData = await this.loadCloud(cloudPath);
 
+                // 如果雲端沒有數據，返回本地數據
                 if (!cloudData) {
                     return localData;
                 }
 
-                // Compare timestamps and return newer data
+                // 比較時間戳，使用較新的數據
                 const localTimestamp = localData?._lastModified || 0;
                 const cloudTimestamp = cloudData?._lastModified || 0;
 
                 if (cloudTimestamp > localTimestamp) {
-                    // Cloud is newer, update local
+                    // 雲端較新，更新本地並返回
                     this.saveLocal(key, cloudData);
                     return cloudData;
                 } else if (localTimestamp > cloudTimestamp && localData) {
-                    // Local is newer, update cloud
+                    // 本地較新，更新雲端並返回
                     await this.saveCloud(cloudPath, localData);
                     return localData;
                 }
 
+                // 時間戳相同或無法比較時，優先返回本地數據
                 return localData || cloudData;
             }
 
@@ -2954,6 +2975,12 @@
             }
 
             async syncDocIndex() {
+                // 未登入時直接返回，不執行任何同步邏輯
+                if (!this.isLoggedIn()) {
+                    console.log('syncDocIndex: 未登入，跳過同步');
+                    return;
+                }
+
                 const localIndex = this.loadLocal(STORAGE.DOC_INDEX, []);
                 const cloudIndex = await this.loadCloud('docs/index');
 
@@ -3402,6 +3429,24 @@
 
         function saveToStorage(key, data) {
             try {
+                // 防呆機制：保護 docIndex 不被空陣列意外覆蓋
+                if (key === STORAGE.DOC_INDEX) {
+                    if (Array.isArray(data) && data.length === 0) {
+                        const existingData = localStorage.getItem(key);
+                        if (existingData) {
+                            try {
+                                const existing = JSON.parse(existingData);
+                                if (Array.isArray(existing) && existing.length > 0) {
+                                    console.warn('saveToStorage: 阻止空陣列覆蓋現有 docIndex 資料');
+                                    return; // 拒絕寫入
+                                }
+                            } catch (e) {
+                                // 如果解析失敗，允許寫入
+                            }
+                        }
+                    }
+                }
+
                 // Add timestamp for sync comparison
                 const dataWithTimestamp = {
                     ...data,
@@ -5494,6 +5539,12 @@ ${selectedText}`;
         }
 
         function init() {
+            // ============================================
+            // Local-First 原則：優先載入本地資料
+            // 無論是否登入，都先從 LocalStorage 載入並顯示內容
+            // 雲端同步在背景執行，不阻塞初始化
+            // ============================================
+
             // Load global settings
             loadGlobalSettings();
 
@@ -5509,13 +5560,16 @@ ${selectedText}`;
                 // Load most recent document
                 loadDocument(state.docIndex[0].id);
             }
-            
+
             // Initialize UI
             initPanelTabs();
             initEventListeners();
             renderDocList();
             renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
-            initAuthListener();  // 初始化 Firebase 認證監聽
+
+            // 初始化 Firebase 認證監聽（背景執行，不阻塞初始化）
+            // Auth 狀態變更時才會觸發雲端同步
+            initAuthListener();
 
             console.log('墨韻 MòYùn v2.1 初始化完成 (支援雲端同步)');
 
