@@ -562,6 +562,95 @@ ${drivesList}
         }
 
         // ============================================
+        // Inspiration Drawer - 靈感抽屜 (隨機衝突產生器)
+        // ============================================
+        async function generateConflict() {
+            const focusCharacter = state.currentDoc?.characters?.find(
+                c => c.id === state.currentDoc?.focusCharacterId
+            );
+
+            // 檢查是否有焦點角色
+            if (!focusCharacter) {
+                showToast('請先建立並選擇一個焦點角色', 'warning');
+                return;
+            }
+
+            // 檢查角色是否有驅動力設定
+            if (!focusCharacter.drives || Object.keys(focusCharacter.drives).length === 0) {
+                showToast('請先為焦點角色設定心理驅動力', 'warning');
+                return;
+            }
+
+            // 檢查 API Key
+            if (!state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'error');
+                return;
+            }
+
+            const inspirationContent = document.getElementById('inspirationContent');
+            const generateBtn = document.getElementById('generateConflictBtn');
+
+            // 顯示載入狀態
+            inspirationContent.innerHTML = '<div class="inspiration-loading">✨ 正在生成劇情靈感...</div>';
+            generateBtn.disabled = true;
+            generateBtn.textContent = '生成中...';
+
+            try {
+                // 獲取驅動力數據並排序
+                const drives = Object.entries(focusCharacter.drives)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([driveId, value]) => ({
+                        id: driveId,
+                        name: CORE_DRIVES[driveId].name,
+                        value: value,
+                        prompt: CORE_DRIVES[driveId].prompt
+                    }));
+
+                // 取前兩個最高的驅動力作為衝突來源
+                const primaryDrive = drives[0];
+                const secondaryDrive = drives[1] || drives[0]; // 如果只有一個驅動力，使用相同的
+
+                // 構建提示
+                const conflictPrompt = `你是一位專業的劇情顧問。請根據角色的心理驅動力，生成一個兩難的劇情衝突場景。
+
+【角色資訊】
+角色名稱：${escapeHtml(focusCharacter.name)}
+主導驅動力：${primaryDrive.name} (${primaryDrive.value}%) - ${primaryDrive.prompt}
+次要驅動力：${secondaryDrive.name} (${secondaryDrive.value}%) - ${secondaryDrive.prompt}
+
+【要求】
+1. 創造一個讓這兩個驅動力產生衝突的場景
+2. 場景要具體、戲劇化，能引發角色的內心掙扎
+3. 控制在 100-150 字以內
+4. 使用第三人稱描述，不要使用項目符號或列表格式
+5. 直接輸出場景描述，不要加標題或額外說明
+
+範例格式：
+「在廢墟深處，${escapeHtml(focusCharacter.name)}發現了一本記載著禁忌知識的古籍。翻開它,就能掌握改變世界的力量,但書頁上流淌的黑色液體散發著不祥的氣息。一個虛弱的聲音從黑暗中傳來,懇求他救命——但若停下閱讀,這本書可能會永遠消失。」
+
+請生成類似的劇情衝突：`;
+
+                const response = await callAPIForAnalysis(conflictPrompt);
+
+                // 顯示結果
+                inspirationContent.innerHTML = `<div class="inspiration-text">${escapeHtml(response.trim())}</div>`;
+
+                // 平滑滾動到靈感抽屜
+                const inspirationDrawer = document.querySelector('.inspiration-drawer');
+                if (inspirationDrawer) {
+                    inspirationDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+            } catch (error) {
+                inspirationContent.innerHTML = '<div class="inspiration-empty"><div class="inspiration-empty-icon">❌</div><p class="inspiration-empty-text">生成失敗，請稍後再試</p></div>';
+                showToast(`生成失敗: ${error.message}`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎲 隨機衝突';
+            }
+        }
+
+        // ============================================
         // Dynamic Weight Prompt Generation - 動態權重 Prompt 生成
         // ============================================
         function getWeightDescription(value) {
@@ -803,6 +892,12 @@ ${drivesDescription}
             el.sendBtn.classList.add('loading');
             el.sendBtn.disabled = true;
 
+            // Add breathing effect to editor
+            const editorPaper = document.querySelector('.editor-paper');
+            if (editorPaper) {
+                editorPaper.classList.add('ai-writing');
+            }
+
             try {
                 const response = await callAPI(userPrompt);
                 if (response) {
@@ -818,6 +913,11 @@ ${drivesDescription}
                 state.isLoading = false;
                 el.sendBtn.classList.remove('loading');
                 el.sendBtn.disabled = false;
+
+                // Remove breathing effect from editor
+                if (editorPaper) {
+                    editorPaper.classList.remove('ai-writing');
+                }
             }
         }
 
@@ -1494,6 +1594,9 @@ ${selectedText}`;
             // Add Character
             el.addCharacterBtn.addEventListener('click', createCharacter);
 
+            // Inspiration Drawer
+            el.generateConflictBtn.addEventListener('click', generateConflict);
+
             // World Library
             console.log('📚 綁定世界觀圖書館事件監聽器...');
             el.worldLibrarySelect.addEventListener('change', () => {
@@ -1684,7 +1787,92 @@ ${selectedText}`;
             if (!state.globalSettings.apiKey) {
                 showToast('歡迎！請先在設定中填入 API Key', 'info', 5000);
             }
+
+            // Initialize offline storage and network monitoring
+            initOfflineStorage();
         }
+
+        // ============================================
+        // Offline Storage Integration
+        // ============================================
+        async function initOfflineStorage() {
+            // Initialize network status UI
+            updateNetworkStatus();
+
+            // Setup network listeners
+            OfflineStorage.setupNetworkListeners(
+                async () => {
+                    // On online
+                    updateNetworkStatus();
+                    showToast('網路已恢復，正在同步資料...', 'info', 3000);
+
+                    // Auto-sync pending changes
+                    const result = await OfflineStorage.syncPendingChanges(storageManager);
+                    if (result.success && result.count > 0) {
+                        showToast(`已同步 ${result.count} 個變更`, 'success', 3000);
+                    }
+                },
+                () => {
+                    // On offline
+                    updateNetworkStatus();
+                    showToast('網路已斷開，將暫存至本地', 'warning', 3000);
+                }
+            );
+
+            // Periodic sync check (every 30 seconds)
+            setInterval(async () => {
+                if (OfflineStorage.isOnline) {
+                    const status = await OfflineStorage.getSyncStatus();
+                    if (status.pendingChangesCount > 0) {
+                        console.log(`⏳ 待同步變更: ${status.pendingChangesCount}`);
+                    }
+                }
+            }, 30000);
+        }
+
+        function updateNetworkStatus() {
+            const statusEl = el.networkStatus;
+            if (!statusEl) return;
+
+            const isOnline = navigator.onLine;
+            const indicator = statusEl.querySelector('.status-indicator');
+            const text = statusEl.querySelector('.status-text');
+
+            statusEl.classList.remove('online', 'offline', 'syncing');
+            indicator.classList.remove('online', 'offline');
+
+            if (isOnline) {
+                statusEl.classList.add('online');
+                indicator.classList.add('online');
+                text.textContent = '線上';
+            } else {
+                statusEl.classList.add('offline');
+                indicator.classList.add('offline');
+                text.textContent = '離線保存中';
+            }
+        }
+
+        // Override autoSave to also save to IndexedDB
+        const originalAutoSave = autoSave;
+        autoSave = function() {
+            // Call original autoSave (saves to localStorage and Firebase)
+            originalAutoSave();
+
+            // Also save to IndexedDB if offline
+            if (state.currentDocId && state.currentDoc) {
+                OfflineStorage.saveDocument(state.currentDocId, state.currentDoc)
+                    .catch(err => console.error('IndexedDB save failed:', err));
+
+                // Record pending change if offline
+                if (!OfflineStorage.isOnline) {
+                    OfflineStorage.addPendingChange(
+                        state.currentDocId,
+                        'update',
+                        state.currentDoc
+                    ).catch(err => console.error('Failed to record pending change:', err));
+                }
+            }
+        };
 
         // Start
         document.addEventListener('DOMContentLoaded', init);

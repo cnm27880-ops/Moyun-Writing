@@ -56,6 +56,13 @@ const $$ = sel => document.querySelectorAll(sel);
             statusFocus: $('statusFocus'),
             statusDrives: $('statusDrives'),
 
+            // Inspiration Drawer
+            generateConflictBtn: $('generateConflictBtn'),
+            inspirationContent: $('inspirationContent'),
+
+            // Network Status
+            networkStatus: $('networkStatus'),
+
             // Editor
             editorBody: $('editorBody'),
             inputField: $('inputField'),
@@ -112,9 +119,10 @@ const $$ = sel => document.querySelectorAll(sel);
             const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
+            // XSS Protection: Escape HTML in message
             toast.innerHTML = `
                 <span class="toast-icon">${icons[type]}</span>
-                <span class="toast-message">${message}</span>
+                <span class="toast-message">${escapeHtml(message)}</span>
                 <button class="toast-close">×</button>
             `;
             

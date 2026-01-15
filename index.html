@@ -6,6 +6,21 @@
     <meta name="description" content="墨韻 MòYùn - AI 協作小說寫作平台，支援離線寫作與智能續寫">
     <meta name="theme-color" content="#F5F5F0">
 
+    <!-- Content Security Policy for XSS Protection -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com;
+        img-src 'self' data: https:;
+        frame-src 'none';
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        upgrade-insecure-requests;
+    ">
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
 
@@ -59,6 +74,10 @@
                     </svg>
                 </span>
             </button>
+            <div class="network-status" id="networkStatus" title="網路狀態">
+                <span class="status-indicator online">●</span>
+                <span class="status-text">線上</span>
+            </div>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
                 <span class="settings-icon">
                     <span class="tooth"></span>
@@ -195,6 +214,23 @@
                             <div class="character-empty" id="characterEmpty">
                                 <div class="character-empty-icon">🎭</div>
                                 <p class="character-empty-text">尚未建立角色<br>點擊上方按鈕新增</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inspiration Drawer - 靈感抽屜 -->
+                    <div class="inspiration-drawer">
+                        <div class="inspiration-header">
+                            <span class="inspiration-title">
+                                <span>💡</span>
+                                <span>靈感抽屜</span>
+                            </span>
+                            <button class="generate-conflict-btn" id="generateConflictBtn">🎲 隨機衝突</button>
+                        </div>
+                        <div class="inspiration-content" id="inspirationContent">
+                            <div class="inspiration-empty">
+                                <div class="inspiration-empty-icon">✨</div>
+                                <p class="inspiration-empty-text">點擊上方按鈕<br>根據角色驅動力生成劇情靈感</p>
                             </div>
                         </div>
                     </div>
@@ -423,6 +459,7 @@
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/offline.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
 </body>

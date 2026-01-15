@@ -38,11 +38,37 @@
         function parseMarkdown(text) {
             if (!text) return '';
             try {
-                marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
-                return marked.parse(text);
+                // XSS Protection: Configure marked to be safer
+                // Note: marked doesn't have built-in sanitization, but we disable some risky features
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    headerIds: false,
+                    mangle: false,
+                    sanitize: false, // deprecated in marked v5+, but keeping for backwards compat
+                    // For better security, consider using DOMPurify or similar sanitization library
+                });
+                const html = marked.parse(text);
+
+                // Basic HTML sanitization: Remove script tags and event handlers
+                return sanitizeHtml(html);
             } catch (e) {
-                return text.replace(/\n/g, '<br>');
+                return escapeHtml(text).replace(/\n/g, '<br>');
             }
+        }
+
+        // Basic HTML sanitization function
+        function sanitizeHtml(html) {
+            // Remove script tags
+            html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            // Remove inline event handlers (onclick, onerror, etc.)
+            html = html.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
+            html = html.replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
+            // Remove javascript: protocol
+            html = html.replace(/javascript:/gi, '');
+            // Remove data: protocol for images (can be used for XSS)
+            html = html.replace(/<img[^>]+src\s*=\s*["']data:/gi, '<img src="');
+            return html;
         }
 
         // ============================================
