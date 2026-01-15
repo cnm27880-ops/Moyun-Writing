@@ -2479,12 +2479,20 @@
                         </div>
                         <textarea class="setting-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
                         <p class="setting-hint">此內容會作為每次請求的背景知識</p>
+                        <div class="world-btn-group" style="margin-top: 8px;">
+                            <button class="world-btn save-btn" id="setDefaultWorldBtn" style="font-size: 13px;">⭐ 設為預設</button>
+                            <button class="world-btn" id="restoreDefaultWorldBtn" style="font-size: 13px; background: #607D8B;">↩️ 回復預設</button>
+                        </div>
                     </div>
 
                     <div class="setting-group">
                         <label class="setting-label">📝 自訂 System Prompt</label>
                         <textarea class="setting-textarea" id="customPrompt" spellcheck="false">你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
                         <p class="setting-hint">此內容會作為 AI 的基礎行為指令</p>
+                        <div class="world-btn-group" style="margin-top: 8px;">
+                            <button class="world-btn save-btn" id="setDefaultPromptBtn" style="font-size: 13px;">⭐ 設為預設</button>
+                            <button class="world-btn" id="restoreDefaultPromptBtn" style="font-size: 13px; background: #607D8B;">↩️ 回復預設</button>
+                        </div>
                     </div>
 
                     <div class="setting-group">
@@ -2497,19 +2505,22 @@
 
                     <div class="setting-group">
                         <label class="setting-label">API Endpoint</label>
-                        <input type="text" class="setting-input" id="apiEndpoint" placeholder="https://openrouter.ai/api/v1/chat/completions">
-                        <p class="setting-hint">OpenRouter 預設端點</p>
+                        <input type="text" class="setting-input" id="apiEndpoint" list="endpointHistory" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                        <datalist id="endpointHistory"></datalist>
+                        <p class="setting-hint">OpenRouter 預設端點（會記錄常用選項）</p>
                     </div>
 
                     <div class="setting-group">
                         <label class="setting-label">API Key</label>
                         <input type="password" class="setting-input" id="apiKey" placeholder="sk-...">
+                        <p class="setting-hint">僅儲存於本機，不會同步到雲端</p>
                     </div>
 
                     <div class="setting-group">
                         <label class="setting-label">模型名稱</label>
-                        <input type="text" class="setting-input" id="modelName" placeholder="anthropic/claude-sonnet-4">
-                        <p class="setting-hint">例: anthropic/claude-sonnet-4</p>
+                        <input type="text" class="setting-input" id="modelName" list="modelHistory" placeholder="anthropic/claude-sonnet-4">
+                        <datalist id="modelHistory"></datalist>
+                        <p class="setting-hint">例: anthropic/claude-sonnet-4（會記錄常用選項）</p>
                     </div>
 
                     <div class="setting-group">
@@ -2900,11 +2911,19 @@
                 const localSettings = this.loadLocal(STORAGE.GLOBAL_SETTINGS);
                 const cloudSettings = await this.loadCloud('settings');
 
+                // 保存本機的 apiKey（不同步到雲端）
+                const localApiKey = localSettings?.apiKey || '';
+
                 if (cloudSettings && !localSettings) {
-                    this.saveLocal(STORAGE.GLOBAL_SETTINGS, cloudSettings);
-                    return cloudSettings;
+                    // 從雲端載入設定，但保留本機的 apiKey
+                    const mergedSettings = { ...cloudSettings, apiKey: localApiKey };
+                    this.saveLocal(STORAGE.GLOBAL_SETTINGS, mergedSettings);
+                    return mergedSettings;
                 } else if (localSettings && !cloudSettings) {
-                    await this.saveCloud('settings', localSettings);
+                    // 上傳到雲端時，排除 apiKey
+                    const settingsToSync = { ...localSettings };
+                    delete settingsToSync.apiKey;
+                    await this.saveCloud('settings', settingsToSync);
                     return localSettings;
                 } else if (localSettings && cloudSettings) {
                     // Compare and use newer
@@ -2912,10 +2931,15 @@
                     const cloudTime = cloudSettings._lastModified || 0;
 
                     if (cloudTime > localTime) {
-                        this.saveLocal(STORAGE.GLOBAL_SETTINGS, cloudSettings);
-                        return cloudSettings;
+                        // 使用雲端較新的設定，但保留本機的 apiKey
+                        const mergedSettings = { ...cloudSettings, apiKey: localApiKey };
+                        this.saveLocal(STORAGE.GLOBAL_SETTINGS, mergedSettings);
+                        return mergedSettings;
                     } else {
-                        await this.saveCloud('settings', localSettings);
+                        // 上傳本機較新的設定到雲端，但排除 apiKey
+                        const settingsToSync = { ...localSettings };
+                        delete settingsToSync.apiKey;
+                        await this.saveCloud('settings', settingsToSync);
                         return localSettings;
                     }
                 }
@@ -2968,16 +2992,40 @@
             }
 
             async syncWorldLibrary() {
-                const localLibrary = this.loadLocal(STORAGE.WORLD_LIBRARY, {});
+                const localLibrary = this.loadLocal(STORAGE.WORLD_LIBRARY, []);
                 const cloudLibrary = await this.loadCloud('worldLibrary');
 
-                if (cloudLibrary && Object.keys(localLibrary).length === 0) {
+                if (cloudLibrary && Array.isArray(cloudLibrary) && localLibrary.length === 0) {
+                    // 從雲端載入到本地
                     this.saveLocal(STORAGE.WORLD_LIBRARY, cloudLibrary);
-                } else if (Object.keys(localLibrary).length > 0 && !cloudLibrary) {
+                } else if (localLibrary.length > 0 && !cloudLibrary) {
+                    // 上傳本地到雲端
                     await this.saveCloud('worldLibrary', localLibrary);
-                } else if (cloudLibrary && Object.keys(localLibrary).length > 0) {
-                    // Merge libraries
-                    const merged = { ...cloudLibrary, ...localLibrary };
+                } else if (cloudLibrary && Array.isArray(cloudLibrary) && localLibrary.length > 0) {
+                    // 合併本地和雲端的世界觀圖書館（以 id 去重）
+                    const mergedMap = new Map();
+
+                    // 先加入雲端的資料
+                    cloudLibrary.forEach(world => {
+                        if (world.id) {
+                            mergedMap.set(world.id, world);
+                        }
+                    });
+
+                    // 再加入本地的資料（會覆蓋相同 id 的雲端資料，保留最新版本）
+                    localLibrary.forEach(world => {
+                        if (world.id) {
+                            // 比較時間戳，保留較新的版本
+                            const existing = mergedMap.get(world.id);
+                            if (!existing || (world.lastModified || 0) > (existing.lastModified || 0)) {
+                                mergedMap.set(world.id, world);
+                            }
+                        }
+                    });
+
+                    const merged = Array.from(mergedMap.values());
+
+                    // 同步到本地和雲端
                     this.saveLocal(STORAGE.WORLD_LIBRARY, merged);
                     await this.saveCloud('worldLibrary', merged);
                 }
@@ -3002,7 +3050,11 @@
             apiEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
             apiKey: '',
             modelName: 'anthropic/claude-sonnet-4',
-            temperature: 0.8
+            temperature: 0.8,
+            savedEndpoints: [],  // 常用 Endpoint 列表（雲端同步）
+            savedModels: [],     // 常用 Model 列表（雲端同步）
+            defaultWorldSetting: '',  // 預設世界觀
+            defaultCustomPrompt: ''   // 預設系統指令
         };
 
         // ============================================
@@ -3194,6 +3246,10 @@
             worldNameInput: $('worldNameInput'),
             worldSaveBtn: $('worldSaveBtn'),
             worldDeleteBtn: $('worldDeleteBtn'),
+            setDefaultWorldBtn: $('setDefaultWorldBtn'),
+            restoreDefaultWorldBtn: $('restoreDefaultWorldBtn'),
+            setDefaultPromptBtn: $('setDefaultPromptBtn'),
+            restoreDefaultPromptBtn: $('restoreDefaultPromptBtn'),
 
             // Settings
             apiFormat: $('apiFormat'),
@@ -3498,7 +3554,7 @@
             if (state.currentDocId) {
                 saveCurrentDocument();
             }
-            
+
             // Generate new document
             const newId = generateId();
             const newDoc = {
@@ -3506,7 +3562,15 @@
                 createdAt: Date.now(),
                 lastModified: Date.now()
             };
-            
+
+            // 使用全域預設值（如果有設定的話）
+            if (state.globalSettings.defaultWorldSetting) {
+                newDoc.worldSetting = state.globalSettings.defaultWorldSetting;
+            }
+            if (state.globalSettings.defaultCustomPrompt) {
+                newDoc.customPrompt = state.globalSettings.defaultCustomPrompt;
+            }
+
             // Save to storage
             saveToStorage(STORAGE.DOC_PREFIX + newId, newDoc);
             
@@ -4674,6 +4738,7 @@ ${recentContent}
             if (existingIndex !== -1) {
                 // 更新現有的
                 library[existingIndex].content = content;
+                library[existingIndex].lastModified = Date.now();
                 saveWorldLibrary(library);
                 showToast(`已更新「${name}」`, 'success');
 
@@ -4685,7 +4750,8 @@ ${recentContent}
                 const newWorld = {
                     id: generateId(),
                     name: name,
-                    content: content
+                    content: content,
+                    lastModified: Date.now()
                 };
                 library.push(newWorld);
                 saveWorldLibrary(library);
@@ -4695,6 +4761,11 @@ ${recentContent}
                 el.worldLibrarySelect.value = newWorld.id;
                 el.worldDeleteBtn.disabled = false;
                 showToast(`已儲存「${name}」到圖書館`, 'success');
+            }
+
+            // 同步到雲端（如果已登入）
+            if (storageManager.isLoggedIn()) {
+                storageManager.syncWorldLibrary();
             }
         }
 
@@ -4723,7 +4794,70 @@ ${recentContent}
 
                 hideConfirmModal();
                 showToast(`已刪除「${world.name}」`, 'success');
+
+                // 同步到雲端（如果已登入）
+                if (storageManager.isLoggedIn()) {
+                    storageManager.syncWorldLibrary();
+                }
             });
+        }
+
+        // 設定預設世界觀
+        function setDefaultWorld() {
+            const currentWorld = el.worldSetting.value.trim();
+            state.globalSettings.defaultWorldSetting = currentWorld;
+            state.globalSettings._lastModified = Date.now();
+            saveToStorage(STORAGE.GLOBAL_SETTINGS, state.globalSettings);
+
+            // 同步到雲端
+            if (storageManager.isLoggedIn()) {
+                storageManager.syncSettings();
+            }
+
+            showToast('已設為預設世界觀', 'success');
+        }
+
+        // 回復預設世界觀
+        function restoreDefaultWorld() {
+            const defaultWorld = state.globalSettings.defaultWorldSetting || '';
+            el.worldSetting.value = defaultWorld;
+
+            // 同步到當前文檔
+            if (state.currentDoc) {
+                state.currentDoc.worldSetting = defaultWorld;
+                saveDocument();
+            }
+
+            showToast('已回復預設世界觀', 'success');
+        }
+
+        // 設定預設系統指令
+        function setDefaultPrompt() {
+            const currentPrompt = el.customPrompt.value.trim();
+            state.globalSettings.defaultCustomPrompt = currentPrompt;
+            state.globalSettings._lastModified = Date.now();
+            saveToStorage(STORAGE.GLOBAL_SETTINGS, state.globalSettings);
+
+            // 同步到雲端
+            if (storageManager.isLoggedIn()) {
+                storageManager.syncSettings();
+            }
+
+            showToast('已設為預設系統指令', 'success');
+        }
+
+        // 回復預設系統指令
+        function restoreDefaultPrompt() {
+            const defaultPrompt = state.globalSettings.defaultCustomPrompt || '你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。';
+            el.customPrompt.value = defaultPrompt;
+
+            // 同步到當前文檔
+            if (state.currentDoc) {
+                state.currentDoc.customPrompt = defaultPrompt;
+                saveDocument();
+            }
+
+            showToast('已回復預設系統指令', 'success');
         }
 
         // ============================================
@@ -4734,7 +4868,7 @@ ${recentContent}
             if (saved) {
                 state.globalSettings = { ...DEFAULT_GLOBAL_SETTINGS, ...saved };
             }
-            
+
             // Update UI
             el.apiFormat.value = state.globalSettings.apiFormat;
             el.apiEndpoint.value = state.globalSettings.apiEndpoint;
@@ -4742,17 +4876,70 @@ ${recentContent}
             el.modelName.value = state.globalSettings.modelName;
             el.temperature.value = state.globalSettings.temperature;
             el.tempValue.textContent = state.globalSettings.temperature;
+
+            // 填入歷史紀錄下拉選單
+            updateHistoryDatalist();
+        }
+
+        function updateHistoryDatalist() {
+            // 更新 Endpoint 歷史
+            const endpointDatalist = document.getElementById('endpointHistory');
+            endpointDatalist.innerHTML = '';
+            (state.globalSettings.savedEndpoints || []).forEach(endpoint => {
+                const option = document.createElement('option');
+                option.value = endpoint;
+                endpointDatalist.appendChild(option);
+            });
+
+            // 更新 Model 歷史
+            const modelDatalist = document.getElementById('modelHistory');
+            modelDatalist.innerHTML = '';
+            (state.globalSettings.savedModels || []).forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                modelDatalist.appendChild(option);
+            });
         }
 
         function saveGlobalSettings() {
+            const currentEndpoint = el.apiEndpoint.value.trim();
+            const currentModel = el.modelName.value.trim();
+
+            // 保留原有的 savedEndpoints、savedModels、defaultWorldSetting、defaultCustomPrompt
+            const savedEndpoints = state.globalSettings.savedEndpoints || [];
+            const savedModels = state.globalSettings.savedModels || [];
+
+            // 將當前值加入歷史（去重）
+            if (currentEndpoint && !savedEndpoints.includes(currentEndpoint)) {
+                savedEndpoints.push(currentEndpoint);
+            }
+            if (currentModel && !savedModels.includes(currentModel)) {
+                savedModels.push(currentModel);
+            }
+
             state.globalSettings = {
                 apiFormat: el.apiFormat.value,
-                apiEndpoint: el.apiEndpoint.value,
+                apiEndpoint: currentEndpoint,
                 apiKey: el.apiKey.value,
-                modelName: el.modelName.value,
-                temperature: el.temperature.value
+                modelName: currentModel,
+                temperature: el.temperature.value,
+                savedEndpoints: savedEndpoints,
+                savedModels: savedModels,
+                defaultWorldSetting: state.globalSettings.defaultWorldSetting || '',
+                defaultCustomPrompt: state.globalSettings.defaultCustomPrompt || '',
+                _lastModified: Date.now()
             };
+
             saveToStorage(STORAGE.GLOBAL_SETTINGS, state.globalSettings);
+
+            // 同步到雲端（如果已登入）
+            if (storageManager.isLoggedIn()) {
+                storageManager.syncSettings();
+            }
+
+            // 更新歷史下拉選單
+            updateHistoryDatalist();
+
             showToast('設定已儲存', 'success');
         }
 
@@ -4950,8 +5137,19 @@ ${selectedText}`;
 
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                const result = await firebaseAuth.signInWithPopup(provider);
-                console.log('✓ 登入成功:', result.user.email);
+
+                // 偵測是否為行動裝置
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    // 行動裝置使用 Redirect Flow（避免 PWA 模式下 popup 失效）
+                    await firebaseAuth.signInWithRedirect(provider);
+                } else {
+                    // 桌面裝置使用 Popup Flow（較好的使用者體驗）
+                    const result = await firebaseAuth.signInWithPopup(provider);
+                    console.log('✓ 登入成功:', result.user.email);
+                    showToast('登入成功！', 'success');
+                }
             } catch (error) {
                 console.error('登入失敗:', error);
                 if (error.code === 'auth/popup-closed-by-user') {
@@ -5017,18 +5215,40 @@ ${selectedText}`;
         }
 
         // Initialize Auth State Listener
-        function initAuthListener() {
+        async function initAuthListener() {
             if (!firebaseAuth) {
                 // Firebase not configured, hide login panel or show message
                 return;
             }
 
+            // 處理 Redirect 登入結果（當使用者從 Google 導回時）
+            try {
+                const result = await firebaseAuth.getRedirectResult();
+                if (result && result.user) {
+                    console.log('✓ Redirect 登入成功:', result.user.email);
+                    showToast('登入成功！', 'success');
+                }
+            } catch (error) {
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    console.error('Redirect 登入處理失敗:', error);
+                    if (error.message) {
+                        showToast('登入失敗：' + error.message, 'error');
+                    }
+                }
+            }
+
+            // 監聽認證狀態變化
             firebaseAuth.onAuthStateChanged(async (user) => {
                 storageManager.setUser(user);
                 updateUserUI(user);
 
                 if (user) {
-                    showToast('歡迎回來，' + (user.displayName || '使用者'), 'success');
+                    // 只在非 redirect 情況下顯示歡迎訊息（redirect 已在上方處理）
+                    const isFromRedirect = sessionStorage.getItem('authRedirectHandled');
+                    if (!isFromRedirect) {
+                        showToast('歡迎回來，' + (user.displayName || '使用者'), 'success');
+                    }
+                    sessionStorage.setItem('authRedirectHandled', 'true');
 
                     // Sync all data
                     await storageManager.syncAllData();
@@ -5045,6 +5265,9 @@ ${selectedText}`;
                     // Reload global settings
                     loadGlobalSettings();
                     renderWorldLibrarySelect();
+                } else {
+                    // 登出時清除標記
+                    sessionStorage.removeItem('authRedirectHandled');
                 }
             });
 
@@ -5086,6 +5309,12 @@ ${selectedText}`;
             });
             el.worldSaveBtn.addEventListener('click', saveWorldToLibrary);
             el.worldDeleteBtn.addEventListener('click', deleteWorldFromLibrary);
+
+            // Default World & Prompt buttons
+            el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
+            el.restoreDefaultWorldBtn.addEventListener('click', restoreDefaultWorld);
+            el.setDefaultPromptBtn.addEventListener('click', setDefaultPrompt);
+            el.restoreDefaultPromptBtn.addEventListener('click', restoreDefaultPrompt);
 
             // Settings
             el.saveSettingsBtn.addEventListener('click', saveGlobalSettings);
