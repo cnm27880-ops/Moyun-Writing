@@ -142,7 +142,7 @@
             });
         }
 
-        const autoSave = debounce(() => {
+        let autoSave = debounce(() => {
             saveCurrentDocument();
             console.log('Auto-saved:', new Date().toLocaleTimeString());
         }, 1000);
