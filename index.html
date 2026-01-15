@@ -2800,6 +2800,13 @@
                 } catch (error) {
                     console.error('Cloud save error:', error);
                     this.notifySyncStatus('error');
+
+                    // 檢測 PERMISSION_DENIED 錯誤，提供友善提示
+                    if (error.code === 'PERMISSION_DENIED' ||
+                        (error.message && error.message.includes('PERMISSION_DENIED'))) {
+                        showToast('同步失敗：請檢查 Firebase 規則設定', 'error');
+                    }
+
                     return false;
                 }
             }
@@ -3051,8 +3058,14 @@
             apiKey: '',
             modelName: 'anthropic/claude-sonnet-4',
             temperature: 0.8,
-            savedEndpoints: [],  // 常用 Endpoint 列表（雲端同步）
-            savedModels: [],     // 常用 Model 列表（雲端同步）
+            savedEndpoints: [
+                'https://openrouter.ai/api/v1/chat/completions',
+                'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+            ],  // 常用 Endpoint 列表（雲端同步）
+            savedModels: [
+                'anthropic/claude-sonnet-4',
+                'gemini-3-pro-preview'
+            ],     // 常用 Model 列表（雲端同步）
             defaultWorldSetting: '',  // 預設世界觀
             defaultCustomPrompt: ''   // 預設系統指令
         };
@@ -4682,11 +4695,14 @@ ${recentContent}
         }
 
         function renderWorldLibrarySelect() {
-            const library = loadWorldLibrary();
+            const rawLibrary = loadWorldLibrary();
             const select = el.worldLibrarySelect;
 
             // 保留第一个默认选项，清除其他
             select.innerHTML = '<option value="">-- 從圖書館選擇 --</option>';
+
+            // 確保資料是陣列格式（相容 LocalStorage Array 和 Firebase Object）
+            const library = Array.isArray(rawLibrary) ? rawLibrary : Object.values(rawLibrary || {});
 
             library.forEach(world => {
                 const option = document.createElement('option');
