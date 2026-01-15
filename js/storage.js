@@ -396,5 +396,3 @@
 
         // Create global storage manager instance
         const storageManager = new StorageManager();
-
-const storageManager = new StorageManager();
