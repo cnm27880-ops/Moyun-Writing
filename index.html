@@ -4260,7 +4260,7 @@ ${drivesList}
 
             if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
-                headers['X-Title'] = '墨韻 MòYùn';
+                headers['X-Title'] = 'MoYun';
             }
 
             const response = await fetch(apiEndpoint, {
@@ -4455,7 +4455,7 @@ ${drivesDescription}
             
             if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
-                headers['X-Title'] = '墨韻 MòYùn';
+                headers['X-Title'] = 'MoYun';
             }
             
             const response = await fetch(apiEndpoint, {
@@ -4717,26 +4717,37 @@ ${recentContent}
         }
 
         function saveWorldToLibrary() {
+            console.log('💾 嘗試儲存世界觀到圖書館...');
+
             const name = el.worldNameInput.value.trim();
             const content = el.worldSetting.value.trim();
 
+            console.log('世界觀名稱:', name);
+            console.log('世界觀內容長度:', content.length);
+
             if (!name) {
+                console.warn('❌ 世界觀名稱為空');
                 showToast('請輸入世界觀名稱', 'warning');
                 el.worldNameInput.focus();
                 return;
             }
 
             if (!content) {
+                console.warn('❌ 世界觀內容為空');
                 showToast('世界觀內容不能為空', 'warning');
                 el.worldSetting.focus();
                 return;
             }
 
             const library = loadWorldLibrary();
+            console.log('當前圖書館內容:', library);
+
             const existingIndex = library.findIndex(w => w.name === name);
+            console.log('現有項目索引:', existingIndex);
 
             if (existingIndex !== -1) {
                 // 更新現有的
+                console.log('✏️ 更新現有世界觀:', name);
                 library[existingIndex].content = content;
                 library[existingIndex].lastModified = Date.now();
                 saveWorldLibrary(library);
@@ -4747,6 +4758,7 @@ ${recentContent}
                 el.worldDeleteBtn.disabled = false;
             } else {
                 // 新增
+                console.log('➕ 新增世界觀:', name);
                 const newWorld = {
                     id: generateId(),
                     name: name,
@@ -4763,8 +4775,11 @@ ${recentContent}
                 showToast(`已儲存「${name}」到圖書館`, 'success');
             }
 
+            console.log('✅ 世界觀儲存完成');
+
             // 同步到雲端（如果已登入）
             if (storageManager.isLoggedIn()) {
+                console.log('🔄 同步世界觀到雲端...');
                 storageManager.syncWorldLibrary();
             }
         }
@@ -5222,18 +5237,30 @@ ${selectedText}`;
             }
 
             // 處理 Redirect 登入結果（當使用者從 Google 導回時）
+            console.log('🔍 檢查 Redirect 登入結果...');
             try {
                 const result = await firebaseAuth.getRedirectResult();
+                console.log('getRedirectResult 返回:', result);
+
                 if (result && result.user) {
                     console.log('✓ Redirect 登入成功:', result.user.email);
-                    showToast('登入成功！', 'success');
+                    showToast('登入成功 (Redirect)', 'success');
+                    // onAuthStateChanged 會自動觸發，不需要額外操作
+                } else if (result && result.credential) {
+                    // 有憑證但沒有 user（不太可能發生）
+                    console.log('收到憑證但沒有用戶資訊');
+                } else {
+                    // result 為 null，表示沒有進行中的 redirect 登入
+                    console.log('無 redirect 登入（正常情況）');
                 }
             } catch (error) {
-                if (error.code !== 'auth/popup-closed-by-user') {
-                    console.error('Redirect 登入處理失敗:', error);
-                    if (error.message) {
-                        showToast('登入失敗：' + error.message, 'error');
-                    }
+                console.error('❌ Redirect 登入錯誤:', error);
+                console.error('錯誤代碼:', error.code);
+                console.error('錯誤訊息:', error.message);
+
+                // 顯示錯誤給使用者（排除取消操作）
+                if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                    showToast('登入失敗：' + error.message, 'error');
                 }
             }
 
@@ -5304,11 +5331,24 @@ ${selectedText}`;
             el.addCharacterBtn.addEventListener('click', createCharacter);
 
             // World Library
+            console.log('📚 綁定世界觀圖書館事件監聽器...');
             el.worldLibrarySelect.addEventListener('change', () => {
                 loadWorldFromLibrary(el.worldLibrarySelect.value);
             });
-            el.worldSaveBtn.addEventListener('click', saveWorldToLibrary);
-            el.worldDeleteBtn.addEventListener('click', deleteWorldFromLibrary);
+
+            if (el.worldSaveBtn) {
+                el.worldSaveBtn.addEventListener('click', saveWorldToLibrary);
+                console.log('✅ worldSaveBtn 事件監聽器已綁定');
+            } else {
+                console.error('❌ worldSaveBtn 元素不存在！');
+            }
+
+            if (el.worldDeleteBtn) {
+                el.worldDeleteBtn.addEventListener('click', deleteWorldFromLibrary);
+                console.log('✅ worldDeleteBtn 事件監聽器已綁定');
+            } else {
+                console.error('❌ worldDeleteBtn 元素不存在！');
+            }
 
             // Default World & Prompt buttons
             el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
