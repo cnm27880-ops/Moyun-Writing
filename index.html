@@ -1169,24 +1169,42 @@
         .style-tag-bar {
             display: flex;
             gap: var(--spacing-xs);
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto;
             margin-bottom: var(--spacing-sm);
             padding: var(--spacing-xs) 0;
+            align-items: center;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .style-tag-bar::-webkit-scrollbar {
+            display: none; /* Chrome, Safari */
+        }
+
+        .style-tag-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border);
+            margin: 0 var(--spacing-xs);
+            flex-shrink: 0;
         }
 
         .style-tag {
-            padding: var(--spacing-xs) var(--spacing-sm);
+            width: 40px;
+            height: 40px;
+            padding: 0;
             background: transparent;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: var(--ink-muted);
+            border-radius: 50%;
+            font-size: 1.2rem;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
             user-select: none;
+            flex-shrink: 0;
         }
 
         .style-tag:hover {
@@ -1195,9 +1213,12 @@
         }
 
         .style-tag.active {
-            background: var(--accent-light);
+            background: var(--accent);
             border-color: var(--accent);
-            color: var(--accent);
+        }
+
+        .style-tag.active .style-tag-icon {
+            filter: brightness(0) invert(1);
         }
 
         .style-tag-icon {
@@ -1206,32 +1227,23 @@
             transition: all var(--transition-fast);
         }
 
-        .style-tag.active .style-tag-icon {
-            filter: grayscale(0);
-            opacity: 1;
-        }
-
         /* ============================================
            Director Mode Toggle
            ============================================ */
         .director-mode-toggle {
-            position: absolute;
-            left: var(--spacing-sm);
-            top: 50%;
-            transform: translateY(-50%);
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
             background: transparent;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            color: var(--ink-muted);
+            border-radius: 50%;
+            font-size: 1.2rem;
             cursor: pointer;
             transition: all var(--transition-fast);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1;
+            flex-shrink: 0;
         }
 
         .director-mode-toggle:hover {
@@ -1240,18 +1252,16 @@
         }
 
         .director-mode-toggle.active {
-            background: rgba(255, 193, 7, 0.2);
+            background: rgba(255, 193, 7, 0.8);
             border-color: #FFC107;
-            color: #F57C00;
         }
 
-        .input-field-wrapper.director-mode {
-            position: relative;
+        .director-mode-toggle.active span {
+            filter: brightness(0) invert(1);
         }
 
         .input-field-wrapper.director-mode .input-field {
             background: rgba(255, 240, 200, 0.3);
-            padding-left: 48px;
         }
 
         /* ============================================
@@ -2033,39 +2043,18 @@
             background: var(--accent-light);
         }
 
-        /* Eye Icon - Pure CSS (修正版) */
+        /* Eye Icon - SVG */
         .eye-icon {
-            width: 22px;
-            height: 16px;
-            position: relative;
+            width: 24px;
+            height: 24px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
         }
 
-        .eye-icon::before {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 12px;
-            border: 2px solid currentColor;
-            border-radius: 70% 70% 70% 70% / 50% 50% 50% 50%;
-            box-sizing: border-box;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .eye-icon::after {
-            content: '';
-            position: absolute;
-            width: 7px;
-            height: 7px;
-            background: currentColor;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .eye-icon svg {
+            width: 100%;
+            height: 100%;
         }
 
         /* ============================================
@@ -2320,7 +2309,12 @@
                 <span class="navbar-title-text" id="navTitle">未命名文檔</span>
             </div>
             <button class="focus-mode-btn" id="focusModeBtn" aria-label="閱讀模式" title="閱讀模式">
-                <span class="eye-icon"></span>
+                <span class="eye-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </span>
             </button>
             <button class="navbar-btn" id="brainBtn" aria-label="開啟設定面板">
                 <span class="settings-icon">
@@ -2580,31 +2574,29 @@
 
                 <!-- Style Tag Bar -->
                 <div class="style-tag-bar" id="styleTagBar">
+                    <button class="director-mode-toggle" id="directorModeToggle" title="導演模式">
+                        <span>🎬</span>
+                    </button>
+                    <div class="style-tag-divider"></div>
                     <button class="style-tag" data-style="immersive" title="沉浸描寫">
                         <span class="style-tag-icon">🍃</span>
-                        <span>沉浸</span>
                     </button>
                     <button class="style-tag" data-style="dialogue" title="對話互動">
                         <span class="style-tag-icon">🗨️</span>
-                        <span>對話</span>
                     </button>
                     <button class="style-tag" data-style="action" title="動作場面">
                         <span class="style-tag-icon">⚡</span>
-                        <span>動作</span>
                     </button>
                     <button class="style-tag" data-style="psychology" title="心理獨白">
                         <span class="style-tag-icon">💭</span>
-                        <span>心理</span>
                     </button>
                     <button class="style-tag" data-style="spicy" title="張力/尺度">
                         <span class="style-tag-icon">🌹</span>
-                        <span>張力</span>
                     </button>
                 </div>
 
                 <div style="display: flex; gap: var(--spacing-sm); align-items: flex-end;">
                     <div class="input-field-wrapper" id="inputFieldWrapper">
-                        <button class="director-mode-toggle" id="directorModeToggle" title="導演模式">🎬</button>
                         <textarea class="input-field" id="inputField" placeholder="繼續你的故事..." rows="1" spellcheck="false"></textarea>
                     </div>
                     <button class="send-btn" id="sendBtn" aria-label="送出">
@@ -4429,10 +4421,16 @@ ${drivesDescription}
         // Style Tags & Director Mode
         // ============================================
         function toggleStyleTag(tagId) {
-            if (state.activeStyleTags.has(tagId)) {
+            const wasActive = state.activeStyleTags.has(tagId);
+            if (wasActive) {
                 state.activeStyleTags.delete(tagId);
             } else {
                 state.activeStyleTags.add(tagId);
+                // 顯示 Toast 提示
+                const tag = STYLE_TAGS[tagId];
+                if (tag) {
+                    showToast(`${tag.icon} 已開啟：${tag.tooltip}`, 'info', 2000);
+                }
             }
             updateStyleTagsUI();
         }
@@ -4452,18 +4450,26 @@ ${drivesDescription}
         function toggleDirectorMode() {
             state.directorMode = !state.directorMode;
             updateDirectorModeUI();
+            // 顯示 Toast 提示
+            if (state.directorMode) {
+                showToast('🎬 導演模式：輸入指令來控制劇情', 'info', 2000);
+            }
         }
 
         function updateDirectorModeUI() {
-            if (!el.directorModeToggle || !el.inputFieldWrapper || !el.inputField) return;
+            if (!el.directorModeToggle || !el.inputField) return;
 
             if (state.directorMode) {
                 el.directorModeToggle.classList.add('active');
-                el.inputFieldWrapper.classList.add('director-mode');
+                if (el.inputFieldWrapper) {
+                    el.inputFieldWrapper.classList.add('director-mode');
+                }
                 el.inputField.placeholder = '輸入劇情指令 (System Instruction)...';
             } else {
                 el.directorModeToggle.classList.remove('active');
-                el.inputFieldWrapper.classList.remove('director-mode');
+                if (el.inputFieldWrapper) {
+                    el.inputFieldWrapper.classList.remove('director-mode');
+                }
                 el.inputField.placeholder = '繼續你的故事...';
             }
         }
