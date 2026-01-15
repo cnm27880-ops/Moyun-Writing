@@ -932,7 +932,9 @@
            ============================================ */
         .main-content {
             padding-top: calc(var(--navbar-height) + var(--safe-area-top));
-            padding-bottom: calc(var(--safe-area-bottom));
+            /* 增加底部 padding，確保內容不被固定的 input-area 遮擋 */
+            /* 180px = input-area 高度 + 安全邊距 */
+            padding-bottom: calc(180px + env(safe-area-inset-bottom, 0px));
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -1056,11 +1058,15 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--bg-paper);
+            /* 毛玻璃效果背景，避免文字重疊混亂 */
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-top: 1px solid var(--border-light);
             padding: var(--spacing-md);
-            padding-bottom: calc(var(--spacing-md) + var(--safe-area-bottom));
-            z-index: var(--z-navbar);
+            padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px));
+            /* 提高 z-index，確保在其他元素之上 */
+            z-index: calc(var(--z-navbar) + 1);
             box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
             transition: transform var(--transition-smooth), opacity var(--transition-smooth);
         }
@@ -1959,8 +1965,11 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             padding: var(--spacing-xs);
             gap: var(--spacing-xs);
-            z-index: var(--z-modal);
+            /* 確保選單在所有元素之上 */
+            z-index: calc(var(--z-modal) + 10);
             animation: menuFadeIn 0.15s ease;
+            /* 確保選單可點擊 */
+            pointer-events: auto;
         }
 
         .selection-menu.active {
@@ -2981,48 +2990,94 @@
                     return;
                 }
 
+                console.log('🔄 開始同步文檔索引 (基於時間戳雙向合併)');
+
                 const localIndex = this.loadLocal(STORAGE.DOC_INDEX, []);
                 const cloudIndex = await this.loadCloud('docs/index');
 
-                if (!cloudIndex && localIndex.length > 0) {
-                    // Upload local docs to cloud
-                    await this.saveCloud('docs/index', localIndex);
-                    for (const doc of localIndex) {
-                        const docData = this.loadLocal(STORAGE.DOC_PREFIX + doc.id);
-                        if (docData) {
-                            await this.saveCloud(`docs/${doc.id}`, docData);
-                        }
-                    }
-                } else if (cloudIndex && localIndex.length === 0) {
-                    // Download cloud docs to local
-                    this.saveLocal(STORAGE.DOC_INDEX, cloudIndex);
-                    for (const doc of cloudIndex) {
-                        const docData = await this.loadCloud(`docs/${doc.id}`);
-                        if (docData) {
-                            this.saveLocal(STORAGE.DOC_PREFIX + doc.id, docData);
-                        }
-                    }
-                } else if (cloudIndex && localIndex.length > 0) {
-                    // Merge: combine unique docs from both
-                    const mergedIndex = [...localIndex];
-                    const localIds = new Set(localIndex.map(d => d.id));
+                // 建立文檔 ID 到資料的對應表
+                const localMap = new Map();
+                const cloudMap = new Map();
 
-                    for (const cloudDoc of cloudIndex) {
-                        if (!localIds.has(cloudDoc.id)) {
+                localIndex.forEach(doc => localMap.set(doc.id, doc));
+                (cloudIndex || []).forEach(doc => cloudMap.set(doc.id, doc));
+
+                // 獲取所有唯一的文檔 ID
+                const allDocIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
+
+                const mergedIndex = [];
+                const toUpload = [];
+                const toDownload = [];
+
+                // 對每個文檔進行時間戳比較
+                for (const docId of allDocIds) {
+                    const localDoc = localMap.get(docId);
+                    const cloudDoc = cloudMap.get(docId);
+
+                    if (localDoc && !cloudDoc) {
+                        // 只存在於本地，需要上傳
+                        mergedIndex.push(localDoc);
+                        toUpload.push(docId);
+                        console.log(`📤 文檔 ${docId} 只存在於本地，標記上傳`);
+                    } else if (!localDoc && cloudDoc) {
+                        // 只存在於雲端，需要下載
+                        mergedIndex.push(cloudDoc);
+                        toDownload.push(docId);
+                        console.log(`📥 文檔 ${docId} 只存在於雲端，標記下載`);
+                    } else if (localDoc && cloudDoc) {
+                        // 兩邊都存在，比較時間戳
+                        const localTime = localDoc._lastModified || localDoc.lastModified || 0;
+                        const cloudTime = cloudDoc._lastModified || cloudDoc.lastModified || 0;
+
+                        if (localTime > cloudTime) {
+                            // 本地較新，使用本地版本並上傳
+                            mergedIndex.push(localDoc);
+                            toUpload.push(docId);
+                            console.log(`📤 文檔 ${docId} 本地較新 (${new Date(localTime).toLocaleString()} > ${new Date(cloudTime).toLocaleString()})，標記上傳`);
+                        } else if (cloudTime > localTime) {
+                            // 雲端較新，使用雲端版本並下載
                             mergedIndex.push(cloudDoc);
-                            const docData = await this.loadCloud(`docs/${cloudDoc.id}`);
-                            if (docData) {
-                                this.saveLocal(STORAGE.DOC_PREFIX + cloudDoc.id, docData);
-                            }
+                            toDownload.push(docId);
+                            console.log(`📥 文檔 ${docId} 雲端較新 (${new Date(cloudTime).toLocaleString()} > ${new Date(localTime).toLocaleString()})，標記下載`);
+                        } else {
+                            // 時間戳相同，使用本地版本
+                            mergedIndex.push(localDoc);
+                            console.log(`✓ 文檔 ${docId} 時間戳相同，保持本地版本`);
                         }
                     }
-
-                    // Sort by last modified
-                    mergedIndex.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
-
-                    this.saveLocal(STORAGE.DOC_INDEX, mergedIndex);
-                    await this.saveCloud('docs/index', mergedIndex);
                 }
+
+                // 執行下載操作
+                for (const docId of toDownload) {
+                    const docData = await this.loadCloud(`docs/${docId}`);
+                    if (docData) {
+                        this.saveLocal(STORAGE.DOC_PREFIX + docId, docData);
+                        console.log(`✓ 已下載文檔 ${docId}`);
+                    }
+                }
+
+                // 執行上傳操作
+                for (const docId of toUpload) {
+                    const docData = this.loadLocal(STORAGE.DOC_PREFIX + docId);
+                    if (docData) {
+                        await this.saveCloud(`docs/${docId}`, docData);
+                        console.log(`✓ 已上傳文檔 ${docId}`);
+                    }
+                }
+
+                // 按最後修改時間排序
+                mergedIndex.sort((a, b) => {
+                    const aTime = a._lastModified || a.lastModified || 0;
+                    const bTime = b._lastModified || b.lastModified || 0;
+                    return bTime - aTime;
+                });
+
+                // 保存合併後的索引（使用直接寫入，繞過保護機制）
+                console.log(`💾 保存合併後的索引 (共 ${mergedIndex.length} 個文檔)`);
+                localStorage.setItem(STORAGE.DOC_INDEX, JSON.stringify(mergedIndex));
+                await this.saveCloud('docs/index', mergedIndex);
+
+                console.log('✓ 文檔索引同步完成');
             }
 
             async syncWorldLibrary() {
@@ -3814,26 +3869,67 @@
                 el.editorBody.innerHTML = '';
                 return;
             }
-            
+
+            // 預設 contenteditable="false"，需要長按才能編輯
             el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => `
                 <div class="paragraph ${p.source === 'user' ? 'user' : 'ai'}" data-id="${escapeHtml(p.id)}">
                     <span class="paragraph-tag">${p.source === 'user' ? '你' : 'AI'}</span>
-                    <div class="paragraph-content" contenteditable="true">${parseMarkdown(p.content)}</div>
+                    <div class="paragraph-content" contenteditable="false">${parseMarkdown(p.content)}</div>
                 </div>
             `).join('');
-            
-            // Bind edit events
+
+            // Bind edit events with long-press to edit
             el.editorBody.querySelectorAll('.paragraph-content').forEach(content => {
                 const paraId = content.parentElement.dataset.id;
-                
+
+                let touchTimer = null;
+                let isLongPress = false;
+
+                // 觸控裝置：長按觸發編輯
+                content.addEventListener('touchstart', (e) => {
+                    isLongPress = false;
+                    touchTimer = setTimeout(() => {
+                        isLongPress = true;
+                        content.setAttribute('contenteditable', 'true');
+                        content.focus();
+                        showToast('進入編輯模式', 'info', 1000);
+                    }, 800); // 長按 800ms 觸發
+                });
+
+                content.addEventListener('touchend', () => {
+                    if (touchTimer) {
+                        clearTimeout(touchTimer);
+                        touchTimer = null;
+                    }
+                });
+
+                content.addEventListener('touchmove', () => {
+                    if (touchTimer) {
+                        clearTimeout(touchTimer);
+                        touchTimer = null;
+                    }
+                });
+
+                // 電腦端：雙擊觸發編輯
+                content.addEventListener('dblclick', () => {
+                    content.setAttribute('contenteditable', 'true');
+                    content.focus();
+                });
+
+                // 失去焦點時：保存並禁用編輯
                 content.addEventListener('blur', () => {
+                    // 保存內容
                     const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
                     if (para) {
                         para.content = content.innerText;
                         autoSave();
                     }
+
+                    // 退出編輯模式
+                    content.setAttribute('contenteditable', 'false');
                 });
-                
+
+                // 貼上純文字
                 content.addEventListener('paste', (e) => {
                     e.preventDefault();
                     const text = e.clipboardData.getData('text/plain');
@@ -4803,20 +4899,20 @@ ${recentContent}
             const library = loadWorldLibrary();
             console.log('當前圖書館內容:', library);
 
+            // 優先根據名稱查找是否已存在
             const existingIndex = library.findIndex(w => w.name === name);
-            console.log('現有項目索引:', existingIndex);
+            console.log('現有項目索引 (by name):', existingIndex);
+
+            let savedWorldId;
 
             if (existingIndex !== -1) {
                 // 更新現有的
                 console.log('✏️ 更新現有世界觀:', name);
                 library[existingIndex].content = content;
                 library[existingIndex].lastModified = Date.now();
+                savedWorldId = library[existingIndex].id;
                 saveWorldLibrary(library);
                 showToast(`已更新「${name}」`, 'success');
-
-                // 選中該項目
-                el.worldLibrarySelect.value = library[existingIndex].id;
-                el.worldDeleteBtn.disabled = false;
             } else {
                 // 新增
                 console.log('➕ 新增世界觀:', name);
@@ -4827,16 +4923,17 @@ ${recentContent}
                     lastModified: Date.now()
                 };
                 library.push(newWorld);
+                savedWorldId = newWorld.id;
                 saveWorldLibrary(library);
-
-                // 刷新下拉選單並選中
-                renderWorldLibrarySelect();
-                el.worldLibrarySelect.value = newWorld.id;
-                el.worldDeleteBtn.disabled = false;
                 showToast(`已儲存「${name}」到圖書館`, 'success');
             }
 
-            console.log('✅ 世界觀儲存完成');
+            // 無論是新增還是更新，都刷新下拉選單並選中該項目
+            renderWorldLibrarySelect();
+            el.worldLibrarySelect.value = savedWorldId;
+            el.worldDeleteBtn.disabled = false;
+
+            console.log('✅ 世界觀儲存完成，已選中 ID:', savedWorldId);
 
             // 同步到雲端（如果已登入）
             if (storageManager.isLoggedIn()) {
@@ -5067,27 +5164,44 @@ ${recentContent}
 
         function showSelectionMenu(x, y) {
             const menu = el.selectionMenu;
+
+            // 先設為顯示狀態以獲取尺寸
+            menu.style.display = 'flex';
             menu.classList.add('active');
 
-            // Position menu near selection
+            // 獲取選單尺寸
             const menuRect = menu.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
 
-            // Adjust position to keep menu in viewport
+            // 計算選單位置（預設顯示在選取範圍上方）
             let posX = x - menuRect.width / 2;
-            let posY = y - menuRect.height - 10;
+            let posY = y - menuRect.height - 15; // 上方留 15px 間距
 
-            if (posX < 10) posX = 10;
-            if (posX + menuRect.width > viewportWidth - 10) {
-                posX = viewportWidth - menuRect.width - 10;
+            // 水平方向邊界檢查
+            const margin = 10;
+            if (posX < margin) {
+                posX = margin;
             }
-            if (posY < 10) {
-                posY = y + 25; // Show below if no room above
+            if (posX + menuRect.width > viewportWidth - margin) {
+                posX = viewportWidth - menuRect.width - margin;
             }
 
+            // 垂直方向邊界檢查
+            if (posY < margin) {
+                // 上方空間不足，顯示在下方
+                posY = y + 25;
+            }
+            if (posY + menuRect.height > viewportHeight - margin) {
+                // 下方也不足，強制顯示在上方
+                posY = viewportHeight - menuRect.height - margin;
+            }
+
+            // 設定選單位置
             menu.style.left = posX + 'px';
             menu.style.top = posY + 'px';
+
+            console.log('📍 選單位置:', posX, posY);
         }
 
         function hideSelectionMenu() {
@@ -5095,25 +5209,41 @@ ${recentContent}
         }
 
         function handleTextSelection() {
-            const selection = window.getSelection();
-            const text = selection.toString().trim();
+            // 延遲執行，避免與其他事件衝突
+            setTimeout(() => {
+                const selection = window.getSelection();
+                const text = selection.toString().trim();
 
-            if (text.length > 0 && el.editorBody.contains(selection.anchorNode)) {
-                selectedText = text;
-                selectedRange = selection.getRangeAt(0).cloneRange();
+                // 確保選取的文字長度足夠且在編輯器內
+                if (text.length > 0 && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const container = range.commonAncestorContainer;
 
-                // Get selection coordinates
-                const range = selection.getRangeAt(0);
-                const rect = range.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top;
+                    // 檢查選取是否在編輯器主體內
+                    const isInEditor = el.editorBody.contains(container.nodeType === 3 ? container.parentNode : container);
 
-                showSelectionMenu(x, y);
-            } else {
+                    if (isInEditor) {
+                        selectedText = text;
+                        selectedRange = range.cloneRange();
+
+                        // 獲取選取範圍的座標
+                        const rect = range.getBoundingClientRect();
+
+                        // 計算選單顯示位置（選取範圍的中心點）
+                        const x = rect.left + rect.width / 2;
+                        const y = rect.top + window.scrollY;
+
+                        console.log('📝 文字選取:', text.substring(0, 30) + '...', '座標:', x, y);
+                        showSelectionMenu(x, y);
+                        return;
+                    }
+                }
+
+                // 沒有有效選取，隱藏選單
                 hideSelectionMenu();
                 selectedText = '';
                 selectedRange = null;
-            }
+            }, 50); // 延遲 50ms 執行
         }
 
         function deleteSelectedText() {
@@ -5331,6 +5461,8 @@ ${selectedText}`;
                 updateUserUI(user);
 
                 if (user) {
+                    console.log('🔐 用戶已登入，開始同步資料');
+
                     // 只在非 redirect 情況下顯示歡迎訊息（redirect 已在上方處理）
                     const isFromRedirect = sessionStorage.getItem('authRedirectHandled');
                     if (!isFromRedirect) {
@@ -5338,23 +5470,47 @@ ${selectedText}`;
                     }
                     sessionStorage.setItem('authRedirectHandled', 'true');
 
-                    // Sync all data
+                    // 強制執行完整的資料同步
+                    console.log('⏳ 執行 syncAllData...');
                     await storageManager.syncAllData();
+                    console.log('✓ syncAllData 完成');
 
-                    // Reload current document state with safety check
-                    state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+                    // 同步完成後，強制從 localStorage 重新讀取最新的 docIndex
+                    // 使用直接讀取而非 loadFromStorage，確保取得同步後的最新資料
+                    try {
+                        const docIndexData = localStorage.getItem(STORAGE.DOC_INDEX);
+                        if (docIndexData) {
+                            state.docIndex = JSON.parse(docIndexData);
+                            console.log(`✓ 重新載入 docIndex，共 ${state.docIndex.length} 個文檔`);
+                        } else {
+                            state.docIndex = [];
+                            console.log('⚠️ docIndex 為空');
+                        }
+                    } catch (e) {
+                        console.error('❌ 載入 docIndex 失敗:', e);
+                        state.docIndex = [];
+                    }
+
                     ensureDocIndexIsArray();
                     renderDocList();
 
+                    // 載入最新的文檔（同步後的版本）
                     if (state.docIndex.length > 0) {
+                        console.log(`📄 載入最新文檔: ${state.docIndex[0].id}`);
                         loadDocument(state.docIndex[0].id);
+                    } else {
+                        console.log('⚠️ 沒有文檔，建立新文檔');
+                        createDocument();
                     }
 
                     // Reload global settings
                     loadGlobalSettings();
                     renderWorldLibrarySelect();
+
+                    console.log('✓ 登入後同步與載入完成');
                 } else {
                     // 登出時清除標記
+                    console.log('🔓 用戶已登出');
                     sessionStorage.removeItem('authRedirectHandled');
                 }
             });
