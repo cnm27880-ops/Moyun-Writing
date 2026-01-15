@@ -281,6 +281,77 @@
             background: var(--accent-light);
         }
 
+        /* Network Status Indicator - 網路狀態指示器 */
+        .network-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 12px;
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator {
+            font-size: 0.6rem;
+            line-height: 1;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-indicator.online {
+            color: #4CAF50;
+        }
+
+        .status-indicator.offline {
+            color: #FF9800;
+            animation: statusBlink 1s ease-in-out infinite;
+        }
+
+        .status-text {
+            color: var(--ink-secondary);
+        }
+
+        .network-status.offline {
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .network-status.syncing {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .network-status.syncing .status-indicator {
+            color: #2196F3;
+            animation: statusSpin 1s linear infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes statusBlink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.3; }
+        }
+
+        @keyframes statusSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hide status text on small screens */
+        @media (max-width: 600px) {
+            .status-text {
+                display: none;
+            }
+            .network-status {
+                padding: 4px 8px;
+            }
+        }
+
         /* ============================================
            Overlay
            ============================================ */
@@ -930,6 +1001,27 @@
             padding: var(--spacing-xl);
             flex: 1;
             min-height: 0;
+            transition: border 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* AI Writing Breathing Effect - 呼吸燈特效 */
+        .editor-paper.ai-writing {
+            border: 2px solid var(--accent);
+            animation: breathingGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes breathingGlow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(107, 142, 35, 0.3),
+                            0 0 20px rgba(107, 142, 35, 0.2),
+                            var(--shadow-card);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(107, 142, 35, 0.5),
+                            0 0 30px rgba(107, 142, 35, 0.3),
+                            0 0 40px rgba(107, 142, 35, 0.1),
+                            var(--shadow-card);
+            }
         }
 
         /* Mobile: Infinite paper - no side margins, full width */
@@ -1914,6 +2006,104 @@
 
         .character-empty-text {
             font-size: 0.85rem;
+        }
+
+        /* ============================================
+           Inspiration Drawer - 靈感抽屜
+           ============================================ */
+        .inspiration-drawer {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: linear-gradient(135deg, rgba(255, 243, 224, 0.6), rgba(255, 228, 196, 0.4));
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.1);
+        }
+
+        .inspiration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .inspiration-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-family: var(--font-ui);
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--ink-dark);
+        }
+
+        .inspiration-title span:first-child {
+            font-size: 1.1rem;
+        }
+
+        .generate-conflict-btn {
+            padding: 6px 14px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: linear-gradient(135deg, #FFC107, #FF9800);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(255, 152, 0, 0.25);
+        }
+
+        .generate-conflict-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 152, 0, 0.35);
+        }
+
+        .generate-conflict-btn:active {
+            transform: translateY(0);
+        }
+
+        .inspiration-content {
+            min-height: 80px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            font-family: var(--font-literary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--ink-dark);
+        }
+
+        .inspiration-empty {
+            text-align: center;
+            padding: var(--spacing-lg);
+            color: var(--ink-muted);
+        }
+
+        .inspiration-empty-icon {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-sm);
+            opacity: 0.5;
+        }
+
+        .inspiration-empty-text {
+            font-size: 0.85rem;
+            font-family: var(--font-ui);
+        }
+
+        .inspiration-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .inspiration-loading {
+            text-align: center;
+            color: var(--ink-muted);
+            font-style: italic;
+            padding: var(--spacing-lg);
         }
 
         /* ============================================
