@@ -90,11 +90,12 @@
 
                 try {
                     this.notifySyncStatus('syncing');
-                    const dataWithTimestamp = {
+                    // 只在沒有時間戳時才添加，避免覆蓋已有的時間戳
+                    const dataToSave = data._lastModified ? data : {
                         ...data,
                         _lastModified: Date.now()
                     };
-                    await firebaseDB.ref(`users/${this.getUserId()}/${path}`).set(dataWithTimestamp);
+                    await firebaseDB.ref(`users/${this.getUserId()}/${path}`).set(dataToSave);
                     this.notifySyncStatus('synced');
                     return true;
                 } catch (error) {
@@ -345,10 +346,21 @@
                     return bTime - aTime;
                 });
 
-                // 保存合併後的索引（使用直接寫入，繞過保護機制）
-                console.log(`💾 保存合併後的索引 (共 ${mergedIndex.length} 個文檔)`);
-                localStorage.setItem(STORAGE.DOC_INDEX, JSON.stringify(mergedIndex));
-                await this.saveCloud('docs/index', mergedIndex);
+                // 保存合併後的索引（加入防呆檢查）
+                if (mergedIndex.length > 0) {
+                    console.log(`💾 保存合併後的索引 (共 ${mergedIndex.length} 個文檔)`);
+                    localStorage.setItem(STORAGE.DOC_INDEX, JSON.stringify(mergedIndex));
+                    await this.saveCloud('docs/index', mergedIndex);
+                } else {
+                    // 檢查是否有現有索引，避免誤刪
+                    const existingIndex = localStorage.getItem(STORAGE.DOC_INDEX);
+                    if (existingIndex) {
+                        console.warn('⚠️ 合併後索引為空但本地有資料，跳過保存以保護現有資料');
+                    } else {
+                        console.log('💾 索引為空，初始化空索引');
+                        localStorage.setItem(STORAGE.DOC_INDEX, JSON.stringify([]));
+                    }
+                }
 
                 console.log('✓ 文檔索引同步完成');
             }

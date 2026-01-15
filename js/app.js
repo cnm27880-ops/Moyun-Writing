@@ -1222,7 +1222,7 @@ ${recentContent}
 ${selectedText}`;
 
             try {
-                const response = await callAPI([{ role: 'user', content: prompt }]);
+                const response = await callAPI(prompt);
                 if (response && state.currentDoc) {
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {
@@ -1255,7 +1255,7 @@ ${selectedText}`;
 ${selectedText}`;
 
             try {
-                const response = await callAPI([{ role: 'user', content: prompt }]);
+                const response = await callAPI(prompt);
                 if (response && state.currentDoc) {
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {

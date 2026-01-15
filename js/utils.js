@@ -107,16 +107,24 @@
                 }
 
                 // Add timestamp for sync comparison
-                const dataWithTimestamp = {
-                    ...data,
-                    _lastModified: Date.now()
-                };
-                localStorage.setItem(key, JSON.stringify(dataWithTimestamp));
+                // 注意：陣列不能使用展開運算符添加時間戳，否則會轉換成物件
+                let dataToSave;
+                if (Array.isArray(data)) {
+                    // 對於陣列，直接儲存（陣列項目內部已有 lastModified）
+                    dataToSave = data;
+                } else {
+                    // 對於物件，添加時間戳
+                    dataToSave = {
+                        ...data,
+                        _lastModified: Date.now()
+                    };
+                }
+                localStorage.setItem(key, JSON.stringify(dataToSave));
 
                 // If logged in, also sync to cloud
                 const cloudPath = getCloudPath(key);
                 if (storageManager.isLoggedIn() && cloudPath) {
-                    storageManager.saveCloud(cloudPath, dataWithTimestamp);
+                    storageManager.saveCloud(cloudPath, dataToSave);
                 }
             } catch (e) {
                 console.error('Storage save error:', e);
