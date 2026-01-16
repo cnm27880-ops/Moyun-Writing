@@ -1043,6 +1043,11 @@
             line-height: var(--line-height);
             color: var(--ink-primary);
             min-height: 200px;
+            /* 禁用文本選擇，防止觸發手機複製貼上 */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .editor-body:empty::before {
@@ -1080,6 +1085,13 @@
         .paragraph-content {
             outline: none;
             min-height: 1.5em;
+            /* 禁用文本選擇 */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            /* 禁用長按選單 */
+            -webkit-touch-callout: none;
         }
 
         /* Streaming Cursor - 閃爍游標 */
@@ -2681,6 +2693,12 @@
             outline: none;
             resize: none;
             overflow-y: auto;
+            /* 確保編輯畫布中可以選擇和複製粘貼文本 */
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            -webkit-touch-callout: default;
         }
 
         .edit-canvas-delete {

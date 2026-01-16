@@ -363,12 +363,35 @@ ${drivesList}
                 jsonText = jsonText.replace(/```\s*/g, '');
                 jsonText = jsonText.trim();
 
-                // 嘗試提取 JSON 物件 (更寬容的 regex)
-                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                // 嘗試多種方法提取 JSON
+                let result = null;
+                let jsonMatch = null;
 
-                if (jsonMatch) {
+                // 方法 1: 直接解析（如果整個回應就是 JSON）
+                try {
+                    result = JSON.parse(jsonText);
+                    console.log('成功使用方法 1 解析 JSON');
+                } catch (e) {
+                    // 方法 2: 使用貪婪匹配提取最外層的 {}
+                    jsonMatch = jsonText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+                    if (!jsonMatch) {
+                        // 方法 3: 更寬鬆的匹配，處理嵌套結構
+                        jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                    }
+
+                    if (jsonMatch) {
+                        try {
+                            result = JSON.parse(jsonMatch[0]);
+                            console.log('成功使用方法 2/3 解析 JSON');
+                        } catch (parseError) {
+                            console.error('JSON 解析錯誤:', parseError);
+                            console.error('嘗試解析的文字:', jsonMatch[0]);
+                        }
+                    }
+                }
+
+                if (result) {
                     try {
-                        const result = JSON.parse(jsonMatch[0]);
 
                         // 驗證返回的資料格式
                         if (typeof result !== 'object' || result === null) {
@@ -401,14 +424,13 @@ ${drivesList}
                         updateStatusBar();
                         autoSave();
                         showToast(`「${character.name}」心理分析完成 (更新 ${updatedCount} 項)`, 'success', 2000);
-                    } catch (parseError) {
-                        console.error('JSON 解析錯誤:', parseError);
-                        console.error('嘗試解析的文字:', jsonMatch[0]);
-                        showToast(`分析格式錯誤: ${parseError.message}`, 'error', 3000);
+                    } catch (validationError) {
+                        console.error('資料驗證錯誤:', validationError);
+                        showToast(`分析結果驗證失敗: ${validationError.message}`, 'error', 3000);
                     }
                 } else {
                     console.error('無法從回應中提取 JSON:', response);
-                    showToast('無法從 AI 回應中提取有效的 JSON 資料', 'error', 3000);
+                    showToast('沒有提取到有效的 JSON 資料，請檢查 API 回應格式', 'error', 3000);
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -2056,6 +2078,23 @@ ${selectedText}`;
             // el.expandBtn.addEventListener('click', expandSelectedText);
             // el.editBtn.addEventListener('click', enableEditing);
             // el.deleteTextBtn.addEventListener('click', deleteSelectedText);
+
+            // 禁用主編輯器區域的系統複製粘貼選單（手機長按選單）
+            el.editorBody.addEventListener('contextmenu', (e) => {
+                // 如果不是在編輯模式下，禁用 contextmenu
+                const target = e.target.closest('.paragraph-content');
+                if (target && target.getAttribute('contenteditable') !== 'true') {
+                    e.preventDefault();
+                }
+            });
+
+            // 禁用選擇開始事件（額外的保護層）
+            el.editorBody.addEventListener('selectstart', (e) => {
+                const target = e.target.closest('.paragraph-content');
+                if (target && target.getAttribute('contenteditable') !== 'true') {
+                    e.preventDefault();
+                }
+            });
 
             // Edit Canvas
             el.editCanvasCancel.addEventListener('click', closeEditCanvas);
