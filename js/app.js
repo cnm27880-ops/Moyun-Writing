@@ -895,7 +895,7 @@ ${recentContent}
             }
         }
 
-        function saveWorldToLibrary() {
+        async function saveWorldToLibrary() {
             console.log('💾 嘗試儲存世界觀到圖書館...');
 
             const name = el.worldNameInput.value.trim();
@@ -918,49 +918,68 @@ ${recentContent}
                 return;
             }
 
-            const library = loadWorldLibrary();
-            console.log('當前圖書館內容:', library);
+            // 設置按鈕 Loading 狀態
+            const originalBtnText = el.worldSaveBtn.textContent;
+            const wasDisabled = el.worldSaveBtn.disabled;
+            el.worldSaveBtn.disabled = true;
+            el.worldSaveBtn.textContent = '儲存中...';
 
-            // 優先根據名稱查找是否已存在
-            const existingIndex = library.findIndex(w => w.name === name);
-            console.log('現有項目索引 (by name):', existingIndex);
+            try {
+                const library = loadWorldLibrary();
+                console.log('當前圖書館內容:', library);
 
-            let savedWorldId;
+                // 優先根據名稱查找是否已存在
+                const existingIndex = library.findIndex(w => w.name === name);
+                console.log('現有項目索引 (by name):', existingIndex);
 
-            if (existingIndex !== -1) {
-                // 更新現有的
-                console.log('✏️ 更新現有世界觀:', name);
-                library[existingIndex].content = content;
-                library[existingIndex].lastModified = Date.now();
-                savedWorldId = library[existingIndex].id;
-                saveWorldLibrary(library);
-                showToast(`已更新「${name}」`, 'success');
-            } else {
-                // 新增
-                console.log('➕ 新增世界觀:', name);
-                const newWorld = {
-                    id: generateId(),
-                    name: name,
-                    content: content,
-                    lastModified: Date.now()
-                };
-                library.push(newWorld);
-                savedWorldId = newWorld.id;
-                saveWorldLibrary(library);
-                showToast(`已儲存「${name}」到圖書館`, 'success');
-            }
+                let savedWorldId;
+                let isUpdate = false;
 
-            // 無論是新增還是更新，都刷新下拉選單並選中該項目
-            renderWorldLibrarySelect();
-            el.worldLibrarySelect.value = savedWorldId;
-            el.worldDeleteBtn.disabled = false;
+                if (existingIndex !== -1) {
+                    // 更新現有的
+                    console.log('✏️ 更新現有世界觀:', name);
+                    library[existingIndex].content = content;
+                    library[existingIndex].lastModified = Date.now();
+                    savedWorldId = library[existingIndex].id;
+                    saveWorldLibrary(library);
+                    isUpdate = true;
+                } else {
+                    // 新增
+                    console.log('➕ 新增世界觀:', name);
+                    const newWorld = {
+                        id: generateId(),
+                        name: name,
+                        content: content,
+                        lastModified: Date.now()
+                    };
+                    library.push(newWorld);
+                    savedWorldId = newWorld.id;
+                    saveWorldLibrary(library);
+                    isUpdate = false;
+                }
 
-            console.log('✅ 世界觀儲存完成，已選中 ID:', savedWorldId);
+                // 無論是新增還是更新，都刷新下拉選單並選中該項目
+                renderWorldLibrarySelect();
+                el.worldLibrarySelect.value = savedWorldId;
+                el.worldDeleteBtn.disabled = false;
 
-            // 同步到雲端（如果已登入）
-            if (storageManager.isLoggedIn()) {
-                console.log('🔄 同步世界觀到雲端...');
-                storageManager.syncWorldLibrary();
+                console.log('✅ 世界觀儲存完成，已選中 ID:', savedWorldId);
+
+                // 同步到雲端（如果已登入）
+                if (storageManager.isLoggedIn()) {
+                    console.log('🔄 同步世界觀到雲端...');
+                    await storageManager.syncWorldLibrary();
+                    showToast(isUpdate ? `已更新並同步「${name}」` : `已儲存並同步「${name}」到圖書館`, 'success');
+                } else {
+                    showToast(isUpdate ? `已更新「${name}」` : `已儲存「${name}」到圖書館`, 'success');
+                }
+            } catch (error) {
+                console.error('儲存世界觀時發生錯誤:', error);
+                showToast('儲存失敗，請稍後再試', 'error');
+            } finally {
+                // 恢復按鈕狀態
+                el.worldSaveBtn.disabled = wasDisabled;
+                el.worldSaveBtn.textContent = originalBtnText;
             }
         }
 

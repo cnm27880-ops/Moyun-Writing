@@ -223,6 +223,11 @@ class StorageManager {
             console.error('Full sync error:', error);
             this.notifySyncStatus('error');
             return false;
+        } finally {
+            // 確保無論成功或失敗，都會解除 syncing 狀態
+            if (this.syncStatus === 'syncing') {
+                this.notifySyncStatus('idle');
+            }
         }
     }
 
