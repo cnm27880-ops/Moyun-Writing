@@ -114,7 +114,14 @@ const $$ = sel => document.querySelectorAll(sel);
             userName: $('userName'),
             syncDot: $('syncDot'),
             syncText: $('syncText'),
-            logoutBtn: $('logoutBtn')
+            logoutBtn: $('logoutBtn'),
+
+            // Edit Canvas
+            editCanvas: $('editCanvas'),
+            editCanvasTextarea: $('editCanvasTextarea'),
+            editCanvasCancel: $('editCanvasCancel'),
+            editCanvasConfirm: $('editCanvasConfirm'),
+            editCanvasDelete: $('editCanvasDelete')
         };
         function showToast(message, type = 'info', duration = 3000) {
             const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
@@ -329,6 +336,40 @@ const $$ = sel => document.querySelectorAll(sel);
                     }
                 });
             });
+
+            // Bind long press events for paragraphs
+            el.editorBody.querySelectorAll('.paragraph').forEach(para => {
+                para.addEventListener('mousedown', (e) => {
+                    if (typeof handleLongPressStart === 'function') {
+                        handleLongPressStart(e);
+                    }
+                });
+                para.addEventListener('mousemove', (e) => {
+                    if (typeof handleLongPressMove === 'function') {
+                        handleLongPressMove(e);
+                    }
+                });
+                para.addEventListener('mouseup', () => {
+                    if (typeof handleLongPressEnd === 'function') {
+                        handleLongPressEnd();
+                    }
+                });
+                para.addEventListener('touchstart', (e) => {
+                    if (typeof handleLongPressStart === 'function') {
+                        handleLongPressStart(e);
+                    }
+                });
+                para.addEventListener('touchmove', (e) => {
+                    if (typeof handleLongPressMove === 'function') {
+                        handleLongPressMove(e);
+                    }
+                });
+                para.addEventListener('touchend', () => {
+                    if (typeof handleLongPressEnd === 'function') {
+                        handleLongPressEnd();
+                    }
+                });
+            });
         }
 
         function addParagraph(content, source = 'user') {
@@ -372,6 +413,16 @@ const $$ = sel => document.querySelectorAll(sel);
                     // Update stats when stats tab is opened
                     if (target === 'stats') {
                         updateStats();
+                    }
+
+                    // Update device count and backup list when settings tab is opened
+                    if (target === 'settings') {
+                        if (typeof loadDeviceCount === 'function') {
+                            loadDeviceCount();
+                        }
+                        if (typeof renderBackupList === 'function') {
+                            renderBackupList();
+                        }
                     }
                 });
             });
