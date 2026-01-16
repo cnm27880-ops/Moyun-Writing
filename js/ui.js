@@ -484,7 +484,7 @@ const $$ = sel => document.querySelectorAll(sel);
                                 <span class="sync-switch"></span>
                                 <span>自動同步</span>
                             </label>
-                            <button class="analyze-now-btn" data-action="analyze" data-character-id="${escapeHtml(character.id)}"
+                            <button class="analyze-now-btn" data-action="analyze" data-character-id="${escapeHtml(character.id)}">
                                 <span>🧠</span>
                                 <span>立即分析</span>
                             </button>
