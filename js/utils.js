@@ -139,11 +139,24 @@
 
                 const parsed = JSON.parse(data);
 
-                // 特殊處理：docIndex 必須是陣列
+                // 特殊處理：docIndex 和 worldLibrary 必須是陣列
                 if (key === STORAGE.DOC_INDEX) {
                     if (!Array.isArray(parsed)) {
                         console.warn('loadFromStorage: DOC_INDEX 資料損壞，已重置為預設值');
                         return defaultValue;
+                    }
+                }
+
+                // 特殊處理：worldLibrary 必須是陣列，若是物件則轉換
+                if (key === STORAGE.WORLD_LIBRARY) {
+                    if (!Array.isArray(parsed)) {
+                        if (parsed && typeof parsed === 'object') {
+                            console.warn('loadFromStorage: WORLD_LIBRARY 是物件，正在轉換為陣列');
+                            return Object.values(parsed);
+                        } else {
+                            console.warn('loadFromStorage: WORLD_LIBRARY 資料損壞，已重置為預設值');
+                            return defaultValue;
+                        }
                     }
                 }
 
