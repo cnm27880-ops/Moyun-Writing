@@ -1006,20 +1006,22 @@
 
         /* AI Writing Breathing Effect - 呼吸燈特效 */
         .editor-paper.ai-writing {
-            border: 2px solid var(--accent);
+            border: 3px solid var(--accent);
             animation: breathingGlow 2s ease-in-out infinite;
         }
 
         @keyframes breathingGlow {
             0%, 100% {
-                box-shadow: 0 0 10px rgba(107, 142, 35, 0.3),
-                            0 0 20px rgba(107, 142, 35, 0.2),
+                border-color: var(--accent);
+                box-shadow: 0 0 15px rgba(107, 142, 35, 0.4),
+                            0 0 25px rgba(107, 142, 35, 0.3),
                             var(--shadow-card);
             }
             50% {
-                box-shadow: 0 0 20px rgba(107, 142, 35, 0.5),
-                            0 0 30px rgba(107, 142, 35, 0.3),
-                            0 0 40px rgba(107, 142, 35, 0.1),
+                border-color: #8AAD3A;
+                box-shadow: 0 0 25px rgba(107, 142, 35, 0.6),
+                            0 0 40px rgba(107, 142, 35, 0.4),
+                            0 0 50px rgba(107, 142, 35, 0.2),
                             var(--shadow-card);
             }
         }
@@ -1103,6 +1105,48 @@
             .paragraph:hover .paragraph-tag {
                 opacity: 1;
             }
+        }
+
+        /* Regenerate Button for AI Paragraphs */
+        .regenerate-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            opacity: 0;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .paragraph:hover .regenerate-btn {
+            opacity: 1;
+        }
+
+        .regenerate-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .regenerate-btn:active {
+            transform: scale(0.95);
+        }
+
+        .regenerate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* ============================================

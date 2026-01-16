@@ -99,6 +99,7 @@ const $$ = sel => document.querySelectorAll(sel);
             selectionMenu: $('selectionMenu'),
             refineBtn: $('refineBtn'),
             expandBtn: $('expandBtn'),
+            editBtn: $('editBtn'),
             deleteTextBtn: $('deleteTextBtn'),
 
             // Input Area
@@ -278,45 +279,18 @@ const $$ = sel => document.querySelectorAll(sel);
                 return;
             }
 
-            // 預設 contenteditable="false"，需要長按才能編輯
+            // 預設 contenteditable="false"，需要雙擊或透過選單的「編輯」按鈕才能編輯
             el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => `
                 <div class="paragraph ${p.source === 'user' ? 'user' : 'ai'}" data-id="${escapeHtml(p.id)}">
                     <span class="paragraph-tag">${p.source === 'user' ? '你' : 'AI'}</span>
                     <div class="paragraph-content" contenteditable="false">${parseMarkdown(p.content)}</div>
+                    ${p.source === 'ai' ? `<button class="regenerate-btn" data-id="${escapeHtml(p.id)}" title="重新生成">🔄</button>` : ''}
                 </div>
             `).join('');
 
-            // Bind edit events with long-press to edit
+            // Bind edit events
             el.editorBody.querySelectorAll('.paragraph-content').forEach(content => {
                 const paraId = content.parentElement.dataset.id;
-
-                let touchTimer = null;
-                let isLongPress = false;
-
-                // 觸控裝置：長按觸發編輯
-                content.addEventListener('touchstart', (e) => {
-                    isLongPress = false;
-                    touchTimer = setTimeout(() => {
-                        isLongPress = true;
-                        content.setAttribute('contenteditable', 'true');
-                        content.focus();
-                        showToast('進入編輯模式', 'info', 1000);
-                    }, 800); // 長按 800ms 觸發
-                });
-
-                content.addEventListener('touchend', () => {
-                    if (touchTimer) {
-                        clearTimeout(touchTimer);
-                        touchTimer = null;
-                    }
-                });
-
-                content.addEventListener('touchmove', () => {
-                    if (touchTimer) {
-                        clearTimeout(touchTimer);
-                        touchTimer = null;
-                    }
-                });
 
                 // 電腦端：雙擊觸發編輯
                 content.addEventListener('dblclick', () => {
@@ -342,6 +316,17 @@ const $$ = sel => document.querySelectorAll(sel);
                     e.preventDefault();
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
+                });
+            });
+
+            // Bind regenerate button events for AI paragraphs
+            el.editorBody.querySelectorAll('.regenerate-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const paraId = btn.dataset.id;
+                    if (typeof regenerateParagraph === 'function') {
+                        regenerateParagraph(paraId);
+                    }
                 });
             });
         }
