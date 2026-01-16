@@ -329,27 +329,18 @@
                     .map(d => d.id)
                     .join(', ');
 
-                const analysisPrompt = `Role: Psychoanalyst
-Task: Analyze the character "${character.name}" based on the following story excerpt and evaluate their current psychological drives.
+                const analysisPrompt = `Role: Psychoanalyst.
+Task: Analyze the character "${character.name}" based on the story fragment below.
+Output: Strictly valid JSON only. Do not output markdown code blocks. Do not output explanations.
 
-【劇情片段】
+Story Fragment:
 ${recentContent}
 
-Instructions: Rate the following psychological drives (0-100). Use null if not evident in the text:
+Metrics (0-100 or null if not applicable):
 ${drivesList}
 
-Drive Definitions:
-- survival: 生存本能（優先保命，恐懼死亡）
-- logic: 絕對理智（計算得失，壓抑情感）
-- curiosity: 狂熱求知（探索未知，不計代價）
-- love: 情感羈絆（重視特定對象，溫柔守護）
-- destruction: 毀滅衝動（暴力，破壞慾）
-- duty: 道德責任（堅持原則，正義感）
-- pride: 傲慢自尊（維護顏面，不願示弱）
-- greed: 貪婪慾望（渴求力量或資源）
-
-Output: Strictly valid JSON only. No markdown, no conversational text.
-Example: {"survival": 80, "logic": 20, "curiosity": null, ...}`;
+JSON Format Example:
+{"survival": 80, "logic": 20, "curiosity": null, ...}`;
 
                 const response = await callAPIForAnalysis(analysisPrompt);
 
@@ -433,7 +424,7 @@ Example: {"survival": 80, "logic": 20, "curiosity": null, ...}`;
                 } else {
                     console.error('無法從回應中提取 JSON:', response);
                     showToast('沒有提取到有效的 JSON 資料，請檢查 API 回應格式', 'error', 3000);
-                    alert("分析失敗，API 回傳內容為：\n" + response.substring(0, 200));
+                    alert("分析失敗 (API 回傳內容)：\n" + response.substring(0, 500));
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -449,15 +440,11 @@ Example: {"survival": 80, "logic": 20, "curiosity": null, ...}`;
         async function callAPIForAnalysis(prompt) {
             const { apiEndpoint, apiKey, modelName } = state.globalSettings;
 
+            // 只發送必要的 Header，避免某些 API 因額外 Header 報錯
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             };
-
-            if (state.globalSettings.apiFormat === 'openrouter') {
-                headers['HTTP-Referer'] = window.location.origin;
-                headers['X-Title'] = 'MoYun';
-            }
 
             const response = await fetch(apiEndpoint, {
                 method: 'POST',
@@ -469,7 +456,8 @@ Example: {"survival": 80, "logic": 20, "curiosity": null, ...}`;
                     ],
                     temperature: 0.3,  // 較低的 temperature 以獲得更穩定的分析結果
                     max_tokens: 500,
-                    response_format: { type: "json_object" }  // 強制 JSON 輸出模式
+                    response_format: { type: "json_object" },  // 強制 JSON 輸出模式
+                    stream: false  // 確保使用非串流模式
                 })
             });
 
