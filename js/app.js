@@ -670,30 +670,35 @@ ${drivesDescription}
 
         function buildConversationHistory() {
             if (!state.currentDoc?.paragraphs) return [];
-            
+
             const recent = state.currentDoc.paragraphs.slice(-20);
             const messages = [];
             let currentRole = null;
             let currentContent = '';
-            
+
             recent.forEach(p => {
+                // 跳過空內容或只有空白字元的段落
+                if (!p.content || !p.content.trim()) {
+                    return;
+                }
+
                 const role = p.source === 'user' ? 'user' : 'assistant';
-                
+
                 if (role === currentRole) {
                     currentContent += '\n\n' + p.content;
                 } else {
-                    if (currentRole) {
+                    if (currentRole && currentContent.trim()) {
                         messages.push({ role: currentRole, content: currentContent });
                     }
                     currentRole = role;
                     currentContent = p.content;
                 }
             });
-            
-            if (currentRole) {
+
+            if (currentRole && currentContent.trim()) {
                 messages.push({ role: currentRole, content: currentContent });
             }
-            
+
             return messages;
         }
 
@@ -706,7 +711,8 @@ ${drivesDescription}
 
             const systemPrompt = buildSystemPrompt();
             const history = buildConversationHistory();
-            history.push({ role: 'user', content: userContent });
+            // 不再手動 push userContent，因為它已經透過 addParagraph 存入 state.currentDoc
+            // buildConversationHistory 會自動抓取它
 
             const headers = {
                 'Content-Type': 'application/json',
@@ -2043,13 +2049,13 @@ ${selectedText}`;
             el.focusModeBtn.addEventListener('click', toggleFocusMode);
             el.focusModeExit.addEventListener('click', exitFocusMode);
 
-            // Selection Menu
-            document.addEventListener('mouseup', debounce(handleTextSelection, 100));
-            document.addEventListener('touchend', debounce(handleTextSelection, 100));
-            el.refineBtn.addEventListener('click', refineSelectedText);
-            el.expandBtn.addEventListener('click', expandSelectedText);
-            el.editBtn.addEventListener('click', enableEditing);
-            el.deleteTextBtn.addEventListener('click', deleteSelectedText);
+            // Selection Menu - 已移除，功能整合到長按選單
+            // document.addEventListener('mouseup', debounce(handleTextSelection, 100));
+            // document.addEventListener('touchend', debounce(handleTextSelection, 100));
+            // el.refineBtn.addEventListener('click', refineSelectedText);
+            // el.expandBtn.addEventListener('click', expandSelectedText);
+            // el.editBtn.addEventListener('click', enableEditing);
+            // el.deleteTextBtn.addEventListener('click', deleteSelectedText);
 
             // Edit Canvas
             el.editCanvasCancel.addEventListener('click', closeEditCanvas);
@@ -2057,13 +2063,6 @@ ${selectedText}`;
             el.editCanvasDelete.addEventListener('click', deleteFromEditCanvas);
             el.editCanvas.addEventListener('click', (e) => {
                 if (e.target === el.editCanvas) closeEditCanvas();
-            });
-
-            // Hide selection menu on click outside
-            document.addEventListener('mousedown', (e) => {
-                if (!el.selectionMenu.contains(e.target)) {
-                    hideSelectionMenu();
-                }
             });
 
             // Keyboard shortcuts
@@ -2335,6 +2334,8 @@ ${content}`;
         function initActionSheet() {
             const overlay = document.getElementById('actionSheetOverlay');
             const editBtn = document.getElementById('actionSheetEdit');
+            const refineBtn = document.getElementById('actionSheetRefine');
+            const expandBtn = document.getElementById('actionSheetExpand');
             const deleteBtn = document.getElementById('actionSheetDelete');
             const cancelBtn = document.getElementById('actionSheetCancel');
 
@@ -2346,6 +2347,24 @@ ${content}`;
                 editBtn.addEventListener('click', () => {
                     if (currentActionSheetParagraphId) {
                         openEditCanvas(currentActionSheetParagraphId);
+                    }
+                    hideActionSheet();
+                });
+            }
+
+            if (refineBtn) {
+                refineBtn.addEventListener('click', () => {
+                    if (currentActionSheetParagraphId) {
+                        refineParagraph(currentActionSheetParagraphId);
+                    }
+                    hideActionSheet();
+                });
+            }
+
+            if (expandBtn) {
+                expandBtn.addEventListener('click', () => {
+                    if (currentActionSheetParagraphId) {
+                        expandParagraph(currentActionSheetParagraphId);
                     }
                     hideActionSheet();
                 });
@@ -2368,6 +2387,74 @@ ${content}`;
         function showParagraphMenu(paraId) {
             // 使用新的 Action Sheet
             showActionSheet(paraId);
+        }
+
+        async function refineParagraph(paraId) {
+            if (!state.currentDoc || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            const paragraph = state.currentDoc.paragraphs.find(p => p.id === paraId);
+            if (!paragraph || !paragraph.content.trim()) {
+                showToast('找不到段落或段落內容為空', 'warning');
+                return;
+            }
+
+            showToast('正在潤飾段落...', 'info', 2000);
+
+            const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${paragraph.content}`;
+
+            try {
+                const response = await callAPI(prompt);
+                if (response) {
+                    // 在獨立編輯畫布中顯示結果供用戶確認
+                    currentEditingParagraphId = paraId;
+                    el.editCanvasTextarea.value = response;
+                    el.editCanvas.classList.add('active');
+                    el.editCanvasTextarea.focus();
+                    showToast('潤飾完成，請確認修改', 'success', 2000);
+                }
+            } catch (error) {
+                showToast('潤飾失敗：' + error.message, 'error');
+            }
+        }
+
+        async function expandParagraph(paraId) {
+            if (!state.currentDoc || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            const paragraph = state.currentDoc.paragraphs.find(p => p.id === paraId);
+            if (!paragraph || !paragraph.content.trim()) {
+                showToast('找不到段落或段落內容為空', 'warning');
+                return;
+            }
+
+            showToast('正在擴寫段落...', 'info', 2000);
+
+            const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${paragraph.content}`;
+
+            try {
+                const response = await callAPI(prompt);
+                if (response) {
+                    // 在獨立編輯畫布中顯示結果供用戶確認
+                    currentEditingParagraphId = paraId;
+                    el.editCanvasTextarea.value = response;
+                    el.editCanvas.classList.add('active');
+                    el.editCanvasTextarea.focus();
+                    showToast('擴寫完成，請確認修改', 'success', 2000);
+                }
+            } catch (error) {
+                showToast('擴寫失敗：' + error.message, 'error');
+            }
         }
 
         function deleteParagraph(paraId) {

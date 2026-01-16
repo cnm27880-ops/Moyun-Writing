@@ -95,12 +95,12 @@ const $$ = sel => document.querySelectorAll(sel);
             focusModeBtn: $('focusModeBtn'),
             focusModeExit: $('focusModeExit'),
 
-            // Selection Menu
-            selectionMenu: $('selectionMenu'),
-            refineBtn: $('refineBtn'),
-            expandBtn: $('expandBtn'),
-            editBtn: $('editBtn'),
-            deleteTextBtn: $('deleteTextBtn'),
+            // Selection Menu - 已移除，功能整合到長按選單
+            // selectionMenu: $('selectionMenu'),
+            // refineBtn: $('refineBtn'),
+            // expandBtn: $('expandBtn'),
+            // editBtn: $('editBtn'),
+            // deleteTextBtn: $('deleteTextBtn'),
 
             // Input Area
             inputArea: $('inputArea'),
@@ -694,50 +694,13 @@ const $$ = sel => document.querySelectorAll(sel);
         let selectedText = '';
         let selectedRange = null;
 
+        // selectionMenu 已移除，以下函數保留但不執行任何操作
         function showSelectionMenu(x, y) {
-            const menu = el.selectionMenu;
-
-            // 先設為顯示狀態以獲取尺寸
-            menu.style.display = 'flex';
-            menu.classList.add('active');
-
-            // 獲取選單尺寸
-            const menuRect = menu.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // 計算選單位置（預設顯示在選取範圍上方）
-            let posX = x - menuRect.width / 2;
-            let posY = y - menuRect.height - 15; // 上方留 15px 間距
-
-            // 水平方向邊界檢查
-            const margin = 10;
-            if (posX < margin) {
-                posX = margin;
-            }
-            if (posX + menuRect.width > viewportWidth - margin) {
-                posX = viewportWidth - menuRect.width - margin;
-            }
-
-            // 垂直方向邊界檢查
-            if (posY < margin) {
-                // 上方空間不足，顯示在下方
-                posY = y + 25;
-            }
-            if (posY + menuRect.height > viewportHeight - margin) {
-                // 下方也不足，強制顯示在上方
-                posY = viewportHeight - menuRect.height - margin;
-            }
-
-            // 設定選單位置
-            menu.style.left = posX + 'px';
-            menu.style.top = posY + 'px';
-
-            console.log('📍 選單位置:', posX, posY);
+            // 已移除，功能整合到長按選單
         }
 
         function hideSelectionMenu() {
-            el.selectionMenu.classList.remove('active');
+            // 已移除，功能整合到長按選單
         }
         function updateUserUI(user) {
             if (user) {
