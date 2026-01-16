@@ -81,6 +81,14 @@
             updateStatusBar();
 
             closeDrawerLeft();
+
+            // 自動滾動到文檔底部，方便閱讀最新內容
+            setTimeout(() => {
+                const editorBody = document.getElementById('editorBody');
+                if (editorBody) {
+                    editorBody.scrollTop = editorBody.scrollHeight;
+                }
+            }, 100); // 延遲確保 DOM 已完全更新
         }
 
         function saveCurrentDocument() {
@@ -440,40 +448,55 @@ JSON Format Example:
         async function callAPIForAnalysis(prompt) {
             const { apiEndpoint, apiKey, modelName } = state.globalSettings;
 
-            // 只發送必要的 Header，避免某些 API 因額外 Header 報錯
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             };
 
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'user', content: prompt }
-                    ],
-                    temperature: 0.3,  // 較低的 temperature 以獲得更穩定的分析結果
-                    max_tokens: 500,
-                    response_format: { type: "json_object" },  // 強制 JSON 輸出模式
-                    stream: false  // 確保使用非串流模式
-                })
-            });
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
+            // 確保不使用 Stream 模式
+            if (state.globalSettings.apiFormat === 'openrouter') {
+                headers['HTTP-Referer'] = window.location.origin;
+                headers['X-Title'] = 'MoYun';
             }
 
-            const data = await response.json();
-            const content = data.choices?.[0]?.message?.content;
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 1000,
+                        stream: false // ★ 明確禁止流式傳輸
+                    })
+                });
 
-            if (!content) {
-                throw new Error('API 回傳內容為空或格式錯誤');
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`API 請求失敗 (${response.status}): ${errText}`);
+                }
+
+                const data = await response.json();
+
+                // ★ 除錯關鍵：檢查資料結構
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    // 如果結構不對，直接 Alert 顯示原始資料，方便截圖除錯
+                    const debugMsg = "API 回傳結構異常:\n" + JSON.stringify(data, null, 2);
+                    console.error(debugMsg);
+                    alert(debugMsg); // 手機上會跳出視窗
+                    return '';
+                }
+
+                return data.choices[0].message.content || '';
+
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("API 連線錯誤:\n" + error.message); // 手機上會跳出視窗
+                throw error;
             }
-
-            return content;
         }
 
         function animateSlider(slider, targetValue) {
