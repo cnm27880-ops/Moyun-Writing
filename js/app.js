@@ -329,15 +329,16 @@
                     .map(d => d.id)
                     .join(', ');
 
-                const analysisPrompt = `你是一位心理分析師。請閱讀以下劇情，並分析角色「${character.name}」當前的心理驅動力。
+                const analysisPrompt = `Role: Psychoanalyst
+Task: Analyze the character "${character.name}" based on the following story excerpt and evaluate their current psychological drives.
 
 【劇情片段】
 ${recentContent}
 
-請針對以下指標評分 (0-100)，若文中未體現則填 null：
+Instructions: Rate the following psychological drives (0-100). Use null if not evident in the text:
 ${drivesList}
 
-每個指標的含義：
+Drive Definitions:
 - survival: 生存本能（優先保命，恐懼死亡）
 - logic: 絕對理智（計算得失，壓抑情感）
 - curiosity: 狂熱求知（探索未知，不計代價）
@@ -347,7 +348,8 @@ ${drivesList}
 - pride: 傲慢自尊（維護顏面，不願示弱）
 - greed: 貪婪慾望（渴求力量或資源）
 
-請只回傳 JSON 格式，例如：{"survival": 80, "logic": 20, "curiosity": null, ...}`;
+Output: Strictly valid JSON only. No markdown, no conversational text.
+Example: {"survival": 80, "logic": 20, "curiosity": null, ...}`;
 
                 const response = await callAPIForAnalysis(analysisPrompt);
 
@@ -431,6 +433,7 @@ ${drivesList}
                 } else {
                     console.error('無法從回應中提取 JSON:', response);
                     showToast('沒有提取到有效的 JSON 資料，請檢查 API 回應格式', 'error', 3000);
+                    alert("分析失敗，API 回傳內容為：\n" + response.substring(0, 200));
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -465,7 +468,8 @@ ${drivesList}
                         { role: 'user', content: prompt }
                     ],
                     temperature: 0.3,  // 較低的 temperature 以獲得更穩定的分析結果
-                    max_tokens: 500
+                    max_tokens: 500,
+                    response_format: { type: "json_object" }  // 強制 JSON 輸出模式
                 })
             });
 
@@ -475,7 +479,13 @@ ${drivesList}
             }
 
             const data = await response.json();
-            return data.choices[0]?.message?.content || '';
+            const content = data.choices?.[0]?.message?.content;
+
+            if (!content) {
+                throw new Error('API 回傳內容為空或格式錯誤');
+            }
+
+            return content;
         }
 
         function animateSlider(slider, targetValue) {
