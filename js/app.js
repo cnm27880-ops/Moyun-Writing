@@ -357,8 +357,11 @@ ${drivesList}
                 // 優化 JSON 提取邏輯：移除 Markdown 標記並提取 JSON
                 let jsonText = response.trim();
 
-                // 移除可能的 Markdown 標記
-                jsonText = jsonText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+                // 移除可能的 Markdown 標記（包括各種變體）
+                jsonText = jsonText.replace(/```json\s*/gi, '');
+                jsonText = jsonText.replace(/```javascript\s*/gi, '');
+                jsonText = jsonText.replace(/```\s*/g, '');
+                jsonText = jsonText.trim();
 
                 // 嘗試提取 JSON 物件 (更寬容的 regex)
                 const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
@@ -367,10 +370,17 @@ ${drivesList}
                     try {
                         const result = JSON.parse(jsonMatch[0]);
 
+                        // 驗證返回的資料格式
+                        if (typeof result !== 'object' || result === null) {
+                            throw new Error('返回的資料格式不正確');
+                        }
+
                         // 更新角色驅動力並添加動畫效果
+                        let updatedCount = 0;
                         Object.entries(result).forEach(([driveId, value]) => {
                             if (value !== null && CORE_DRIVES[driveId]) {
                                 character.drives[driveId] = value;
+                                updatedCount++;
 
                                 // 添加視覺反饋
                                 const slider = document.querySelector(
@@ -382,18 +392,23 @@ ${drivesList}
                             }
                         });
 
+                        if (updatedCount === 0) {
+                            showToast('未能識別任何心理驅動力', 'warning', 3000);
+                            return;
+                        }
+
                         renderCharacterList();
                         updateStatusBar();
                         autoSave();
-                        showToast(`「${character.name}」心理分析完成`, 'success', 2000);
+                        showToast(`「${character.name}」心理分析完成 (更新 ${updatedCount} 項)`, 'success', 2000);
                     } catch (parseError) {
                         console.error('JSON 解析錯誤:', parseError);
                         console.error('嘗試解析的文字:', jsonMatch[0]);
-                        showToast('分析格式錯誤，請重試', 'error', 3000);
+                        showToast(`分析格式錯誤: ${parseError.message}`, 'error', 3000);
                     }
                 } else {
                     console.error('無法從回應中提取 JSON:', response);
-                    showToast('分析格式錯誤，請重試', 'error', 3000);
+                    showToast('無法從 AI 回應中提取有效的 JSON 資料', 'error', 3000);
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -682,46 +697,67 @@ ${drivesDescription}
             return messages;
         }
 
-        async function callAPI(userContent) {
+        async function callAPI(userContent, options = {}) {
             const { apiEndpoint, apiKey, modelName, temperature } = state.globalSettings;
-            
+
             if (!apiKey) {
                 throw new Error('請先在設定中填入 API Key');
             }
-            
+
             const systemPrompt = buildSystemPrompt();
             const history = buildConversationHistory();
             history.push({ role: 'user', content: userContent });
-            
+
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
             };
-            
+
             if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
                 headers['X-Title'] = 'MoYun';
             }
-            
+
+            const requestBody = {
+                model: modelName,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...history
+                ],
+                temperature: parseFloat(temperature),
+                max_tokens: 4096
+            };
+
+            // 如果開啟 streaming 模式
+            if (options.stream) {
+                requestBody.stream = true;
+
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
+                }
+
+                return response; // 返回 response 供 stream 處理
+            }
+
+            // 原本的非 streaming 模式（用於分析等功能）
             const response = await fetch(apiEndpoint, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        ...history
-                    ],
-                    temperature: parseFloat(temperature),
-                    max_tokens: 4096
-                })
+                body: JSON.stringify(requestBody)
             });
-            
+
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
                 throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
             }
-            
+
             const data = await response.json();
             return data.choices[0]?.message?.content || '';
         }
@@ -784,16 +820,83 @@ ${drivesDescription}
                 editorPaper.classList.add('ai-writing');
             }
 
-            try {
-                const response = await callAPI(userPrompt);
-                if (response) {
-                    addParagraph(response, 'ai');
-                    showToast('AI 續寫完成', 'success', 2000);
+            // 即時建立空的 AI 段落
+            const aiParagraph = {
+                id: generateId(),
+                content: '',
+                source: 'ai',
+                timestamp: Date.now()
+            };
+            state.currentDoc.paragraphs.push(aiParagraph);
+            renderParagraphs();
 
-                    // 觸發自動同步（心靈同步功能）
-                    setTimeout(() => triggerAutoSync(), 500);
+            // 智慧滾動：將視窗捲動到新段落的頂部
+            const newPara = el.editorBody.querySelector(`[data-id="${aiParagraph.id}"]`);
+            if (newPara) {
+                // 添加 streaming 類別以顯示閃爍游標
+                newPara.classList.add('streaming');
+                newPara.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            try {
+                const response = await callAPI(userPrompt, { stream: true });
+
+                // 處理 SSE Stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // 保留未完成的行
+
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        if (!line.startsWith('data: ')) continue;
+
+                        const data = line.slice(6); // 移除 "data: " 前綴
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const parsed = JSON.parse(data);
+                            const delta = parsed.choices?.[0]?.delta?.content || '';
+                            if (delta) {
+                                fullContent += delta;
+                                // 即時更新段落內容
+                                aiParagraph.content = fullContent;
+                                const paraContent = newPara.querySelector('.paragraph-content');
+                                if (paraContent) {
+                                    paraContent.innerHTML = parseMarkdown(fullContent);
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse SSE data:', e);
+                        }
+                    }
                 }
+
+                // 完成後移除 streaming 類別
+                if (newPara) {
+                    newPara.classList.remove('streaming');
+                }
+
+                autoSave();
+                showToast('AI 續寫完成', 'success', 2000);
+
+                // 觸發自動同步（心靈同步功能）
+                setTimeout(() => triggerAutoSync(), 500);
             } catch (error) {
+                // 移除空段落
+                const paraIndex = state.currentDoc.paragraphs.findIndex(p => p.id === aiParagraph.id);
+                if (paraIndex !== -1) {
+                    state.currentDoc.paragraphs.splice(paraIndex, 1);
+                    renderParagraphs();
+                }
                 showToast(`續寫失敗: ${error.message}`, 'error');
             } finally {
                 state.isLoading = false;
@@ -1295,17 +1398,20 @@ ${selectedText}`;
 
             try {
                 const response = await callAPI(prompt);
-                if (response && state.currentDoc) {
+                if (response) {
+                    // 找到包含選取文字的段落
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {
                         if (paragraphs[i].content.includes(selectedText)) {
-                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            // 在獨立編輯畫布中顯示結果
+                            currentEditingParagraphId = paragraphs[i].id;
+                            el.editCanvasTextarea.value = paragraphs[i].content.replace(selectedText, response);
+                            el.editCanvas.classList.add('active');
+                            el.editCanvasTextarea.focus();
+                            showToast('潤飾完成，請確認修改', 'success', 2000);
                             break;
                         }
                     }
-                    renderParagraphs();
-                    autoSave();
-                    showToast('潤飾完成', 'success', 1500);
                 }
             } catch (error) {
                 showToast('潤飾失敗：' + error.message, 'error');
@@ -1328,17 +1434,20 @@ ${selectedText}`;
 
             try {
                 const response = await callAPI(prompt);
-                if (response && state.currentDoc) {
+                if (response) {
+                    // 找到包含選取文字的段落
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {
                         if (paragraphs[i].content.includes(selectedText)) {
-                            paragraphs[i].content = paragraphs[i].content.replace(selectedText, response);
+                            // 在獨立編輯畫布中顯示結果
+                            currentEditingParagraphId = paragraphs[i].id;
+                            el.editCanvasTextarea.value = paragraphs[i].content.replace(selectedText, response);
+                            el.editCanvas.classList.add('active');
+                            el.editCanvasTextarea.focus();
+                            showToast('擴寫完成，請確認修改', 'success', 2000);
                             break;
                         }
                     }
-                    renderParagraphs();
-                    autoSave();
-                    showToast('擴寫完成', 'success', 1500);
                 }
             } catch (error) {
                 showToast('擴寫失敗：' + error.message, 'error');
@@ -1844,6 +1953,14 @@ ${selectedText}`;
             el.editBtn.addEventListener('click', enableEditing);
             el.deleteTextBtn.addEventListener('click', deleteSelectedText);
 
+            // Edit Canvas
+            el.editCanvasCancel.addEventListener('click', closeEditCanvas);
+            el.editCanvasConfirm.addEventListener('click', saveEditCanvas);
+            el.editCanvasDelete.addEventListener('click', deleteFromEditCanvas);
+            el.editCanvas.addEventListener('click', (e) => {
+                if (e.target === el.editCanvas) closeEditCanvas();
+            });
+
             // Hide selection menu on click outside
             document.addEventListener('mousedown', (e) => {
                 if (!el.selectionMenu.contains(e.target)) {
@@ -1870,6 +1987,183 @@ ${selectedText}`;
             // Before unload
             window.addEventListener('beforeunload', () => {
                 saveCurrentDocument();
+            });
+        }
+
+        // ============================================
+        // Edit Canvas - 獨立編輯畫布
+        // ============================================
+        let currentEditingParagraphId = null;
+
+        function openEditCanvas(paraId) {
+            const para = state.currentDoc?.paragraphs?.find(p => p.id === paraId);
+            if (!para) return;
+
+            currentEditingParagraphId = paraId;
+            el.editCanvasTextarea.value = para.content;
+            el.editCanvas.classList.add('active');
+            el.editCanvasTextarea.focus();
+        }
+
+        function closeEditCanvas() {
+            el.editCanvas.classList.remove('active');
+            currentEditingParagraphId = null;
+            el.editCanvasTextarea.value = '';
+        }
+
+        function saveEditCanvas() {
+            if (!currentEditingParagraphId) return;
+
+            const para = state.currentDoc?.paragraphs?.find(p => p.id === currentEditingParagraphId);
+            if (!para) return;
+
+            const newContent = el.editCanvasTextarea.value.trim();
+
+            if (newContent === '') {
+                // 空訊息清理：自動刪除該段落
+                const paraIndex = state.currentDoc.paragraphs.findIndex(p => p.id === currentEditingParagraphId);
+                if (paraIndex !== -1) {
+                    state.currentDoc.paragraphs.splice(paraIndex, 1);
+                }
+                showToast('空段落已刪除', 'info', 2000);
+            } else {
+                para.content = newContent;
+                showToast('段落已更新', 'success', 2000);
+            }
+
+            renderParagraphs();
+            autoSave();
+            closeEditCanvas();
+        }
+
+        function deleteFromEditCanvas() {
+            if (!currentEditingParagraphId) return;
+
+            showConfirmModal('刪除段落', '確定要刪除此段落嗎？', () => {
+                const paraIndex = state.currentDoc.paragraphs.findIndex(p => p.id === currentEditingParagraphId);
+                if (paraIndex !== -1) {
+                    state.currentDoc.paragraphs.splice(paraIndex, 1);
+                    renderParagraphs();
+                    autoSave();
+                    showToast('段落已刪除', 'success', 2000);
+                }
+                hideConfirmModal();
+                closeEditCanvas();
+            });
+        }
+
+        // ============================================
+        // Long Press Interaction - 長按互動
+        // ============================================
+        let longPressTimer = null;
+        let longPressTarget = null;
+        let longPressStartX = 0;
+        let longPressStartY = 0;
+        const LONG_PRESS_DURATION = 600;
+        const MOVE_THRESHOLD = 10;
+
+        function handleLongPressStart(e) {
+            const paragraph = e.target.closest('.paragraph');
+            if (!paragraph) return;
+
+            longPressTarget = paragraph;
+            longPressStartX = e.touches ? e.touches[0].clientX : e.clientX;
+            longPressStartY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            longPressTimer = setTimeout(() => {
+                // 震動反饋
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                showParagraphMenu(paragraph.dataset.id);
+            }, LONG_PRESS_DURATION);
+        }
+
+        function handleLongPressMove(e) {
+            if (!longPressTimer) return;
+
+            const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+            const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+            const deltaX = Math.abs(currentX - longPressStartX);
+            const deltaY = Math.abs(currentY - longPressStartY);
+
+            // 如果移動距離超過閾值，取消長按
+            if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                longPressTarget = null;
+            }
+        }
+
+        function handleLongPressEnd() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                longPressTarget = null;
+            }
+        }
+
+        function showParagraphMenu(paraId) {
+            // 創建底部選單
+            const existingMenu = document.getElementById('paragraphMenu');
+            if (existingMenu) existingMenu.remove();
+
+            const menu = document.createElement('div');
+            menu.id = 'paragraphMenu';
+            menu.className = 'paragraph-menu active';
+            menu.innerHTML = `
+                <button class="paragraph-menu-btn" data-action="edit" data-para-id="${escapeHtml(paraId)}">
+                    <span>✏️</span>
+                    <span>編輯</span>
+                </button>
+                <button class="paragraph-menu-btn delete" data-action="delete" data-para-id="${escapeHtml(paraId)}">
+                    <span>🗑️</span>
+                    <span>刪除</span>
+                </button>
+                <button class="paragraph-menu-btn cancel" data-action="cancel">
+                    <span>取消</span>
+                </button>
+            `;
+
+            document.body.appendChild(menu);
+
+            // 綁定事件
+            menu.querySelectorAll('.paragraph-menu-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.dataset.action;
+                    const paraId = btn.dataset.paraId;
+
+                    if (action === 'edit') {
+                        openEditCanvas(paraId);
+                    } else if (action === 'delete') {
+                        deleteParagraph(paraId);
+                    }
+
+                    menu.remove();
+                });
+            });
+
+            // 點擊外部關閉
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                }, { once: true });
+            }, 100);
+        }
+
+        function deleteParagraph(paraId) {
+            showConfirmModal('刪除段落', '確定要刪除此段落嗎？', () => {
+                const paraIndex = state.currentDoc.paragraphs.findIndex(p => p.id === paraId);
+                if (paraIndex !== -1) {
+                    state.currentDoc.paragraphs.splice(paraIndex, 1);
+                    renderParagraphs();
+                    autoSave();
+                    showToast('段落已刪除', 'success', 2000);
+                }
+                hideConfirmModal();
             });
         }
 

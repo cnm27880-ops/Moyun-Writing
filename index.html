@@ -435,6 +435,20 @@
         <div class="focus-mode-exit" id="focusModeExit"></div>
         <div class="focus-hint">點擊任意處退出閱讀模式</div>
 
+        <!-- Edit Canvas - 獨立編輯畫布 -->
+        <div class="edit-canvas" id="editCanvas">
+            <div class="edit-canvas-header">
+                <button class="edit-canvas-btn cancel" id="editCanvasCancel">取消</button>
+                <span class="edit-canvas-title">編輯段落</span>
+                <button class="edit-canvas-btn confirm" id="editCanvasConfirm">完成</button>
+            </div>
+            <textarea class="edit-canvas-textarea" id="editCanvasTextarea" placeholder="編輯你的文字..." spellcheck="false"></textarea>
+            <button class="edit-canvas-delete" id="editCanvasDelete">
+                <span>🗑️</span>
+                <span>刪除此段落</span>
+            </button>
+        </div>
+
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
 

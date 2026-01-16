@@ -114,7 +114,14 @@ const $$ = sel => document.querySelectorAll(sel);
             userName: $('userName'),
             syncDot: $('syncDot'),
             syncText: $('syncText'),
-            logoutBtn: $('logoutBtn')
+            logoutBtn: $('logoutBtn'),
+
+            // Edit Canvas
+            editCanvas: $('editCanvas'),
+            editCanvasTextarea: $('editCanvasTextarea'),
+            editCanvasCancel: $('editCanvasCancel'),
+            editCanvasConfirm: $('editCanvasConfirm'),
+            editCanvasDelete: $('editCanvasDelete')
         };
         function showToast(message, type = 'info', duration = 3000) {
             const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
@@ -326,6 +333,40 @@ const $$ = sel => document.querySelectorAll(sel);
                     const paraId = btn.dataset.id;
                     if (typeof regenerateParagraph === 'function') {
                         regenerateParagraph(paraId);
+                    }
+                });
+            });
+
+            // Bind long press events for paragraphs
+            el.editorBody.querySelectorAll('.paragraph').forEach(para => {
+                para.addEventListener('mousedown', (e) => {
+                    if (typeof handleLongPressStart === 'function') {
+                        handleLongPressStart(e);
+                    }
+                });
+                para.addEventListener('mousemove', (e) => {
+                    if (typeof handleLongPressMove === 'function') {
+                        handleLongPressMove(e);
+                    }
+                });
+                para.addEventListener('mouseup', () => {
+                    if (typeof handleLongPressEnd === 'function') {
+                        handleLongPressEnd();
+                    }
+                });
+                para.addEventListener('touchstart', (e) => {
+                    if (typeof handleLongPressStart === 'function') {
+                        handleLongPressStart(e);
+                    }
+                });
+                para.addEventListener('touchmove', (e) => {
+                    if (typeof handleLongPressMove === 'function') {
+                        handleLongPressMove(e);
+                    }
+                });
+                para.addEventListener('touchend', () => {
+                    if (typeof handleLongPressEnd === 'function') {
+                        handleLongPressEnd();
                     }
                 });
             });
