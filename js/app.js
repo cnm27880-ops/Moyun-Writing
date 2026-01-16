@@ -1643,6 +1643,79 @@ ${selectedText}`;
             }
         }
 
+        // 強制用本地資料覆蓋雲端
+        async function forceFixCloudData() {
+            if (!storageManager.isLoggedIn()) {
+                showToast('請先登入以使用此功能', 'warning');
+                return;
+            }
+
+            showConfirmModal(
+                '強制覆蓋雲端',
+                '此操作會使用本地資料強制覆蓋雲端資料。如果雲端資料較新，將會遺失。確定要繼續嗎？',
+                async () => {
+                    hideConfirmModal();
+
+                    const btn = document.getElementById('forceFixCloudBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = '修復中...';
+                    }
+
+                    try {
+                        console.log('🔧 開始強制修復雲端資料...');
+                        const userId = storageManager.getUserId();
+
+                        // 1. 上傳文檔索引和所有文檔
+                        let docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+                        if (!Array.isArray(docIndex)) {
+                            docIndex = Object.values(docIndex);
+                        }
+
+                        if (docIndex.length > 0) {
+                            await firebaseDB.ref(`users/${userId}/docs/index`).set(docIndex);
+                            console.log(`✓ 已上傳文檔索引 (${docIndex.length} 個文檔)`);
+
+                            for (const doc of docIndex) {
+                                const docData = loadFromStorage(STORAGE.DOC_PREFIX + doc.id);
+                                if (docData) {
+                                    await firebaseDB.ref(`users/${userId}/docs/${doc.id}`).set(docData);
+                                    console.log(`✓ 已上傳文檔: ${doc.title || doc.id}`);
+                                }
+                            }
+                        }
+
+                        // 2. 上傳世界觀圖書館
+                        let worldLibrary = loadFromStorage(STORAGE.WORLD_LIBRARY, []);
+                        if (!Array.isArray(worldLibrary)) {
+                            worldLibrary = Object.values(worldLibrary);
+                        }
+                        await firebaseDB.ref(`users/${userId}/worldLibrary`).set(worldLibrary);
+                        console.log(`✓ 已上傳世界觀圖書館 (${worldLibrary.length} 個)`);
+
+                        // 3. 上傳全域設定 (排除 apiKey)
+                        const settings = loadFromStorage(STORAGE.GLOBAL_SETTINGS, {});
+                        const settingsToSync = { ...settings };
+                        delete settingsToSync.apiKey;
+                        await firebaseDB.ref(`users/${userId}/settings`).set(settingsToSync);
+                        console.log('✓ 已上傳全域設定');
+
+                        console.log('✅ 雲端資料修復完成！');
+                        showToast('雲端資料已修復！', 'success');
+
+                    } catch (error) {
+                        console.error('修復失敗:', error);
+                        showToast('修復失敗：' + error.message, 'error');
+                    } finally {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = '🔧 強制用本地覆蓋雲端';
+                        }
+                    }
+                }
+            );
+        }
+
         async function restoreBackup(backupId) {
             showConfirmModal('還原備份', '確定要還原此備份嗎？目前的資料將被覆蓋。', async () => {
                 hideConfirmModal();
@@ -1895,6 +1968,12 @@ ${selectedText}`;
             const createBackupBtn = document.getElementById('createBackupBtn');
             if (createBackupBtn) {
                 createBackupBtn.addEventListener('click', createManualBackup);
+            }
+
+            // Force Fix Cloud Data
+            const forceFixCloudBtn = document.getElementById('forceFixCloudBtn');
+            if (forceFixCloudBtn) {
+                forceFixCloudBtn.addEventListener('click', forceFixCloudData);
             }
 
             // Memory & settings auto-save
