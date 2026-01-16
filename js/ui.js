@@ -373,6 +373,16 @@ const $$ = sel => document.querySelectorAll(sel);
                     if (target === 'stats') {
                         updateStats();
                     }
+
+                    // Update device count and backup list when settings tab is opened
+                    if (target === 'settings') {
+                        if (typeof loadDeviceCount === 'function') {
+                            loadDeviceCount();
+                        }
+                        if (typeof renderBackupList === 'function') {
+                            renderBackupList();
+                        }
+                    }
                 });
             });
         }

@@ -3,6 +3,22 @@ class StorageManager {
         this.user = null;
         this.syncStatus = 'idle'; // idle, syncing, synced, error
         this.listeners = [];
+        this.deviceId = this.getOrCreateDeviceId();
+    }
+
+    // Get or create a unique device ID
+    getOrCreateDeviceId() {
+        let deviceId = localStorage.getItem('moyun_deviceId');
+        if (!deviceId) {
+            // Generate UUID v4
+            deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            localStorage.setItem('moyun_deviceId', deviceId);
+        }
+        return deviceId;
     }
 
     // Add listener for sync status changes
@@ -101,6 +117,9 @@ class StorageManager {
 
             await firebaseDB.ref(`users/${this.getUserId()}/${path}`).set(dataToSave);
 
+            // 更新裝置心跳
+            await this.updateDeviceHeartbeat();
+
             this.notifySyncStatus('synced');
             return true;
         } catch (error) {
@@ -141,6 +160,49 @@ class StorageManager {
         } catch (error) {
             console.error('Cloud remove error:', error);
             return false;
+        }
+    }
+
+    // ============================================
+    // Device Tracking System
+    // ============================================
+    async updateDeviceHeartbeat() {
+        if (!this.isLoggedIn() || !firebaseDB) return false;
+
+        try {
+            const deviceData = {
+                lastSeen: Date.now(),
+                userAgent: navigator.userAgent
+            };
+            await firebaseDB.ref(`users/${this.getUserId()}/devices/${this.deviceId}`).set(deviceData);
+            return true;
+        } catch (error) {
+            console.error('Device heartbeat update error:', error);
+            return false;
+        }
+    }
+
+    async getActiveDeviceCount() {
+        if (!this.isLoggedIn() || !firebaseDB) return 0;
+
+        try {
+            const snapshot = await firebaseDB.ref(`users/${this.getUserId()}/devices`).once('value');
+            const devices = snapshot.val();
+
+            if (!devices) return 0;
+
+            const now = Date.now();
+            const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+
+            // 過濾掉 lastSeen 超過 7 天的裝置
+            const activeDevices = Object.values(devices).filter(device => {
+                return device.lastSeen && device.lastSeen > sevenDaysAgo;
+            });
+
+            return activeDevices.length;
+        } catch (error) {
+            console.error('Get active device count error:', error);
+            return 0;
         }
     }
 
@@ -208,6 +270,9 @@ class StorageManager {
         this.notifySyncStatus('syncing');
 
         try {
+            // Update device heartbeat
+            await this.updateDeviceHeartbeat();
+
             // Sync global settings
             await this.syncSettings();
 
@@ -419,6 +484,140 @@ class StorageManager {
             await this.saveCloud('worldLibrary', merged);
         } else {
             console.log('✓ 世界觀圖書館為空，無需同步');
+        }
+    }
+
+    // ============================================
+    // Version History & Backup System
+    // ============================================
+    async createCloudBackup(note = '手動備份') {
+        if (!this.isLoggedIn() || !firebaseDB) {
+            console.error('無法建立備份：未登入');
+            return false;
+        }
+
+        try {
+            console.log('📦 開始建立雲端備份...');
+
+            // 讀取本地所有資料
+            const docIndex = this.loadLocal(STORAGE.DOC_INDEX, []);
+            const worldLibrary = this.loadLocal(STORAGE.WORLD_LIBRARY, []);
+            const globalSettings = this.loadLocal(STORAGE.GLOBAL_SETTINGS, {});
+
+            // 收集所有文檔內容
+            const documents = {};
+            for (const docInfo of docIndex) {
+                const docData = this.loadLocal(STORAGE.DOC_PREFIX + docInfo.id);
+                if (docData) {
+                    documents[docInfo.id] = docData;
+                }
+            }
+
+            // 打包成備份資料
+            const backupData = {
+                timestamp: Date.now(),
+                note: note,
+                data: {
+                    docIndex: docIndex,
+                    documents: documents,
+                    worldLibrary: worldLibrary,
+                    globalSettings: globalSettings
+                }
+            };
+
+            // 上傳到雲端
+            const backupId = Date.now().toString();
+            await firebaseDB.ref(`users/${this.getUserId()}/backups/${backupId}`).set(backupData);
+
+            console.log('✓ 備份建立完成:', backupId);
+            return backupId;
+        } catch (error) {
+            console.error('建立備份失敗:', error);
+            return false;
+        }
+    }
+
+    async getCloudBackups() {
+        if (!this.isLoggedIn() || !firebaseDB) return [];
+
+        try {
+            const snapshot = await firebaseDB.ref(`users/${this.getUserId()}/backups`).once('value');
+            const backups = snapshot.val();
+
+            if (!backups) return [];
+
+            // 轉換成陣列並排序（最新的在前）
+            const backupList = Object.entries(backups).map(([id, data]) => ({
+                id: id,
+                timestamp: data.timestamp,
+                note: data.note,
+                // 不包含完整資料，減少流量
+            })).sort((a, b) => b.timestamp - a.timestamp);
+
+            return backupList;
+        } catch (error) {
+            console.error('讀取備份列表失敗:', error);
+            return [];
+        }
+    }
+
+    async restoreCloudBackup(backupId) {
+        if (!this.isLoggedIn() || !firebaseDB) {
+            console.error('無法還原備份：未登入');
+            return false;
+        }
+
+        try {
+            console.log('🔄 開始還原備份:', backupId);
+
+            // 從雲端下載完整備份資料
+            const snapshot = await firebaseDB.ref(`users/${this.getUserId()}/backups/${backupId}`).once('value');
+            const backup = snapshot.val();
+
+            if (!backup || !backup.data) {
+                console.error('備份資料不存在或損壞');
+                return false;
+            }
+
+            const { docIndex, documents, worldLibrary, globalSettings } = backup.data;
+
+            // 保留本機的 apiKey（不覆蓋）
+            const currentSettings = this.loadLocal(STORAGE.GLOBAL_SETTINGS, {});
+            const mergedSettings = { ...globalSettings, apiKey: currentSettings.apiKey || '' };
+
+            // 強制覆蓋本地資料
+            this.saveLocal(STORAGE.DOC_INDEX, docIndex);
+            this.saveLocal(STORAGE.WORLD_LIBRARY, worldLibrary);
+            this.saveLocal(STORAGE.GLOBAL_SETTINGS, mergedSettings);
+
+            // 還原所有文檔
+            for (const [docId, docData] of Object.entries(documents)) {
+                this.saveLocal(STORAGE.DOC_PREFIX + docId, docData);
+            }
+
+            console.log('✓ 本地資料已還原');
+
+            // 強制覆蓋雲端資料（與 fixCloudData 類似的邏輯）
+            await this.saveCloud('docs/index', docIndex);
+            await this.saveCloud('worldLibrary', worldLibrary);
+
+            // 上傳設定時排除 apiKey
+            const settingsToSync = { ...mergedSettings };
+            delete settingsToSync.apiKey;
+            await this.saveCloud('settings', settingsToSync);
+
+            // 上傳所有文檔
+            for (const [docId, docData] of Object.entries(documents)) {
+                await this.saveCloud(`docs/${docId}`, docData);
+            }
+
+            console.log('✓ 雲端資料已覆蓋');
+            console.log('✅ 備份還原完成！');
+
+            return true;
+        } catch (error) {
+            console.error('還原備份失敗:', error);
+            return false;
         }
     }
 }

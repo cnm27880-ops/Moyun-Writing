@@ -1413,6 +1413,143 @@ ${selectedText}`;
         }
 
         // ============================================
+        // Cloud Status & Backup Functions
+        // ============================================
+        async function checkAndPerformAutoBackup() {
+            if (!storageManager.isLoggedIn()) return;
+
+            try {
+                const lastAutoBackup = localStorage.getItem('moyun_lastAutoBackup');
+                const now = Date.now();
+                const oneDayAgo = now - (24 * 60 * 60 * 1000);
+
+                if (!lastAutoBackup || parseInt(lastAutoBackup) < oneDayAgo) {
+                    console.log('⏰ 執行自動備份...');
+                    const backupId = await storageManager.createCloudBackup('系統自動備份');
+                    if (backupId) {
+                        localStorage.setItem('moyun_lastAutoBackup', now.toString());
+                        console.log('✓ 自動備份完成');
+                    }
+                }
+            } catch (error) {
+                console.error('自動備份失敗:', error);
+            }
+        }
+
+        async function loadDeviceCount() {
+            if (!storageManager.isLoggedIn()) return;
+
+            try {
+                const count = await storageManager.getActiveDeviceCount();
+                const deviceCountEl = document.getElementById('deviceCount');
+                if (deviceCountEl) {
+                    deviceCountEl.textContent = count;
+                }
+            } catch (error) {
+                console.error('載入裝置數量失敗:', error);
+            }
+        }
+
+        async function renderBackupList() {
+            const backupListEl = document.getElementById('backupList');
+            if (!backupListEl) return;
+
+            if (!storageManager.isLoggedIn()) {
+                backupListEl.innerHTML = '<p class="backup-hint">請先登入以使用備份功能</p>';
+                return;
+            }
+
+            try {
+                backupListEl.innerHTML = '<p class="backup-hint">載入中...</p>';
+                const backups = await storageManager.getCloudBackups();
+
+                if (backups.length === 0) {
+                    backupListEl.innerHTML = '<p class="backup-hint">尚無備份紀錄</p>';
+                    return;
+                }
+
+                backupListEl.innerHTML = backups.map(backup => {
+                    const date = new Date(backup.timestamp);
+                    const dateStr = date.toLocaleString('zh-TW');
+                    return `
+                        <div class="backup-item">
+                            <div class="backup-info">
+                                <div class="backup-note">${escapeHtml(backup.note)}</div>
+                                <div class="backup-date">${dateStr}</div>
+                            </div>
+                            <button class="backup-restore-btn" onclick="restoreBackup('${backup.id}')">還原</button>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('載入備份列表失敗:', error);
+                backupListEl.innerHTML = '<p class="backup-hint">載入失敗，請稍後再試</p>';
+            }
+        }
+
+        async function createManualBackup() {
+            if (!storageManager.isLoggedIn()) {
+                showToast('請先登入以使用備份功能', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('createBackupBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '建立中...';
+            }
+
+            try {
+                const backupId = await storageManager.createCloudBackup('手動備份');
+                if (backupId) {
+                    showToast('備份建立成功', 'success');
+                    await renderBackupList();
+                } else {
+                    showToast('備份建立失敗', 'error');
+                }
+            } catch (error) {
+                console.error('建立備份失敗:', error);
+                showToast('備份建立失敗：' + error.message, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '手動建立備份';
+                }
+            }
+        }
+
+        async function restoreBackup(backupId) {
+            showConfirmModal('還原備份', '確定要還原此備份嗎？目前的資料將被覆蓋。', async () => {
+                hideConfirmModal();
+
+                const toastEl = showToast('正在還原備份...', 'info', 0);
+
+                try {
+                    const success = await storageManager.restoreCloudBackup(backupId);
+
+                    if (toastEl && toastEl.parentNode) {
+                        toastEl.remove();
+                    }
+
+                    if (success) {
+                        showToast('備份還原成功，即將重新載入...', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('備份還原失敗', 'error');
+                    }
+                } catch (error) {
+                    if (toastEl && toastEl.parentNode) {
+                        toastEl.remove();
+                    }
+                    console.error('還原備份失敗:', error);
+                    showToast('還原失敗：' + error.message, 'error');
+                }
+            });
+        }
+
+        // ============================================
         // Authentication Functions
         // ============================================
         async function signInWithGoogle() {
@@ -1507,10 +1644,16 @@ ${selectedText}`;
                     }
                     sessionStorage.setItem('authRedirectHandled', 'true');
 
+                    // 更新裝置心跳
+                    await storageManager.updateDeviceHeartbeat();
+
                     // 強制執行完整的資料同步
                     console.log('⏳ 執行 syncAllData...');
                     await storageManager.syncAllData();
                     console.log('✓ syncAllData 完成');
+
+                    // 檢查是否需要自動備份（24小時一次）
+                    await checkAndPerformAutoBackup();
 
                     // 同步完成後，強制從 localStorage 重新讀取最新的 docIndex
                     // 使用直接讀取而非 loadFromStorage，確保取得同步後的最新資料
@@ -1619,6 +1762,12 @@ ${selectedText}`;
             el.temperature.addEventListener('input', (e) => {
                 el.tempValue.textContent = e.target.value;
             });
+
+            // Cloud Backup
+            const createBackupBtn = document.getElementById('createBackupBtn');
+            if (createBackupBtn) {
+                createBackupBtn.addEventListener('click', createManualBackup);
+            }
 
             // Memory & settings auto-save
             [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt].forEach(textarea => {

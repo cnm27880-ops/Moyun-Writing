@@ -2496,6 +2496,102 @@
         }
 
         /* ============================================
+           Cloud Status & Backup
+           ============================================ */
+        .cloud-status-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+        }
+
+        .cloud-status-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-sm) 0;
+        }
+
+        .status-indicator-text {
+            font-size: 0.9rem;
+            color: var(--ink-secondary);
+        }
+
+        #deviceCount {
+            font-weight: 700;
+            color: var(--ink-primary);
+            font-size: 1.1rem;
+        }
+
+        .backup-list-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+            padding-top: var(--spacing-sm);
+        }
+
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-sm);
+            background: var(--bg-primary);
+            transition: background var(--transition-smooth);
+        }
+
+        .backup-item:hover {
+            background: var(--bg-input);
+        }
+
+        .backup-info {
+            flex: 1;
+        }
+
+        .backup-note {
+            font-size: 0.9rem;
+            color: var(--ink-primary);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .backup-date {
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+        }
+
+        .backup-restore-btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            font-family: var(--font-secondary);
+        }
+
+        .backup-restore-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .backup-restore-btn:active {
+            transform: translateY(0);
+        }
+
+        .backup-hint {
+            text-align: center;
+            color: var(--ink-muted);
+            font-size: 0.85rem;
+            padding: var(--spacing-md);
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }
