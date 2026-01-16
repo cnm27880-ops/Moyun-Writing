@@ -351,30 +351,49 @@ ${drivesList}
 
                 const response = await callAPIForAnalysis(analysisPrompt);
 
-                // 解析 JSON 結果
-                const jsonMatch = response.match(/\{[\s\S]*?\}/);
+                // 除錯：輸出 API 回應
+                console.log('API Response:', response);
+
+                // 優化 JSON 提取邏輯：移除 Markdown 標記並提取 JSON
+                let jsonText = response.trim();
+
+                // 移除可能的 Markdown 標記
+                jsonText = jsonText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+                // 嘗試提取 JSON 物件 (更寬容的 regex)
+                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+
                 if (jsonMatch) {
-                    const result = JSON.parse(jsonMatch[0]);
+                    try {
+                        const result = JSON.parse(jsonMatch[0]);
 
-                    // 更新角色驅動力並添加動畫效果
-                    Object.entries(result).forEach(([driveId, value]) => {
-                        if (value !== null && CORE_DRIVES[driveId]) {
-                            character.drives[driveId] = value;
+                        // 更新角色驅動力並添加動畫效果
+                        Object.entries(result).forEach(([driveId, value]) => {
+                            if (value !== null && CORE_DRIVES[driveId]) {
+                                character.drives[driveId] = value;
 
-                            // 添加視覺反饋
-                            const slider = document.querySelector(
-                                `[data-character-id="${characterId}"][data-drive-id="${driveId}"].drive-slider`
-                            );
-                            if (slider) {
-                                animateSlider(slider, value);
+                                // 添加視覺反饋
+                                const slider = document.querySelector(
+                                    `[data-character-id="${characterId}"][data-drive-id="${driveId}"].drive-slider`
+                                );
+                                if (slider) {
+                                    animateSlider(slider, value);
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    renderCharacterList();
-                    updateStatusBar();
-                    autoSave();
-                    showToast(`「${character.name}」心理分析完成`, 'success', 2000);
+                        renderCharacterList();
+                        updateStatusBar();
+                        autoSave();
+                        showToast(`「${character.name}」心理分析完成`, 'success', 2000);
+                    } catch (parseError) {
+                        console.error('JSON 解析錯誤:', parseError);
+                        console.error('嘗試解析的文字:', jsonMatch[0]);
+                        showToast('分析格式錯誤，請重試', 'error', 3000);
+                    }
+                } else {
+                    console.error('無法從回應中提取 JSON:', response);
+                    showToast('分析格式錯誤，請重試', 'error', 3000);
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -1206,6 +1225,40 @@ ${recentContent}
             }, 50); // 延遲 50ms 執行
         }
 
+        function enableEditing() {
+            if (!selectedRange) return;
+
+            // 找到選取範圍所在的段落
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+
+            // 找到包含的 paragraph-content 元素
+            let paragraphContent = container.nodeType === 3 ? container.parentNode : container;
+            while (paragraphContent && !paragraphContent.classList?.contains('paragraph-content')) {
+                paragraphContent = paragraphContent.parentNode;
+            }
+
+            if (paragraphContent) {
+                // 設為可編輯並聚焦
+                paragraphContent.setAttribute('contenteditable', 'true');
+                paragraphContent.focus();
+
+                // 恢復選取範圍
+                try {
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    console.warn('無法恢復選取範圍:', e);
+                }
+
+                hideSelectionMenu();
+                showToast('進入編輯模式', 'info', 1000);
+            }
+        }
+
         function deleteSelectedText() {
             if (selectedRange && state.currentDoc) {
                 // Find and update the paragraph containing the selection
@@ -1289,6 +1342,73 @@ ${selectedText}`;
                 }
             } catch (error) {
                 showToast('擴寫失敗：' + error.message, 'error');
+            }
+        }
+
+        async function regenerateParagraph(paraId) {
+            if (!state.currentDoc || state.isLoading) return;
+
+            if (!state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'error');
+                return;
+            }
+
+            const paragraphs = state.currentDoc.paragraphs;
+            const paraIndex = paragraphs.findIndex(p => p.id === paraId);
+
+            if (paraIndex === -1 || paragraphs[paraIndex].source !== 'ai') {
+                showToast('找不到該段落或該段落不是 AI 生成的', 'warning');
+                return;
+            }
+
+            // 獲取該段落之前的內容作為上下文（最多取前 3 段）
+            const contextStart = Math.max(0, paraIndex - 3);
+            const contextParagraphs = paragraphs.slice(contextStart, paraIndex);
+            const contextText = contextParagraphs.map(p => p.content).join('\n\n');
+
+            // 設置載入狀態
+            state.isLoading = true;
+            const btn = document.querySelector(`.regenerate-btn[data-id="${paraId}"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳';
+            }
+
+            // Add breathing effect to editor
+            const editorPaper = document.querySelector('.editor-paper');
+            if (editorPaper) {
+                editorPaper.classList.add('ai-writing');
+            }
+
+            showToast('正在重新生成...', 'info', 2000);
+
+            try {
+                // 構建 prompt：使用之前的內容作為上下文，要求重寫這一段
+                const prompt = contextText + '\n\n請繼續這個故事，重新生成接下來的段落。';
+
+                const response = await callAPI(prompt);
+
+                if (response) {
+                    // 更新段落內容
+                    paragraphs[paraIndex].content = response;
+                    paragraphs[paraIndex].timestamp = Date.now();
+
+                    renderParagraphs();
+                    autoSave();
+                    showToast('重新生成完成', 'success', 2000);
+
+                    // 觸發自動同步（心靈同步功能）
+                    setTimeout(() => triggerAutoSync(), 500);
+                }
+            } catch (error) {
+                showToast(`重新生成失敗: ${error.message}`, 'error');
+            } finally {
+                state.isLoading = false;
+
+                // Remove breathing effect from editor
+                if (editorPaper) {
+                    editorPaper.classList.remove('ai-writing');
+                }
             }
         }
 
@@ -1570,9 +1690,10 @@ ${selectedText}`;
             // Selection Menu
             document.addEventListener('mouseup', debounce(handleTextSelection, 100));
             document.addEventListener('touchend', debounce(handleTextSelection, 100));
-            el.deleteTextBtn.addEventListener('click', deleteSelectedText);
             el.refineBtn.addEventListener('click', refineSelectedText);
             el.expandBtn.addEventListener('click', expandSelectedText);
+            el.editBtn.addEventListener('click', enableEditing);
+            el.deleteTextBtn.addEventListener('click', deleteSelectedText);
 
             // Hide selection menu on click outside
             document.addEventListener('mousedown', (e) => {
