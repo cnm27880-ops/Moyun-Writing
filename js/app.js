@@ -142,8 +142,26 @@
             });
         }
 
-        const autoSave = debounce(() => {
+        let autoSave = debounce(() => {
+            // 1. 執行原本的儲存邏輯 (LocalStorage + Firebase)
             saveCurrentDocument();
+
+            // 2. 執行離線儲存邏輯 (IndexedDB) - 現在這也會被 Debounce 保護了
+            if (state.currentDocId && state.currentDoc) {
+                // 儲存到本地資料庫
+                OfflineStorage.saveDocument(state.currentDocId, state.currentDoc)
+                    .catch(err => console.error('IndexedDB save failed:', err));
+
+                // 如果離線，記錄變更以便未來同步
+                if (!OfflineStorage.isOnline) {
+                    OfflineStorage.addPendingChange(
+                        state.currentDocId,
+                        'update',
+                        state.currentDoc
+                    ).catch(err => console.error('Failed to record pending change:', err));
+                }
+            }
+
             console.log('Auto-saved:', new Date().toLocaleTimeString());
         }, 1000);
 
@@ -1204,7 +1222,7 @@ ${recentContent}
 ${selectedText}`;
 
             try {
-                const response = await callAPI([{ role: 'user', content: prompt }]);
+                const response = await callAPI(prompt);
                 if (response && state.currentDoc) {
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {
@@ -1237,7 +1255,7 @@ ${selectedText}`;
 ${selectedText}`;
 
             try {
-                const response = await callAPI([{ role: 'user', content: prompt }]);
+                const response = await callAPI(prompt);
                 if (response && state.currentDoc) {
                     const paragraphs = state.currentDoc.paragraphs;
                     for (let i = 0; i < paragraphs.length; i++) {
@@ -1684,28 +1702,6 @@ ${selectedText}`;
                 text.textContent = '離線保存中';
             }
         }
-
-        // Override autoSave to also save to IndexedDB
-        const originalAutoSave = autoSave;
-        autoSave = function() {
-            // Call original autoSave (saves to localStorage and Firebase)
-            originalAutoSave();
-
-            // Also save to IndexedDB if offline
-            if (state.currentDocId && state.currentDoc) {
-                OfflineStorage.saveDocument(state.currentDocId, state.currentDoc)
-                    .catch(err => console.error('IndexedDB save failed:', err));
-
-                // Record pending change if offline
-                if (!OfflineStorage.isOnline) {
-                    OfflineStorage.addPendingChange(
-                        state.currentDocId,
-                        'update',
-                        state.currentDoc
-                    ).catch(err => console.error('Failed to record pending change:', err));
-                }
-            }
-        };
 
         // Start
         document.addEventListener('DOMContentLoaded', init);
