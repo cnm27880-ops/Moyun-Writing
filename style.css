@@ -2781,6 +2781,201 @@
         }
 
         /* ============================================
+           Edit Canvas AI Actions - AI 輔助功能按鈕
+           ============================================ */
+        .edit-canvas-ai-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            padding: 0 var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .edit-canvas-ai-btn {
+            flex: 1;
+            padding: var(--spacing-md);
+            background: var(--bg-drawer);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+        }
+
+        .edit-canvas-ai-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .edit-canvas-ai-btn:active {
+            transform: scale(0.98);
+        }
+
+        .edit-canvas-ai-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .edit-canvas-ai-btn.refine:hover {
+            background: rgba(255, 193, 7, 0.15);
+            border-color: #F9A825;
+            color: #F9A825;
+        }
+
+        .edit-canvas-ai-btn.expand:hover {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: #43A047;
+            color: #43A047;
+        }
+
+        .edit-canvas-ai-btn span:first-child {
+            font-size: 1.2rem;
+        }
+
+        /* ============================================
+           Action Sheet - 段落操作選單
+           ============================================ */
+        .action-sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: calc(var(--z-modal) + 5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-smooth);
+            backdrop-filter: blur(2px);
+        }
+
+        .action-sheet-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .action-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-paper);
+            border-radius: 20px 20px 0 0;
+            z-index: calc(var(--z-modal) + 6);
+            transform: translateY(100%);
+            transition: transform var(--transition-smooth);
+            padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom, 0px));
+        }
+
+        .action-sheet.active {
+            transform: translateY(0);
+        }
+
+        .action-sheet-header {
+            padding: var(--spacing-lg);
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+            position: relative;
+        }
+
+        .action-sheet-header::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .action-sheet-title {
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-sheet-content {
+            padding: var(--spacing-md);
+        }
+
+        .action-sheet-btn {
+            width: 100%;
+            padding: var(--spacing-lg);
+            background: var(--bg-drawer);
+            border: none;
+            border-radius: 14px;
+            font-family: var(--font-ui);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--ink-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .action-sheet-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .action-sheet-btn:hover {
+            background: var(--accent-light);
+        }
+
+        .action-sheet-btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-sheet-btn.danger {
+            color: var(--error);
+        }
+
+        .action-sheet-btn.danger:hover {
+            background: rgba(199, 92, 92, 0.1);
+        }
+
+        .action-sheet-icon {
+            font-size: 1.3rem;
+            width: 32px;
+            text-align: center;
+        }
+
+        .action-sheet-cancel {
+            width: calc(100% - var(--spacing-md) * 2);
+            margin: var(--spacing-md);
+            margin-top: 0;
+            padding: var(--spacing-lg);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            font-family: var(--font-ui);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .action-sheet-cancel:hover {
+            background: var(--border-light);
+        }
+
+        .action-sheet-cancel:active {
+            transform: scale(0.98);
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }

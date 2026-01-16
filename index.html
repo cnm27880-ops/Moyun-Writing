@@ -12,7 +12,7 @@
         script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com;
+        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com https://yinli.one;
         img-src 'self' data: https:;
         frame-src 'self' https://*.firebaseapp.com https://*.google.com;
         object-src 'none';
@@ -443,10 +443,40 @@
                 <button class="edit-canvas-btn confirm" id="editCanvasConfirm">完成</button>
             </div>
             <textarea class="edit-canvas-textarea" id="editCanvasTextarea" placeholder="編輯你的文字..." spellcheck="false"></textarea>
+            <!-- AI 輔助功能按鈕組 -->
+            <div class="edit-canvas-ai-actions" id="editCanvasAiActions">
+                <button class="edit-canvas-ai-btn refine" id="editCanvasRefine">
+                    <span>✨</span>
+                    <span>潤飾全文</span>
+                </button>
+                <button class="edit-canvas-ai-btn expand" id="editCanvasExpand">
+                    <span>➕</span>
+                    <span>擴寫全文</span>
+                </button>
+            </div>
             <button class="edit-canvas-delete" id="editCanvasDelete">
                 <span>🗑️</span>
                 <span>刪除此段落</span>
             </button>
+        </div>
+
+        <!-- Action Sheet - 段落操作選單 -->
+        <div class="action-sheet-overlay" id="actionSheetOverlay"></div>
+        <div class="action-sheet" id="actionSheet">
+            <div class="action-sheet-header">
+                <span class="action-sheet-title">段落操作</span>
+            </div>
+            <div class="action-sheet-content">
+                <button class="action-sheet-btn" id="actionSheetEdit">
+                    <span class="action-sheet-icon">✏️</span>
+                    <span>進入編輯畫布</span>
+                </button>
+                <button class="action-sheet-btn danger" id="actionSheetDelete">
+                    <span class="action-sheet-icon">🗑️</span>
+                    <span>刪除段落</span>
+                </button>
+            </div>
+            <button class="action-sheet-cancel" id="actionSheetCancel">取消</button>
         </div>
 
         <!-- Toast Container -->

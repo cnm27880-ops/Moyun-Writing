@@ -832,10 +832,14 @@ ${drivesDescription}
 
             // 智慧滾動：將視窗捲動到新段落的頂部
             const newPara = el.editorBody.querySelector(`[data-id="${aiParagraph.id}"]`);
+            let initialScrollDone = false;
+
             if (newPara) {
                 // 添加 streaming 類別以顯示閃爍游標
                 newPara.classList.add('streaming');
+                // 初始滾動到段落頂部
                 newPara.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                initialScrollDone = true;
             }
 
             try {
@@ -846,6 +850,10 @@ ${drivesDescription}
                 const decoder = new TextDecoder('utf-8');
                 let buffer = '';
                 let fullContent = '';
+
+                // 記錄初始滾動位置，streaming 期間保持固定
+                const mainContent = document.querySelector('.main-content');
+                const initialScrollTop = mainContent ? mainContent.scrollTop : window.scrollY;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -873,6 +881,8 @@ ${drivesDescription}
                                 if (paraContent) {
                                     paraContent.innerHTML = parseMarkdown(fullContent);
                                 }
+                                // 流式傳輸期間不自動滾動，保持在段落開頭
+                                // 用戶可以手動滾動閱讀
                             }
                         } catch (e) {
                             console.warn('Failed to parse SSE data:', e);
@@ -988,7 +998,13 @@ ${recentContent}
             }
         }
         function loadWorldLibrary() {
-            return loadFromStorage(STORAGE.WORLD_LIBRARY, []);
+            const data = loadFromStorage(STORAGE.WORLD_LIBRARY, []);
+            // 強制轉換：若為物件則透過 Object.values() 轉回陣列
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                console.warn('loadWorldLibrary: 偵測到物件格式，正在轉換為陣列');
+                return Object.values(data);
+            }
+            return Array.isArray(data) ? data : [];
         }
 
         function saveWorldLibrary(library) {
@@ -1764,6 +1780,9 @@ ${selectedText}`;
                     // 檢查是否需要自動備份（24小時一次）
                     await checkAndPerformAutoBackup();
 
+                    // 載入裝置統計
+                    await loadDeviceCount();
+
                     // 同步完成後，強制從 localStorage 重新讀取最新的 docIndex
                     // 使用直接讀取而非 loadFromStorage，確保取得同步後的最新資料
                     try {
@@ -2053,6 +2072,110 @@ ${selectedText}`;
         }
 
         // ============================================
+        // Edit Canvas AI Functions - 編輯畫布 AI 輔助功能
+        // ============================================
+        async function refineInEditCanvas() {
+            if (!currentEditingParagraphId || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            const content = el.editCanvasTextarea.value.trim();
+            if (!content) {
+                showToast('內容不能為空', 'warning');
+                return;
+            }
+
+            const refineBtn = document.getElementById('editCanvasRefine');
+            const expandBtn = document.getElementById('editCanvasExpand');
+
+            // 設置載入狀態
+            if (refineBtn) {
+                refineBtn.disabled = true;
+                refineBtn.innerHTML = '<span>⏳</span><span>潤飾中...</span>';
+            }
+            if (expandBtn) expandBtn.disabled = true;
+
+            const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${content}`;
+
+            try {
+                const response = await callAPI(prompt);
+                if (response) {
+                    el.editCanvasTextarea.value = response;
+                    showToast('潤飾完成', 'success', 2000);
+                }
+            } catch (error) {
+                showToast('潤飾失敗：' + error.message, 'error');
+            } finally {
+                if (refineBtn) {
+                    refineBtn.disabled = false;
+                    refineBtn.innerHTML = '<span>✨</span><span>潤飾全文</span>';
+                }
+                if (expandBtn) expandBtn.disabled = false;
+            }
+        }
+
+        async function expandInEditCanvas() {
+            if (!currentEditingParagraphId || !state.globalSettings.apiKey) {
+                showToast('請先設定 API Key', 'warning');
+                return;
+            }
+
+            const content = el.editCanvasTextarea.value.trim();
+            if (!content) {
+                showToast('內容不能為空', 'warning');
+                return;
+            }
+
+            const refineBtn = document.getElementById('editCanvasRefine');
+            const expandBtn = document.getElementById('editCanvasExpand');
+
+            // 設置載入狀態
+            if (expandBtn) {
+                expandBtn.disabled = true;
+                expandBtn.innerHTML = '<span>⏳</span><span>擴寫中...</span>';
+            }
+            if (refineBtn) refineBtn.disabled = true;
+
+            const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${content}`;
+
+            try {
+                const response = await callAPI(prompt);
+                if (response) {
+                    el.editCanvasTextarea.value = response;
+                    showToast('擴寫完成', 'success', 2000);
+                }
+            } catch (error) {
+                showToast('擴寫失敗：' + error.message, 'error');
+            } finally {
+                if (expandBtn) {
+                    expandBtn.disabled = false;
+                    expandBtn.innerHTML = '<span>➕</span><span>擴寫全文</span>';
+                }
+                if (refineBtn) refineBtn.disabled = false;
+            }
+        }
+
+        function initEditCanvasAiActions() {
+            const refineBtn = document.getElementById('editCanvasRefine');
+            const expandBtn = document.getElementById('editCanvasExpand');
+
+            if (refineBtn) {
+                refineBtn.addEventListener('click', refineInEditCanvas);
+            }
+
+            if (expandBtn) {
+                expandBtn.addEventListener('click', expandInEditCanvas);
+            }
+        }
+
+        // ============================================
         // Long Press Interaction - 長按互動
         // ============================================
         let longPressTimer = null;
@@ -2103,55 +2226,69 @@ ${selectedText}`;
             }
         }
 
-        function showParagraphMenu(paraId) {
-            // 創建底部選單
-            const existingMenu = document.getElementById('paragraphMenu');
-            if (existingMenu) existingMenu.remove();
+        // ============================================
+        // Action Sheet - 美觀的段落操作選單
+        // ============================================
+        let currentActionSheetParagraphId = null;
 
-            const menu = document.createElement('div');
-            menu.id = 'paragraphMenu';
-            menu.className = 'paragraph-menu active';
-            menu.innerHTML = `
-                <button class="paragraph-menu-btn" data-action="edit" data-para-id="${escapeHtml(paraId)}">
-                    <span>✏️</span>
-                    <span>編輯</span>
-                </button>
-                <button class="paragraph-menu-btn delete" data-action="delete" data-para-id="${escapeHtml(paraId)}">
-                    <span>🗑️</span>
-                    <span>刪除</span>
-                </button>
-                <button class="paragraph-menu-btn cancel" data-action="cancel">
-                    <span>取消</span>
-                </button>
-            `;
+        function showActionSheet(paraId) {
+            currentActionSheetParagraphId = paraId;
+            const overlay = document.getElementById('actionSheetOverlay');
+            const sheet = document.getElementById('actionSheet');
 
-            document.body.appendChild(menu);
+            if (overlay && sheet) {
+                overlay.classList.add('active');
+                sheet.classList.add('active');
+            }
+        }
 
-            // 綁定事件
-            menu.querySelectorAll('.paragraph-menu-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const action = btn.dataset.action;
-                    const paraId = btn.dataset.paraId;
+        function hideActionSheet() {
+            currentActionSheetParagraphId = null;
+            const overlay = document.getElementById('actionSheetOverlay');
+            const sheet = document.getElementById('actionSheet');
 
-                    if (action === 'edit') {
-                        openEditCanvas(paraId);
-                    } else if (action === 'delete') {
-                        deleteParagraph(paraId);
+            if (overlay && sheet) {
+                overlay.classList.remove('active');
+                sheet.classList.remove('active');
+            }
+        }
+
+        function initActionSheet() {
+            const overlay = document.getElementById('actionSheetOverlay');
+            const editBtn = document.getElementById('actionSheetEdit');
+            const deleteBtn = document.getElementById('actionSheetDelete');
+            const cancelBtn = document.getElementById('actionSheetCancel');
+
+            if (overlay) {
+                overlay.addEventListener('click', hideActionSheet);
+            }
+
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    if (currentActionSheetParagraphId) {
+                        openEditCanvas(currentActionSheetParagraphId);
                     }
-
-                    menu.remove();
+                    hideActionSheet();
                 });
-            });
+            }
 
-            // 點擊外部關閉
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu(e) {
-                    if (!menu.contains(e.target)) {
-                        menu.remove();
-                        document.removeEventListener('click', closeMenu);
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    if (currentActionSheetParagraphId) {
+                        deleteParagraph(currentActionSheetParagraphId);
                     }
-                }, { once: true });
-            }, 100);
+                    hideActionSheet();
+                });
+            }
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', hideActionSheet);
+            }
+        }
+
+        function showParagraphMenu(paraId) {
+            // 使用新的 Action Sheet
+            showActionSheet(paraId);
         }
 
         function deleteParagraph(paraId) {
@@ -2189,7 +2326,13 @@ ${selectedText}`;
             loadGlobalSettings();
 
             // Load document index with safety check
-            state.docIndex = loadFromStorage(STORAGE.DOC_INDEX, []);
+            let docIndexData = loadFromStorage(STORAGE.DOC_INDEX, []);
+            // 強制轉換：若為物件則透過 Object.values() 轉回陣列
+            if (docIndexData && typeof docIndexData === 'object' && !Array.isArray(docIndexData)) {
+                console.warn('init: docIndex 是物件，正在轉換為陣列');
+                docIndexData = Object.values(docIndexData);
+            }
+            state.docIndex = Array.isArray(docIndexData) ? docIndexData : [];
             ensureDocIndexIsArray();
 
             // Initialize or load document
@@ -2204,6 +2347,8 @@ ${selectedText}`;
             // Initialize UI
             initPanelTabs();
             initEventListeners();
+            initActionSheet();           // 初始化 Action Sheet
+            initEditCanvasAiActions();   // 初始化編輯畫布 AI 功能
             renderDocList();
             renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
 
