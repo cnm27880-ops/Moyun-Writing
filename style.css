@@ -1203,6 +1203,9 @@
             border-left: 3px solid transparent;
             border-radius: 0 8px 8px 0;
             transition: all var(--transition-fast);
+            /* 禁用點擊高亮效果 */
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
 
         .paragraph.user {
