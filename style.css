@@ -1205,10 +1205,6 @@
             transition: all var(--transition-fast);
         }
 
-        .paragraph:hover {
-            background: var(--accent-light);
-        }
-
         .paragraph.user {
             border-left-color: var(--accent);
         }
