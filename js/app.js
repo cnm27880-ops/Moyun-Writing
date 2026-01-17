@@ -83,12 +83,13 @@
             closeDrawerLeft();
 
             // 自動滾動到文檔底部，方便閱讀最新內容
+            // 滾動容器是 .main-content，不是 editorBody
             setTimeout(() => {
-                const editorBody = document.getElementById('editorBody');
-                if (editorBody) {
-                    editorBody.scrollTop = editorBody.scrollHeight;
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.scrollTop = mainContent.scrollHeight;
                 }
-            }, 100); // 延遲確保 DOM 已完全更新
+            }, 150); // 延遲確保 DOM 已完全更新
         }
 
         function saveCurrentDocument() {
