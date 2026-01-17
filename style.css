@@ -772,6 +772,82 @@
             border-color: var(--accent);
         }
 
+        .memory-hint {
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+            margin: 0 0 var(--spacing-sm) 0;
+        }
+
+        /* 擷取生成按鈕 */
+        .extract-btn {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            background: var(--accent-light);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .extract-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .extract-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 角色印象筆記標籤 */
+        .character-note-tabs {
+            display: flex;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .character-note-tab {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-family: var(--font-ui);
+            background: var(--bg-secondary);
+            color: var(--ink-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .character-note-tab:hover {
+            background: var(--border);
+        }
+
+        .character-note-tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .character-note-tab[data-role="user"].active {
+            background: var(--ai-marker);
+            border-color: var(--ai-marker);
+        }
+
+        /* 角色印象筆記內容 */
+        .character-note-content {
+            display: none;
+        }
+
+        .character-note-content.active {
+            display: block;
+        }
+
+        .character-note {
+            min-height: 150px;
+        }
+
         .checkpoint-btn {
             width: 100%;
             padding: var(--spacing-md);
@@ -1143,6 +1219,18 @@
 
         .paragraph.ai:hover {
             background: var(--ai-marker-light);
+        }
+
+        /* Long Press Highlight - 長按高亮效果 */
+        .paragraph.long-press-highlight {
+            background: var(--accent-light);
+            box-shadow: 0 0 0 2px var(--accent);
+            transform: scale(1.01);
+        }
+
+        .paragraph.long-press-highlight.ai {
+            background: var(--ai-marker-light);
+            box-shadow: 0 0 0 2px var(--ai-marker);
         }
 
         .paragraph-content {

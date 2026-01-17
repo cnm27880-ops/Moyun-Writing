@@ -82,21 +82,39 @@ function initEditCanvasAiActions() {
 // Long Press Interaction - 長按互動
 // ============================================
 let longPressTimer = null;
+let longPressHighlightTimer = null;
 let longPressTarget = null;
 let longPressStartX = 0;
 let longPressStartY = 0;
 const LONG_PRESS_DURATION = 600;
+const LONG_PRESS_HIGHLIGHT_DELAY = 300; // 300ms 後才顯示高亮
 const MOVE_THRESHOLD = 10;
 
 function handleLongPressStart(e) {
     const paragraph = e.target.closest('.paragraph');
     if (!paragraph) return;
 
+    // 如果段落正在 streaming（AI 生成中），不允許長按
+    if (paragraph.classList.contains('streaming')) {
+        return;
+    }
+
     longPressTarget = paragraph;
     longPressStartX = e.touches ? e.touches[0].clientX : e.clientX;
     longPressStartY = e.touches ? e.touches[0].clientY : e.clientY;
 
+    // 延遲顯示高亮效果（只有持續按住才會顯示）
+    longPressHighlightTimer = setTimeout(() => {
+        if (longPressTarget) {
+            longPressTarget.classList.add('long-press-highlight');
+        }
+    }, LONG_PRESS_HIGHLIGHT_DELAY);
+
     longPressTimer = setTimeout(() => {
+        // 移除高亮效果
+        if (longPressTarget) {
+            longPressTarget.classList.remove('long-press-highlight');
+        }
         // 震動反饋
         if (navigator.vibrate) {
             navigator.vibrate(50);
@@ -116,7 +134,13 @@ function handleLongPressMove(e) {
     // 如果移動距離超過閾值，取消長按
     if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
         clearTimeout(longPressTimer);
+        clearTimeout(longPressHighlightTimer);
         longPressTimer = null;
+        longPressHighlightTimer = null;
+        // 移除高亮效果
+        if (longPressTarget) {
+            longPressTarget.classList.remove('long-press-highlight');
+        }
         longPressTarget = null;
     }
 }
@@ -125,8 +149,16 @@ function handleLongPressEnd() {
     if (longPressTimer) {
         clearTimeout(longPressTimer);
         longPressTimer = null;
-        longPressTarget = null;
     }
+    if (longPressHighlightTimer) {
+        clearTimeout(longPressHighlightTimer);
+        longPressHighlightTimer = null;
+    }
+    // 移除高亮效果
+    if (longPressTarget) {
+        longPressTarget.classList.remove('long-press-highlight');
+    }
+    longPressTarget = null;
 }
 
 // ============================================
@@ -333,9 +365,31 @@ function initEventListeners() {
     }
 
     // Memory & settings auto-save
-    [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt].forEach(textarea => {
-        textarea.addEventListener('input', autoSave);
+    [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
+        if (textarea) {
+            textarea.addEventListener('input', autoSave);
+        }
     });
+
+    // Character Note Tabs (角色印象筆記標籤切換)
+    if (el.characterNoteTabs) {
+        el.characterNoteTabs.querySelectorAll('.character-note-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const role = tab.dataset.role;
+                // 切換標籤狀態
+                el.characterNoteTabs.querySelectorAll('.character-note-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                // 切換內容區域
+                el.aiCharacterNote.classList.toggle('active', role === 'ai');
+                el.userCharacterNote.classList.toggle('active', role === 'user');
+            });
+        });
+    }
+
+    // Extract Character Button (擷取生成按鈕)
+    if (el.extractCharacterBtn) {
+        el.extractCharacterBtn.addEventListener('click', extractCharacterImpression);
+    }
 
     // Input field
     el.inputField.addEventListener('input', () => autoResizeTextarea(el.inputField));

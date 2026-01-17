@@ -158,36 +158,69 @@
                         <span>本章結算 (Checkpoint)</span>
                     </button>
 
+                    <!-- 故事錨點 -->
                     <div class="memory-block">
                         <div class="memory-header">
                             <span class="memory-label">
                                 <span>🎯</span>
-                                <span>軌道 A：故事錨點</span>
+                                <span>故事錨點</span>
                             </span>
-                            <span class="memory-badge anchor">Anchors</span>
+                            <span class="memory-badge anchor">Scene</span>
                         </div>
+                        <p class="memory-hint">關注：時間、地點、氛圍、衝突</p>
                         <textarea class="memory-textarea" id="storyAnchors" spellcheck="false">{
   "時間地點": "",
-  "環境氛圍": {
-    "光影": "",
-    "氣味": "",
-    "聲音": ""
-  },
-  "角色狀態": {
-    "心理": "",
-    "姿勢": "",
-    "外觀": ""
-  },
+  "環境氛圍": "",
   "當前衝突": "",
   "禁止發生的劇情": []
 }</textarea>
                     </div>
 
+                    <!-- 角色印象筆記 -->
+                    <div class="memory-block">
+                        <div class="memory-header">
+                            <span class="memory-label">
+                                <span>🎭</span>
+                                <span>角色印象筆記</span>
+                            </span>
+                            <button class="extract-btn" id="extractCharacterBtn" title="擷取生成">🔄 擷取生成</button>
+                        </div>
+                        <p class="memory-hint">關注：身分背景、狀態、角色理解</p>
+                        <!-- 角色標籤切換 -->
+                        <div class="character-note-tabs" id="characterNoteTabs">
+                            <button class="character-note-tab active" data-role="ai">🤖 AI 主筆角色</button>
+                            <button class="character-note-tab" data-role="user">👤 用戶主筆角色</button>
+                        </div>
+                        <!-- AI 主筆角色筆記 -->
+                        <div class="character-note-content active" id="aiCharacterNote" data-role="ai">
+                            <textarea class="memory-textarea character-note" id="aiCharacterNoteText" spellcheck="false" placeholder="AI 主筆角色的印象筆記...
+{
+  &quot;角色名稱&quot;: &quot;&quot;,
+  &quot;身分本質&quot;: &quot;&quot;,
+  &quot;當前狀態&quot;: &quot;&quot;,
+  &quot;性格特質&quot;: &quot;&quot;,
+  &quot;關鍵經歷&quot;: &quot;&quot;
+}"></textarea>
+                        </div>
+                        <!-- 用戶主筆角色筆記 -->
+                        <div class="character-note-content" id="userCharacterNote" data-role="user">
+                            <textarea class="memory-textarea character-note" id="userCharacterNoteText" spellcheck="false" placeholder="用戶主筆角色的印象筆記...
+{
+  &quot;角色名稱&quot;: &quot;&quot;,
+  &quot;身分本質&quot;: &quot;&quot;,
+  &quot;當前狀態&quot;: &quot;&quot;,
+  &quot;性格特質&quot;: &quot;&quot;,
+  &quot;關鍵經歷&quot;: &quot;&quot;
+}"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 文風指紋 -->
                     <div class="memory-block">
                         <div class="memory-header">
                             <span class="memory-label">
                                 <span>🖋️</span>
-                                <span>軌道 B：文風指紋</span>
+                                <span>文風指紋</span>
                             </span>
                             <span class="memory-badge style">Style</span>
                         </div>

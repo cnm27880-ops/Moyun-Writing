@@ -28,6 +28,14 @@ const $$ = sel => document.querySelectorAll(sel);
             worldSetting: $('worldSetting'),
             customPrompt: $('customPrompt'),
 
+            // Character Notes (角色印象筆記)
+            extractCharacterBtn: $('extractCharacterBtn'),
+            characterNoteTabs: $('characterNoteTabs'),
+            aiCharacterNote: $('aiCharacterNote'),
+            userCharacterNote: $('userCharacterNote'),
+            aiCharacterNoteText: $('aiCharacterNoteText'),
+            userCharacterNoteText: $('userCharacterNoteText'),
+
             // World Library
             worldLibrarySelect: $('worldLibrarySelect'),
             worldNameInput: $('worldNameInput'),

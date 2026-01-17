@@ -71,6 +71,14 @@ function loadDocument(docId) {
     el.worldSetting.value = docData.worldSetting || '';
     el.customPrompt.value = docData.customPrompt || DEFAULT_DOC_DATA.customPrompt;
 
+    // Character Notes (角色印象筆記)
+    if (el.aiCharacterNoteText) {
+        el.aiCharacterNoteText.value = docData.aiCharacterNote || '';
+    }
+    if (el.userCharacterNoteText) {
+        el.userCharacterNoteText.value = docData.userCharacterNote || '';
+    }
+
     // Ensure characters array exists
     if (!state.currentDoc.characters) {
         state.currentDoc.characters = [];
@@ -104,6 +112,14 @@ function saveCurrentDocument() {
     state.currentDoc.worldSetting = el.worldSetting.value;
     state.currentDoc.customPrompt = el.customPrompt.value;
     state.currentDoc.lastModified = Date.now();
+
+    // Character Notes (角色印象筆記)
+    if (el.aiCharacterNoteText) {
+        state.currentDoc.aiCharacterNote = el.aiCharacterNoteText.value;
+    }
+    if (el.userCharacterNoteText) {
+        state.currentDoc.userCharacterNote = el.userCharacterNoteText.value;
+    }
 
     // Characters are already directly modified in state.currentDoc.characters
 
