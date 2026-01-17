@@ -81,6 +81,15 @@
             updateStatusBar();
 
             closeDrawerLeft();
+
+            // 自動滾動到文檔底部，方便閱讀最新內容
+            // 滾動容器是 .main-content，不是 editorBody
+            setTimeout(() => {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.scrollTop = mainContent.scrollHeight;
+                }
+            }, 150); // 延遲確保 DOM 已完全更新
         }
 
         function saveCurrentDocument() {
@@ -329,25 +338,18 @@
                     .map(d => d.id)
                     .join(', ');
 
-                const analysisPrompt = `你是一位心理分析師。請閱讀以下劇情，並分析角色「${character.name}」當前的心理驅動力。
+                const analysisPrompt = `Role: Psychoanalyst.
+Task: Analyze the character "${character.name}" based on the story fragment below.
+Output: Strictly valid JSON only. Do not output markdown code blocks. Do not output explanations.
 
-【劇情片段】
+Story Fragment:
 ${recentContent}
 
-請針對以下指標評分 (0-100)，若文中未體現則填 null：
+Metrics (0-100 or null if not applicable):
 ${drivesList}
 
-每個指標的含義：
-- survival: 生存本能（優先保命，恐懼死亡）
-- logic: 絕對理智（計算得失，壓抑情感）
-- curiosity: 狂熱求知（探索未知，不計代價）
-- love: 情感羈絆（重視特定對象，溫柔守護）
-- destruction: 毀滅衝動（暴力，破壞慾）
-- duty: 道德責任（堅持原則，正義感）
-- pride: 傲慢自尊（維護顏面，不願示弱）
-- greed: 貪婪慾望（渴求力量或資源）
-
-請只回傳 JSON 格式，例如：{"survival": 80, "logic": 20, "curiosity": null, ...}`;
+JSON Format Example:
+{"survival": 80, "logic": 20, "curiosity": null, ...}`;
 
                 const response = await callAPIForAnalysis(analysisPrompt);
 
@@ -431,6 +433,7 @@ ${drivesList}
                 } else {
                     console.error('無法從回應中提取 JSON:', response);
                     showToast('沒有提取到有效的 JSON 資料，請檢查 API 回應格式', 'error', 3000);
+                    alert("分析失敗 (API 回傳內容)：\n" + response.substring(0, 500));
                 }
             } catch (error) {
                 showToast(`分析失敗: ${error.message}`, 'error');
@@ -451,31 +454,50 @@ ${drivesList}
                 'Authorization': `Bearer ${apiKey}`
             };
 
+            // 確保不使用 Stream 模式
             if (state.globalSettings.apiFormat === 'openrouter') {
                 headers['HTTP-Referer'] = window.location.origin;
                 headers['X-Title'] = 'MoYun';
             }
 
-            const response = await fetch(apiEndpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: modelName,
-                    messages: [
-                        { role: 'user', content: prompt }
-                    ],
-                    temperature: 0.3,  // 較低的 temperature 以獲得更穩定的分析結果
-                    max_tokens: 500
-                })
-            });
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 1000,
+                        stream: false // ★ 明確禁止流式傳輸
+                    })
+                });
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`API 請求失敗 (${response.status}): ${errText}`);
+                }
+
+                const data = await response.json();
+
+                // ★ 除錯關鍵：檢查資料結構
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    // 如果結構不對，直接 Alert 顯示原始資料，方便截圖除錯
+                    const debugMsg = "API 回傳結構異常:\n" + JSON.stringify(data, null, 2);
+                    console.error(debugMsg);
+                    alert(debugMsg); // 手機上會跳出視窗
+                    return '';
+                }
+
+                return data.choices[0].message.content || '';
+
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("API 連線錯誤:\n" + error.message); // 手機上會跳出視窗
+                throw error;
             }
-
-            const data = await response.json();
-            return data.choices[0]?.message?.content || '';
         }
 
         function animateSlider(slider, targetValue) {
