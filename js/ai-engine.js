@@ -18,7 +18,21 @@ function buildSystemPrompt() {
     }
 
     if (el.storyAnchors.value.trim()) {
-        parts.push(`【故事錨點 - 當前狀態】\n${el.storyAnchors.value.trim()}`);
+        parts.push(`【故事錨點 - 當前場景】\n${el.storyAnchors.value.trim()}`);
+    }
+
+    // 角色印象筆記
+    const aiCharNote = el.aiCharacterNoteText?.value?.trim();
+    const userCharNote = el.userCharacterNoteText?.value?.trim();
+    if (aiCharNote || userCharNote) {
+        let charNotes = '【角色印象筆記 - 必須遵守的角色設定】\n';
+        if (aiCharNote) {
+            charNotes += `\n[AI 主筆角色]\n${aiCharNote}`;
+        }
+        if (userCharNote) {
+            charNotes += `\n\n[用戶主筆角色]\n${userCharNote}`;
+        }
+        parts.push(charNotes);
     }
 
     if (el.styleFingerprint.value.trim()) {
@@ -380,19 +394,10 @@ ${recentContent}
 
 請以 JSON 格式回傳，包含兩個物件：
 
-1. "storyAnchors" (故事錨點)：
+1. "storyAnchors" (故事錨點 - 關注場景狀態)：
 {
   "時間地點": "具體的時間與地點",
-  "環境氛圍": {
-    "光影": "光線描述",
-    "氣味": "氣味描述",
-    "聲音": "聲音描述"
-  },
-  "角色狀態": {
-    "心理": "當前心理狀態",
-    "姿勢": "身體姿態",
-    "外觀": "外觀描述"
-  },
+  "環境氛圍": "光影、氣味、聲音等環境描述",
   "當前衝突": "主要衝突或張力",
   "禁止發生的劇情": ["不應該發生的情節"]
 }
@@ -407,7 +412,7 @@ ${recentContent}
 
 請直接回傳 JSON，不要加任何其他說明。`;
 
-        const response = await callAPI(analysisPrompt);
+        const response = await callAPIForAnalysis(analysisPrompt);
 
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -818,5 +823,89 @@ ${content}`;
             expandBtn.innerHTML = '<span>➕</span><span>擴寫全文</span>';
         }
         if (refineBtn) refineBtn.disabled = false;
+    }
+}
+
+// ============================================
+// Extract Character Impression (角色印象筆記 - 擷取生成)
+// ============================================
+async function extractCharacterImpression() {
+    if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 2) {
+        showToast('內容太少，請先寫一些故事', 'warning');
+        return;
+    }
+
+    if (!state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'error');
+        return;
+    }
+
+    const btn = el.extractCharacterBtn;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ 分析中...';
+    }
+
+    try {
+        // 取得最近的故事內容
+        const recentContent = state.currentDoc.paragraphs
+            .slice(-15)
+            .map(p => `[${p.source === 'user' ? '用戶' : 'AI'}]: ${p.content}`)
+            .join('\n\n');
+
+        const analysisPrompt = `你是一位文學編輯，請分析以下故事對話，識別出兩個主要角色：
+1. AI 主筆角色（由 AI 續寫時主要描寫的角色）
+2. 用戶主筆角色（由用戶輸入時主要描寫的角色）
+
+【故事對話】
+${recentContent}
+
+請分析 AI 在續寫時對這些角色的「當下理解」，這是用來檢查 AI 是否有錯誤的設定或幻覺。
+
+請以 JSON 格式回傳，結構如下：
+{
+  "aiCharacter": {
+    "角色名稱": "角色的名字",
+    "身分本質": "AI 認為這個角色是誰（職業、種族、身分等）",
+    "當前狀態": "角色現在的處境、位置、正在做什麼",
+    "性格特質": "角色展現出的性格",
+    "關鍵經歷": "故事中提到的重要背景或經歷"
+  },
+  "userCharacter": {
+    "角色名稱": "角色的名字",
+    "身分本質": "這個角色是誰（職業、種族、身分等）",
+    "當前狀態": "角色現在的處境、位置、正在做什麼",
+    "性格特質": "角色展現出的性格",
+    "關鍵經歷": "故事中提到的重要背景或經歷"
+  }
+}
+
+請直接回傳 JSON，不要加任何其他說明。如果無法識別某個角色，該欄位填寫 "未識別"。`;
+
+        const response = await callAPIForAnalysis(analysisPrompt);
+
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+
+            if (result.aiCharacter) {
+                el.aiCharacterNoteText.value = JSON.stringify(result.aiCharacter, null, 2);
+            }
+            if (result.userCharacter) {
+                el.userCharacterNoteText.value = JSON.stringify(result.userCharacter, null, 2);
+            }
+
+            autoSave();
+            showToast('角色印象擷取完成！請檢查是否有錯誤理解', 'success');
+        } else {
+            showToast('無法解析回應，請重試', 'warning');
+        }
+    } catch (error) {
+        showToast(`擷取失敗: ${error.message}`, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 擷取生成';
+        }
     }
 }
