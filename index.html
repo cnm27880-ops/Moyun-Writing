@@ -12,7 +12,7 @@
         script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com https://yinli.one;
+        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com https://yinli.one https://accounts.google.com;
         img-src 'self' data: https:;
         frame-src 'self' https://*.firebaseapp.com https://*.google.com;
         object-src 'none';
@@ -210,6 +210,7 @@
                             </span>
                             <button class="add-character-btn" id="addCharacterBtn">+ 新增角色</button>
                         </div>
+                        <div class="director-focus-bar" id="directorFocusBar"></div>
                         <div class="character-list" id="characterList">
                             <!-- Character cards will be rendered here -->
                             <div class="character-empty" id="characterEmpty">
@@ -370,14 +371,6 @@
         <!-- Input Area -->
         <div class="input-area" id="inputArea">
             <div class="input-wrapper">
-                <!-- Status Bar for Character Mindset -->
-                <div class="status-bar" id="statusBar">
-                    <span class="status-focus" id="statusFocus">🎥 焦點：</span>
-                    <div class="status-drives" id="statusDrives">
-                        <!-- Drive tags will be rendered here -->
-                    </div>
-                </div>
-
                 <!-- Style Tag Bar -->
                 <div class="style-tag-bar" id="styleTagBar">
                     <button class="director-mode-toggle" id="directorModeToggle" title="導演模式">

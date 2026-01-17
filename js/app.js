@@ -754,9 +754,7 @@ ${drivesDescription}
             }
 
             const systemPrompt = buildSystemPrompt();
-            const history = buildConversationHistory();
-            // 不再手動 push userContent，因為它已經透過 addParagraph 存入 state.currentDoc
-            // buildConversationHistory 會自動抓取它
+            const history = options.customHistory || buildConversationHistory();
 
             const headers = {
                 'Content-Type': 'application/json',
@@ -1536,10 +1534,36 @@ ${selectedText}`;
                 return;
             }
 
-            // 獲取該段落之前的內容作為上下文（最多取前 3 段）
-            const contextStart = Math.max(0, paraIndex - 3);
-            const contextParagraphs = paragraphs.slice(contextStart, paraIndex);
-            const contextText = contextParagraphs.map(p => p.content).join('\n\n');
+            // 建立乾淨歷史：取得該段落之前的所有段落
+            const contextParagraphs = state.currentDoc.paragraphs.slice(0, paraIndex);
+
+            // 建構 customHistory，過濾掉空內容
+            const customHistory = [];
+            let currentRole = null;
+            let currentContent = '';
+
+            contextParagraphs.forEach(p => {
+                // 跳過空內容或只有空白字元的段落
+                if (!p.content || !p.content.trim()) {
+                    return;
+                }
+
+                const role = p.source === 'user' ? 'user' : 'assistant';
+
+                if (role === currentRole) {
+                    currentContent += '\n\n' + p.content;
+                } else {
+                    if (currentRole && currentContent.trim()) {
+                        customHistory.push({ role: currentRole, content: currentContent });
+                    }
+                    currentRole = role;
+                    currentContent = p.content;
+                }
+            });
+
+            if (currentRole && currentContent.trim()) {
+                customHistory.push({ role: currentRole, content: currentContent });
+            }
 
             // 設置載入狀態
             state.isLoading = true;
@@ -1558,22 +1582,73 @@ ${selectedText}`;
             showToast('正在重新生成...', 'info', 2000);
 
             try {
-                // 構建 prompt：使用之前的內容作為上下文，要求重寫這一段
-                const prompt = contextText + '\n\n請繼續這個故事，重新生成接下來的段落。';
+                // 構建 prompt：要求重新生成這一段
+                const prompt = '請繼續這個故事，重新生成接下來的段落。';
 
-                const response = await callAPI(prompt);
+                // 添加 user 訊息到 customHistory
+                customHistory.push({ role: 'user', content: prompt });
 
-                if (response) {
-                    // 更新段落內容
-                    paragraphs[paraIndex].content = response;
-                    paragraphs[paraIndex].timestamp = Date.now();
+                const response = await callAPI(prompt, { stream: true, customHistory: customHistory });
 
-                    renderParagraphs();
-                    autoSave();
-                    showToast('重新生成完成', 'success', 2000);
+                // 處理 streaming response
+                if (response && response.body) {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullContent = '';
 
-                    // 觸發自動同步（心靈同步功能）
-                    setTimeout(() => triggerAutoSync(), 500);
+                    // 更新段落顯示為 streaming 狀態
+                    const paraElement = document.querySelector(`.paragraph[data-id="${paraId}"]`);
+                    if (paraElement) {
+                        paraElement.classList.add('streaming');
+                    }
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+                                if (data === '[DONE]') continue;
+
+                                try {
+                                    const json = JSON.parse(data);
+                                    const delta = json.choices?.[0]?.delta?.content;
+                                    if (delta) {
+                                        fullContent += delta;
+                                        // 即時更新段落內容
+                                        paragraphs[paraIndex].content = fullContent;
+                                        const contentEl = paraElement?.querySelector('.paragraph-content');
+                                        if (contentEl) {
+                                            contentEl.innerHTML = parseMarkdown(fullContent);
+                                        }
+                                    }
+                                } catch (e) {
+                                    // 忽略解析錯誤
+                                }
+                            }
+                        }
+                    }
+
+                    // 移除 streaming 狀態
+                    if (paraElement) {
+                        paraElement.classList.remove('streaming');
+                    }
+
+                    if (fullContent) {
+                        paragraphs[paraIndex].content = fullContent;
+                        paragraphs[paraIndex].timestamp = Date.now();
+
+                        renderParagraphs();
+                        autoSave();
+                        showToast('重新生成完成', 'success', 2000);
+
+                        // 觸發自動同步（心靈同步功能）
+                        setTimeout(() => triggerAutoSync(), 500);
+                    }
                 }
             } catch (error) {
                 showToast(`重新生成失敗: ${error.message}`, 'error');
@@ -1583,6 +1658,12 @@ ${selectedText}`;
                 // Remove breathing effect from editor
                 if (editorPaper) {
                     editorPaper.classList.remove('ai-writing');
+                }
+
+                // 恢復按鈕狀態
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🔄';
                 }
             }
         }
