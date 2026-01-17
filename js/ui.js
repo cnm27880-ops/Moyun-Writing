@@ -674,6 +674,10 @@ const $$ = sel => document.querySelectorAll(sel);
                 select.appendChild(option);
             });
         }
+
+        // Focus Mode State
+        let isFocusMode = false;
+
         function toggleFocusMode() {
             isFocusMode = !isFocusMode;
             document.body.classList.toggle('focus-mode', isFocusMode);

@@ -1227,7 +1227,7 @@ ${recentContent}
             // 同步到當前文檔
             if (state.currentDoc) {
                 state.currentDoc.worldSetting = defaultWorld;
-                saveDocument();
+                saveCurrentDocument();
             }
 
             showToast('已回復預設世界觀', 'success');
@@ -1256,7 +1256,7 @@ ${recentContent}
             // 同步到當前文檔
             if (state.currentDoc) {
                 state.currentDoc.customPrompt = defaultPrompt;
-                saveDocument();
+                saveCurrentDocument();
             }
 
             showToast('已回復預設系統指令', 'success');
