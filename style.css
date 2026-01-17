@@ -1713,6 +1713,49 @@
             margin-bottom: var(--spacing-md);
         }
 
+        /* Director Focus Bar - 當前焦點角色顯示區 */
+        .director-focus-bar {
+            display: none;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-md);
+            background: var(--accent-light);
+            border-radius: 10px;
+            margin-bottom: var(--spacing-md);
+            border: 1px solid rgba(107, 142, 35, 0.2);
+        }
+
+        .director-focus-bar.active {
+            display: flex;
+        }
+
+        .focus-character {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .focus-drives {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+        }
+
+        .focus-drive-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: var(--bg-paper);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--ink-secondary);
+            border: 1px solid var(--border-light);
+        }
+
         .director-title {
             font-size: 0.95rem;
             font-weight: 500;

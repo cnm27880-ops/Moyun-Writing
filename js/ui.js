@@ -52,9 +52,7 @@ const $$ = sel => document.querySelectorAll(sel);
             addCharacterBtn: $('addCharacterBtn'),
             characterList: $('characterList'),
             characterEmpty: $('characterEmpty'),
-            statusBar: $('statusBar'),
-            statusFocus: $('statusFocus'),
-            statusDrives: $('statusDrives'),
+            directorFocusBar: $('directorFocusBar'),
 
             // Inspiration Drawer
             generateConflictBtn: $('generateConflictBtn'),
@@ -602,22 +600,27 @@ const $$ = sel => document.querySelectorAll(sel);
             );
 
             if (!focusCharacter || Object.keys(focusCharacter.drives).length === 0) {
-                el.statusBar.classList.remove('active');
+                el.directorFocusBar.classList.remove('active');
+                el.directorFocusBar.innerHTML = '';
                 return;
             }
 
-            el.statusBar.classList.add('active');
-            el.statusFocus.innerHTML = `🎥 焦點：${escapeHtml(focusCharacter.name)}`;
+            el.directorFocusBar.classList.add('active');
 
-            // 生成動力標籤（按權重排序）
+            // 生成動力標籤（按權重排序，最多顯示 3 個）
             const sortedDrives = Object.entries(focusCharacter.drives)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 4);  // 最多顯示 4 個
+                .slice(0, 3);
 
-            el.statusDrives.innerHTML = sortedDrives.map(([driveId, value]) => {
+            const drivesHtml = sortedDrives.map(([driveId, value]) => {
                 const drive = CORE_DRIVES[driveId];
-                return `<span class="status-drive-tag">${drive.icon}${drive.name.slice(0,2)} ${value}%</span>`;
+                return `<span class="focus-drive-tag">${drive.icon} ${drive.name} ${value}%</span>`;
             }).join('');
+
+            el.directorFocusBar.innerHTML = `
+                <span class="focus-character">🎥 當前焦點：${escapeHtml(focusCharacter.name)}</span>
+                <div class="focus-drives">${drivesHtml}</div>
+            `;
         }
         function updateStyleTagsUI() {
             if (!el.styleTagBar) return;
