@@ -756,6 +756,11 @@ ${drivesDescription}
             const systemPrompt = buildSystemPrompt();
             const history = options.customHistory || buildConversationHistory();
 
+            // 注入增強 Prompt：如果最後一則訊息是 user，替換其 content 為包含風格標籤的 userContent
+            if (history.length > 0 && history[history.length - 1].role === 'user') {
+                history[history.length - 1].content = userContent;
+            }
+
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`
@@ -766,12 +771,16 @@ ${drivesDescription}
                 headers['X-Title'] = 'MoYun';
             }
 
+            // 建構 messages 陣列，過濾空的 system message
+            const messages = [];
+            if (systemPrompt && systemPrompt.trim()) {
+                messages.push({ role: 'system', content: systemPrompt });
+            }
+            messages.push(...history);
+
             const requestBody = {
                 model: modelName,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    ...history
-                ],
+                messages: messages,
                 temperature: parseFloat(temperature),
                 max_tokens: 4096
             };
