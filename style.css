@@ -1217,22 +1217,6 @@
             border-left-color: var(--ai-marker);
         }
 
-        .paragraph.ai:hover {
-            background: var(--ai-marker-light);
-        }
-
-        /* Long Press Highlight - 長按高亮效果 */
-        .paragraph.long-press-highlight {
-            background: var(--accent-light);
-            box-shadow: 0 0 0 2px var(--accent);
-            transform: scale(1.01);
-        }
-
-        .paragraph.long-press-highlight.ai {
-            background: var(--ai-marker-light);
-            box-shadow: 0 0 0 2px var(--ai-marker);
-        }
-
         .paragraph-content {
             outline: none;
             min-height: 1.5em;
