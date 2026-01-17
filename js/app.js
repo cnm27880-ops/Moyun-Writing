@@ -1282,23 +1282,37 @@ ${recentContent}
         }
 
         function updateHistoryDatalist() {
-            // 更新 Endpoint 歷史
-            const endpointDatalist = document.getElementById('endpointHistory');
-            endpointDatalist.innerHTML = '';
-            (state.globalSettings.savedEndpoints || []).forEach(endpoint => {
-                const option = document.createElement('option');
-                option.value = endpoint;
-                endpointDatalist.appendChild(option);
-            });
+            // 更新 Endpoint 下拉選單
+            const endpointSelect = el.endpointSelect;
+            if (endpointSelect) {
+                const currentValue = el.apiEndpoint.value;
+                endpointSelect.innerHTML = '<option value="">-- 選擇或輸入新端點 --</option>';
+                (state.globalSettings.savedEndpoints || []).forEach(endpoint => {
+                    const option = document.createElement('option');
+                    option.value = endpoint;
+                    option.textContent = endpoint.length > 50 ? endpoint.substring(0, 50) + '...' : endpoint;
+                    if (endpoint === currentValue) {
+                        option.selected = true;
+                    }
+                    endpointSelect.appendChild(option);
+                });
+            }
 
-            // 更新 Model 歷史
-            const modelDatalist = document.getElementById('modelHistory');
-            modelDatalist.innerHTML = '';
-            (state.globalSettings.savedModels || []).forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                modelDatalist.appendChild(option);
-            });
+            // 更新 Model 下拉選單
+            const modelSelect = el.modelSelect;
+            if (modelSelect) {
+                const currentValue = el.modelName.value;
+                modelSelect.innerHTML = '<option value="">-- 選擇或輸入新模型 --</option>';
+                (state.globalSettings.savedModels || []).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    if (model === currentValue) {
+                        option.selected = true;
+                    }
+                    modelSelect.appendChild(option);
+                });
+            }
         }
 
         function saveGlobalSettings() {
@@ -1341,6 +1355,41 @@ ${recentContent}
             updateHistoryDatalist();
 
             showToast('設定已儲存', 'success');
+        }
+
+        function deleteFromHistory(type, value) {
+            if (type === 'endpoint') {
+                const savedEndpoints = state.globalSettings.savedEndpoints || [];
+                const index = savedEndpoints.indexOf(value);
+                if (index > -1) {
+                    savedEndpoints.splice(index, 1);
+                    state.globalSettings.savedEndpoints = savedEndpoints;
+                    el.apiEndpoint.value = '';
+                    showToast('端點已從歷史記錄中刪除', 'success');
+                } else {
+                    showToast('此端點不在歷史記錄中', 'warning');
+                    return;
+                }
+            } else if (type === 'model') {
+                const savedModels = state.globalSettings.savedModels || [];
+                const index = savedModels.indexOf(value);
+                if (index > -1) {
+                    savedModels.splice(index, 1);
+                    state.globalSettings.savedModels = savedModels;
+                    el.modelName.value = '';
+                    showToast('模型已從歷史記錄中刪除', 'success');
+                } else {
+                    showToast('此模型不在歷史記錄中', 'warning');
+                    return;
+                }
+            }
+
+            // 保存設定並更新 UI
+            saveToStorage(STORAGE.GLOBAL_SETTINGS, state.globalSettings);
+            if (storageManager.isLoggedIn()) {
+                storageManager.syncSettings();
+            }
+            updateHistoryDatalist();
         }
 
         function clearAllData() {
@@ -2094,6 +2143,48 @@ ${selectedText}`;
             el.temperature.addEventListener('input', (e) => {
                 el.tempValue.textContent = e.target.value;
             });
+
+            // Endpoint 下拉選單選擇事件
+            if (el.endpointSelect) {
+                el.endpointSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        el.apiEndpoint.value = e.target.value;
+                    }
+                });
+            }
+
+            // Model 下拉選單選擇事件
+            if (el.modelSelect) {
+                el.modelSelect.addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        el.modelName.value = e.target.value;
+                    }
+                });
+            }
+
+            // 刪除 Endpoint 按鈕
+            if (el.deleteEndpointBtn) {
+                el.deleteEndpointBtn.addEventListener('click', () => {
+                    const currentEndpoint = el.apiEndpoint.value.trim();
+                    if (!currentEndpoint) {
+                        showToast('請先選擇要刪除的端點', 'warning');
+                        return;
+                    }
+                    deleteFromHistory('endpoint', currentEndpoint);
+                });
+            }
+
+            // 刪除 Model 按鈕
+            if (el.deleteModelBtn) {
+                el.deleteModelBtn.addEventListener('click', () => {
+                    const currentModel = el.modelName.value.trim();
+                    if (!currentModel) {
+                        showToast('請先選擇要刪除的模型', 'warning');
+                        return;
+                    }
+                    deleteFromHistory('model', currentModel);
+                });
+            }
 
             // Cloud Backup
             const createBackupBtn = document.getElementById('createBackupBtn');

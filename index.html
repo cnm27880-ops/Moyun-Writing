@@ -301,9 +301,14 @@
 
                     <div class="setting-group">
                         <label class="setting-label">API Endpoint</label>
-                        <input type="text" class="setting-input" id="apiEndpoint" list="endpointHistory" placeholder="https://openrouter.ai/api/v1/chat/completions">
-                        <datalist id="endpointHistory"></datalist>
-                        <p class="setting-hint">OpenRouter 預設端點（會記錄常用選項）</p>
+                        <div class="combo-select-wrapper">
+                            <select class="combo-select" id="endpointSelect">
+                                <option value="">-- 選擇或輸入新端點 --</option>
+                            </select>
+                            <input type="text" class="setting-input combo-input" id="apiEndpoint" placeholder="https://openrouter.ai/api/v1/chat/completions">
+                            <button type="button" class="combo-delete-btn" id="deleteEndpointBtn" title="刪除此端點">🗑️</button>
+                        </div>
+                        <p class="setting-hint">從歷史記錄選擇，或輸入新端點（儲存後會自動記錄）</p>
                     </div>
 
                     <div class="setting-group">
@@ -314,9 +319,14 @@
 
                     <div class="setting-group">
                         <label class="setting-label">模型名稱</label>
-                        <input type="text" class="setting-input" id="modelName" list="modelHistory" placeholder="anthropic/claude-sonnet-4">
-                        <datalist id="modelHistory"></datalist>
-                        <p class="setting-hint">例: anthropic/claude-sonnet-4（會記錄常用選項）</p>
+                        <div class="combo-select-wrapper">
+                            <select class="combo-select" id="modelSelect">
+                                <option value="">-- 選擇或輸入新模型 --</option>
+                            </select>
+                            <input type="text" class="setting-input combo-input" id="modelName" placeholder="anthropic/claude-sonnet-4">
+                            <button type="button" class="combo-delete-btn" id="deleteModelBtn" title="刪除此模型">🗑️</button>
+                        </div>
+                        <p class="setting-hint">從歷史記錄選擇，或輸入新模型（儲存後會自動記錄）</p>
                     </div>
 
                     <div class="setting-group">

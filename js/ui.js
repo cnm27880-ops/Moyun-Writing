@@ -41,8 +41,12 @@ const $$ = sel => document.querySelectorAll(sel);
             // Settings
             apiFormat: $('apiFormat'),
             apiEndpoint: $('apiEndpoint'),
+            endpointSelect: $('endpointSelect'),
+            deleteEndpointBtn: $('deleteEndpointBtn'),
             apiKey: $('apiKey'),
             modelName: $('modelName'),
+            modelSelect: $('modelSelect'),
+            deleteModelBtn: $('deleteModelBtn'),
             temperature: $('temperature'),
             tempValue: $('tempValue'),
             saveSettingsBtn: $('saveSettingsBtn'),
@@ -595,11 +599,12 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function updateStatusBar() {
-            const focusCharacter = state.currentDoc?.characters?.find(
-                c => c.id === state.currentDoc.focusCharacterId
-            );
+            const characters = state.currentDoc?.characters || [];
+            const focusCharacterId = state.currentDoc?.focusCharacterId;
+            const focusCharacter = characters.find(c => c.id === focusCharacterId);
 
-            if (!focusCharacter || Object.keys(focusCharacter.drives).length === 0) {
+            // 如果沒有角色，隱藏焦點欄
+            if (characters.length === 0) {
                 el.directorFocusBar.classList.remove('active');
                 el.directorFocusBar.innerHTML = '';
                 return;
@@ -607,20 +612,46 @@ const $$ = sel => document.querySelectorAll(sel);
 
             el.directorFocusBar.classList.add('active');
 
-            // 生成動力標籤（按權重排序，最多顯示 3 個）
-            const sortedDrives = Object.entries(focusCharacter.drives)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 3);
-
-            const drivesHtml = sortedDrives.map(([driveId, value]) => {
-                const drive = CORE_DRIVES[driveId];
-                return `<span class="focus-drive-tag">${drive.icon} ${drive.name} ${value}%</span>`;
+            // 生成角色選項
+            const characterOptions = characters.map(c => {
+                const isSelected = c.id === focusCharacterId;
+                return `<option value="${c.id}" ${isSelected ? 'selected' : ''}>${escapeHtml(c.name)}</option>`;
             }).join('');
 
+            // 生成動力標籤（按權重排序，最多顯示 3 個）
+            let drivesHtml = '';
+            if (focusCharacter && Object.keys(focusCharacter.drives).length > 0) {
+                const sortedDrives = Object.entries(focusCharacter.drives)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+
+                drivesHtml = sortedDrives.map(([driveId, value]) => {
+                    const drive = CORE_DRIVES[driveId];
+                    return `<span class="focus-drive-tag">${drive.icon} ${drive.name} ${value}%</span>`;
+                }).join('');
+            } else {
+                drivesHtml = '<span class="focus-drive-hint">選擇角色後設定驅動力</span>';
+            }
+
             el.directorFocusBar.innerHTML = `
-                <span class="focus-character">🎥 當前焦點：${escapeHtml(focusCharacter.name)}</span>
+                <div class="focus-character-row">
+                    <span class="focus-label">🎥 當前焦點：</span>
+                    <select class="focus-character-select" id="focusCharacterSelect">
+                        <option value="">-- 選擇角色 --</option>
+                        ${characterOptions}
+                    </select>
+                </div>
                 <div class="focus-drives">${drivesHtml}</div>
             `;
+
+            // 綁定下拉選單變更事件
+            const selectEl = document.getElementById('focusCharacterSelect');
+            if (selectEl) {
+                selectEl.addEventListener('change', (e) => {
+                    const selectedId = e.target.value || null;
+                    setFocusCharacter(selectedId);
+                });
+            }
         }
         function updateStyleTagsUI() {
             if (!el.styleTagBar) return;

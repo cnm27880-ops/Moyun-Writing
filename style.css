@@ -860,6 +860,69 @@
             margin-top: var(--spacing-xs);
         }
 
+        /* Combo Select Wrapper - 下拉選單與輸入框組合 */
+        .combo-select-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .combo-select {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-secondary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .combo-select:hover {
+            border-color: var(--accent);
+            background: var(--bg-paper);
+        }
+
+        .combo-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(107, 142, 35, 0.1);
+        }
+
+        .combo-input {
+            border-radius: 8px;
+        }
+
+        .combo-delete-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity var(--transition-fast);
+            display: none;
+        }
+
+        .combo-select-wrapper {
+            position: relative;
+        }
+
+        .combo-select-wrapper:hover .combo-delete-btn,
+        .combo-delete-btn:focus {
+            display: block;
+        }
+
+        .combo-delete-btn:hover {
+            opacity: 1;
+        }
+
         .setting-range-wrapper {
             display: flex;
             align-items: center;
@@ -1754,6 +1817,46 @@
             font-size: 0.8rem;
             color: var(--ink-secondary);
             border: 1px solid var(--border-light);
+        }
+
+        .focus-character-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .focus-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .focus-character-select {
+            flex: 1;
+            padding: 6px 10px;
+            background: var(--bg-paper);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--ink-primary);
+            cursor: pointer;
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+
+        .focus-character-select:hover {
+            border-color: var(--accent-dark, #5a7a1e);
+        }
+
+        .focus-character-select:focus {
+            box-shadow: 0 0 0 2px rgba(107, 142, 35, 0.2);
+        }
+
+        .focus-drive-hint {
+            font-size: 0.8rem;
+            color: var(--ink-muted);
+            font-style: italic;
         }
 
         .director-title {
