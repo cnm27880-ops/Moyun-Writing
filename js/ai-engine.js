@@ -1,0 +1,822 @@
+// ============================================
+// MoYun 墨韻 - AI Engine Module
+// AI 引擎：API 通訊、續寫、潤飾、擴寫等功能
+// ============================================
+
+// ============================================
+// API Communication
+// ============================================
+function buildSystemPrompt() {
+    const parts = [];
+
+    if (el.customPrompt.value.trim()) {
+        parts.push(el.customPrompt.value.trim());
+    }
+
+    if (el.worldSetting.value.trim()) {
+        parts.push(`【世界觀設定】\n${el.worldSetting.value.trim()}`);
+    }
+
+    if (el.storyAnchors.value.trim()) {
+        parts.push(`【故事錨點 - 當前狀態】\n${el.storyAnchors.value.trim()}`);
+    }
+
+    if (el.styleFingerprint.value.trim()) {
+        parts.push(`【文風指紋 - 寫作風格】\n${el.styleFingerprint.value.trim()}`);
+    }
+
+    // 角色心理混音台 Prompt
+    const mindsetPrompt = buildCharacterMindsetPrompt();
+    if (mindsetPrompt) {
+        parts.push(mindsetPrompt);
+    }
+
+    return parts.join('\n\n');
+}
+
+function buildConversationHistory() {
+    if (!state.currentDoc?.paragraphs) return [];
+
+    const recent = state.currentDoc.paragraphs.slice(-20);
+    const messages = [];
+    let currentRole = null;
+    let currentContent = '';
+
+    recent.forEach(p => {
+        // 跳過空內容或只有空白字元的段落 (修復空訊息過濾)
+        if (!p.content || !p.content.trim()) {
+            return;
+        }
+
+        const role = p.source === 'user' ? 'user' : 'assistant';
+
+        if (role === currentRole) {
+            currentContent += '\n\n' + p.content;
+        } else {
+            if (currentRole && currentContent.trim()) {
+                messages.push({ role: currentRole, content: currentContent });
+            }
+            currentRole = role;
+            currentContent = p.content;
+        }
+    });
+
+    if (currentRole && currentContent.trim()) {
+        messages.push({ role: currentRole, content: currentContent });
+    }
+
+    return messages;
+}
+
+async function callAPI(userContent, options = {}) {
+    const { apiEndpoint, apiKey, modelName, temperature } = state.globalSettings;
+
+    if (!apiKey) {
+        throw new Error('請先在設定中填入 API Key');
+    }
+
+    const systemPrompt = buildSystemPrompt();
+    const history = options.customHistory || buildConversationHistory();
+
+    // 注入增強 Prompt：如果最後一則訊息是 user，替換其 content 為包含風格標籤的 userContent
+    if (history.length > 0 && history[history.length - 1].role === 'user') {
+        history[history.length - 1].content = userContent;
+    }
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    };
+
+    if (state.globalSettings.apiFormat === 'openrouter') {
+        headers['HTTP-Referer'] = window.location.origin;
+        headers['X-Title'] = 'MoYun';
+    }
+
+    // 建構 messages 陣列，過濾空的 system message (修復 API 空訊息過濾)
+    const messages = [];
+    if (systemPrompt && systemPrompt.trim()) {
+        messages.push({ role: 'system', content: systemPrompt });
+    }
+    messages.push(...history);
+
+    const requestBody = {
+        model: modelName,
+        messages: messages,
+        temperature: parseFloat(temperature),
+        max_tokens: 4096
+    };
+
+    // 如果開啟 streaming 模式
+    if (options.stream) {
+        requestBody.stream = true;
+
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
+        }
+
+        return response; // 返回 response 供 stream 處理
+    }
+
+    // 原本的非 streaming 模式（用於分析等功能）
+    const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API 請求失敗 (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
+}
+
+async function callAPIForAnalysis(prompt) {
+    const { apiEndpoint, apiKey, modelName } = state.globalSettings;
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+    };
+
+    // 確保不使用 Stream 模式
+    if (state.globalSettings.apiFormat === 'openrouter') {
+        headers['HTTP-Referer'] = window.location.origin;
+        headers['X-Title'] = 'MoYun';
+    }
+
+    try {
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                model: modelName,
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 1000,
+                stream: false // 明確禁止流式傳輸
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`API 請求失敗 (${response.status}): ${errText}`);
+        }
+
+        const data = await response.json();
+
+        // 檢查資料結構
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            const debugMsg = "API 回傳結構異常:\n" + JSON.stringify(data, null, 2);
+            console.error(debugMsg);
+            alert(debugMsg);
+            return '';
+        }
+
+        return data.choices[0].message.content || '';
+
+    } catch (error) {
+        console.error("API Error:", error);
+        alert("API 連線錯誤:\n" + error.message);
+        throw error;
+    }
+}
+
+// ============================================
+// Style Tags
+// ============================================
+function toggleStyleTag(tagId) {
+    const wasActive = state.activeStyleTags.has(tagId);
+    if (wasActive) {
+        state.activeStyleTags.delete(tagId);
+    } else {
+        state.activeStyleTags.add(tagId);
+        // 顯示 Toast 提示
+        const tag = STYLE_TAGS[tagId];
+        if (tag) {
+            showToast(`${tag.icon} 已開啟：${tag.tooltip}`, 'info', 2000);
+        }
+    }
+    updateStyleTagsUI();
+}
+
+function getActiveStylePrompts() {
+    const prompts = [];
+    state.activeStyleTags.forEach(tagId => {
+        if (STYLE_TAGS[tagId]) {
+            prompts.push(STYLE_TAGS[tagId].prompt);
+        }
+    });
+    return prompts;
+}
+
+// ============================================
+// Main Submit Handler
+// ============================================
+async function handleSubmit() {
+    const content = el.inputField.value.trim();
+    if (!content || state.isLoading) return;
+
+    // 根據導演模式包裝用戶輸入
+    let userPrompt = content;
+    if (state.directorMode) {
+        userPrompt = `[System Instruction: 用戶要求劇情發展如下：${content}。請演出此情節，不要在文中複述指令。]`;
+    } else {
+        userPrompt = content + '\n\n請繼續這個故事。';
+    }
+
+    // 新增風格標籤的 prompts
+    const stylePrompts = getActiveStylePrompts();
+    if (stylePrompts.length > 0) {
+        userPrompt += '\n\n' + stylePrompts.join('\n');
+    }
+
+    addParagraph(content, 'user');
+    el.inputField.value = '';
+    el.inputField.style.height = 'auto';
+
+    state.isLoading = true;
+    el.sendBtn.classList.add('loading');
+    el.sendBtn.disabled = true;
+
+    // Add breathing effect to editor
+    const editorPaper = document.querySelector('.editor-paper');
+    if (editorPaper) {
+        editorPaper.classList.add('ai-writing');
+    }
+
+    // 即時建立空的 AI 段落
+    const aiParagraph = {
+        id: generateId(),
+        content: '',
+        source: 'ai',
+        timestamp: Date.now()
+    };
+    state.currentDoc.paragraphs.push(aiParagraph);
+    renderParagraphs();
+
+    // 智慧滾動：將視窗捲動到新段落的頂部
+    const newPara = el.editorBody.querySelector(`[data-id="${aiParagraph.id}"]`);
+
+    if (newPara) {
+        // 添加 streaming 類別以顯示閃爍游標
+        newPara.classList.add('streaming');
+        // 初始滾動到段落頂部
+        newPara.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    try {
+        const response = await callAPI(userPrompt, { stream: true });
+
+        // 處理 SSE Stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let fullContent = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // 保留未完成的行
+
+            for (const line of lines) {
+                if (line.trim() === '') continue;
+                if (!line.startsWith('data: ')) continue;
+
+                const data = line.slice(6); // 移除 "data: " 前綴
+                if (data === '[DONE]') continue;
+
+                try {
+                    const parsed = JSON.parse(data);
+                    const delta = parsed.choices?.[0]?.delta?.content || '';
+                    if (delta) {
+                        fullContent += delta;
+                        // 即時更新段落內容
+                        aiParagraph.content = fullContent;
+                        const paraContent = newPara.querySelector('.paragraph-content');
+                        if (paraContent) {
+                            paraContent.innerHTML = parseMarkdown(fullContent);
+                        }
+                        // 流式傳輸期間不自動滾動，保持在段落開頭
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse SSE data:', e);
+                }
+            }
+        }
+
+        // 完成後移除 streaming 類別
+        if (newPara) {
+            newPara.classList.remove('streaming');
+        }
+
+        autoSave();
+        showToast('AI 續寫完成', 'success', 2000);
+
+        // 觸發自動同步（心靈同步功能）
+        setTimeout(() => triggerAutoSync(), 500);
+    } catch (error) {
+        // 移除空段落
+        const paraIndex = state.currentDoc.paragraphs.findIndex(p => p.id === aiParagraph.id);
+        if (paraIndex !== -1) {
+            state.currentDoc.paragraphs.splice(paraIndex, 1);
+            renderParagraphs();
+        }
+        showToast(`續寫失敗: ${error.message}`, 'error');
+    } finally {
+        state.isLoading = false;
+        el.sendBtn.classList.remove('loading');
+        el.sendBtn.disabled = false;
+
+        // Remove breathing effect from editor
+        if (editorPaper) {
+            editorPaper.classList.remove('ai-writing');
+        }
+    }
+}
+
+// ============================================
+// Checkpoint (本章結算)
+// ============================================
+async function performCheckpoint() {
+    if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 3) {
+        showToast('內容太少，請先寫一些故事', 'warning');
+        return;
+    }
+
+    if (!state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'error');
+        return;
+    }
+
+    el.checkpointBtn.disabled = true;
+    el.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
+
+    try {
+        const recentContent = state.currentDoc.paragraphs
+            .slice(-10)
+            .map(p => p.content)
+            .join('\n\n');
+
+        const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊：
+
+【故事片段】
+${recentContent}
+
+請以 JSON 格式回傳，包含兩個物件：
+
+1. "storyAnchors" (故事錨點)：
+{
+  "時間地點": "具體的時間與地點",
+  "環境氛圍": {
+    "光影": "光線描述",
+    "氣味": "氣味描述",
+    "聲音": "聲音描述"
+  },
+  "角色狀態": {
+    "心理": "當前心理狀態",
+    "姿勢": "身體姿態",
+    "外觀": "外觀描述"
+  },
+  "當前衝突": "主要衝突或張力",
+  "禁止發生的劇情": ["不應該發生的情節"]
+}
+
+2. "styleFingerprint" (文風指紋)：
+{
+  "敘事節奏": "描述節奏特點",
+  "感官偏好": ["主要感官描寫類型"],
+  "禁忌與張力處理": "如何處理敏感或緊張情節",
+  "關鍵語氣樣本": ["摘錄代表性句子"]
+}
+
+請直接回傳 JSON，不要加任何其他說明。`;
+
+        const response = await callAPI(analysisPrompt);
+
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+
+            if (result.storyAnchors) {
+                el.storyAnchors.value = JSON.stringify(result.storyAnchors, null, 2);
+            }
+            if (result.styleFingerprint) {
+                el.styleFingerprint.value = JSON.stringify(result.styleFingerprint, null, 2);
+            }
+
+            autoSave();
+            showToast('本章結算完成！', 'success');
+        }
+    } catch (error) {
+        showToast(`結算失敗: ${error.message}`, 'error');
+    } finally {
+        el.checkpointBtn.disabled = false;
+        el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (Checkpoint)</span>';
+    }
+}
+
+// ============================================
+// Regenerate Paragraph (重新生成段落)
+// ============================================
+async function regenerateParagraph(paraId) {
+    if (!state.currentDoc || state.isLoading) return;
+
+    if (!state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'error');
+        return;
+    }
+
+    const paragraphs = state.currentDoc.paragraphs;
+    const paraIndex = paragraphs.findIndex(p => p.id === paraId);
+
+    if (paraIndex === -1 || paragraphs[paraIndex].source !== 'ai') {
+        showToast('找不到該段落或該段落不是 AI 生成的', 'warning');
+        return;
+    }
+
+    // 建立乾淨歷史：取得該段落之前的所有段落 (修復重複對話)
+    const contextParagraphs = state.currentDoc.paragraphs.slice(0, paraIndex);
+
+    // 建構 customHistory，過濾掉空內容
+    const customHistory = [];
+    let currentRole = null;
+    let currentContent = '';
+
+    contextParagraphs.forEach(p => {
+        // 跳過空內容或只有空白字元的段落
+        if (!p.content || !p.content.trim()) {
+            return;
+        }
+
+        const role = p.source === 'user' ? 'user' : 'assistant';
+
+        if (role === currentRole) {
+            currentContent += '\n\n' + p.content;
+        } else {
+            if (currentRole && currentContent.trim()) {
+                customHistory.push({ role: currentRole, content: currentContent });
+            }
+            currentRole = role;
+            currentContent = p.content;
+        }
+    });
+
+    if (currentRole && currentContent.trim()) {
+        customHistory.push({ role: currentRole, content: currentContent });
+    }
+
+    // 設置載入狀態
+    state.isLoading = true;
+    const btn = document.querySelector(`.regenerate-btn[data-id="${paraId}"]`);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳';
+    }
+
+    // Add breathing effect to editor
+    const editorPaper = document.querySelector('.editor-paper');
+    if (editorPaper) {
+        editorPaper.classList.add('ai-writing');
+    }
+
+    showToast('正在重新生成...', 'info', 2000);
+
+    try {
+        // 構建 prompt：要求重新生成這一段
+        const prompt = '請繼續這個故事，重新生成接下來的段落。';
+
+        // 添加 user 訊息到 customHistory
+        customHistory.push({ role: 'user', content: prompt });
+
+        const response = await callAPI(prompt, { stream: true, customHistory: customHistory });
+
+        // 處理 streaming response
+        if (response && response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = '';
+
+            // 更新段落顯示為 streaming 狀態
+            const paraElement = document.querySelector(`.paragraph[data-id="${paraId}"]`);
+            if (paraElement) {
+                paraElement.classList.add('streaming');
+            }
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta?.content;
+                            if (delta) {
+                                fullContent += delta;
+                                // 即時更新段落內容
+                                paragraphs[paraIndex].content = fullContent;
+                                const contentEl = paraElement?.querySelector('.paragraph-content');
+                                if (contentEl) {
+                                    contentEl.innerHTML = parseMarkdown(fullContent);
+                                }
+                            }
+                        } catch (e) {
+                            // 忽略解析錯誤
+                        }
+                    }
+                }
+            }
+
+            // 移除 streaming 狀態
+            if (paraElement) {
+                paraElement.classList.remove('streaming');
+            }
+
+            if (fullContent) {
+                paragraphs[paraIndex].content = fullContent;
+                paragraphs[paraIndex].timestamp = Date.now();
+
+                renderParagraphs();
+                autoSave();
+                showToast('重新生成完成', 'success', 2000);
+
+                // 觸發自動同步（心靈同步功能）
+                setTimeout(() => triggerAutoSync(), 500);
+            }
+        }
+    } catch (error) {
+        showToast(`重新生成失敗: ${error.message}`, 'error');
+    } finally {
+        state.isLoading = false;
+
+        // Remove breathing effect from editor
+        if (editorPaper) {
+            editorPaper.classList.remove('ai-writing');
+        }
+
+        // 恢復按鈕狀態
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '🔄';
+        }
+    }
+}
+
+// ============================================
+// Text Selection Operations (選取文字操作)
+// ============================================
+async function refineSelectedText() {
+    if (!selectedText || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    hideSelectionMenu();
+    showToast('正在潤飾文字...', 'info', 2000);
+
+    const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            // 找到包含選取文字的段落
+            const paragraphs = state.currentDoc.paragraphs;
+            for (let i = 0; i < paragraphs.length; i++) {
+                if (paragraphs[i].content.includes(selectedText)) {
+                    // 在獨立編輯畫布中顯示結果
+                    currentEditingParagraphId = paragraphs[i].id;
+                    el.editCanvasTextarea.value = paragraphs[i].content.replace(selectedText, response);
+                    el.editCanvas.classList.add('active');
+                    el.editCanvasTextarea.focus();
+                    showToast('潤飾完成，請確認修改', 'success', 2000);
+                    break;
+                }
+            }
+        }
+    } catch (error) {
+        showToast('潤飾失敗：' + error.message, 'error');
+    }
+}
+
+async function expandSelectedText() {
+    if (!selectedText || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    hideSelectionMenu();
+    showToast('正在擴寫文字...', 'info', 2000);
+
+    const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${selectedText}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            // 找到包含選取文字的段落
+            const paragraphs = state.currentDoc.paragraphs;
+            for (let i = 0; i < paragraphs.length; i++) {
+                if (paragraphs[i].content.includes(selectedText)) {
+                    // 在獨立編輯畫布中顯示結果
+                    currentEditingParagraphId = paragraphs[i].id;
+                    el.editCanvasTextarea.value = paragraphs[i].content.replace(selectedText, response);
+                    el.editCanvas.classList.add('active');
+                    el.editCanvasTextarea.focus();
+                    showToast('擴寫完成，請確認修改', 'success', 2000);
+                    break;
+                }
+            }
+        }
+    } catch (error) {
+        showToast('擴寫失敗：' + error.message, 'error');
+    }
+}
+
+// ============================================
+// Paragraph AI Operations (段落 AI 操作)
+// ============================================
+async function refineParagraph(paraId) {
+    if (!state.currentDoc || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    const paragraph = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!paragraph || !paragraph.content.trim()) {
+        showToast('找不到段落或段落內容為空', 'warning');
+        return;
+    }
+
+    showToast('正在潤飾段落...', 'info', 2000);
+
+    const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${paragraph.content}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            // 在獨立編輯畫布中顯示結果供用戶確認
+            currentEditingParagraphId = paraId;
+            el.editCanvasTextarea.value = response;
+            el.editCanvas.classList.add('active');
+            el.editCanvasTextarea.focus();
+            showToast('潤飾完成，請確認修改', 'success', 2000);
+        }
+    } catch (error) {
+        showToast('潤飾失敗：' + error.message, 'error');
+    }
+}
+
+async function expandParagraph(paraId) {
+    if (!state.currentDoc || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    const paragraph = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!paragraph || !paragraph.content.trim()) {
+        showToast('找不到段落或段落內容為空', 'warning');
+        return;
+    }
+
+    showToast('正在擴寫段落...', 'info', 2000);
+
+    const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${paragraph.content}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            // 在獨立編輯畫布中顯示結果供用戶確認
+            currentEditingParagraphId = paraId;
+            el.editCanvasTextarea.value = response;
+            el.editCanvas.classList.add('active');
+            el.editCanvasTextarea.focus();
+            showToast('擴寫完成，請確認修改', 'success', 2000);
+        }
+    } catch (error) {
+        showToast('擴寫失敗：' + error.message, 'error');
+    }
+}
+
+// ============================================
+// Edit Canvas AI Functions - 編輯畫布 AI 輔助功能
+// ============================================
+async function refineInEditCanvas() {
+    if (!currentEditingParagraphId || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    const content = el.editCanvasTextarea.value.trim();
+    if (!content) {
+        showToast('內容不能為空', 'warning');
+        return;
+    }
+
+    const refineBtn = document.getElementById('editCanvasRefine');
+    const expandBtn = document.getElementById('editCanvasExpand');
+
+    // 設置載入狀態
+    if (refineBtn) {
+        refineBtn.disabled = true;
+        refineBtn.innerHTML = '<span>⏳</span><span>潤飾中...</span>';
+    }
+    if (expandBtn) expandBtn.disabled = true;
+
+    const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
+
+原文：
+${content}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            el.editCanvasTextarea.value = response;
+            showToast('潤飾完成', 'success', 2000);
+        }
+    } catch (error) {
+        showToast('潤飾失敗：' + error.message, 'error');
+    } finally {
+        if (refineBtn) {
+            refineBtn.disabled = false;
+            refineBtn.innerHTML = '<span>✨</span><span>潤飾全文</span>';
+        }
+        if (expandBtn) expandBtn.disabled = false;
+    }
+}
+
+async function expandInEditCanvas() {
+    if (!currentEditingParagraphId || !state.globalSettings.apiKey) {
+        showToast('請先設定 API Key', 'warning');
+        return;
+    }
+
+    const content = el.editCanvasTextarea.value.trim();
+    if (!content) {
+        showToast('內容不能為空', 'warning');
+        return;
+    }
+
+    const refineBtn = document.getElementById('editCanvasRefine');
+    const expandBtn = document.getElementById('editCanvasExpand');
+
+    // 設置載入狀態
+    if (expandBtn) {
+        expandBtn.disabled = true;
+        expandBtn.innerHTML = '<span>⏳</span><span>擴寫中...</span>';
+    }
+    if (refineBtn) refineBtn.disabled = true;
+
+    const prompt = `請擴寫以下文字，添加更多環境描寫、心理活動、感官細節，讓這段話變成一個更完整的場景描寫。保持原意，但讓內容更加豐富。只輸出擴寫後的結果，不要加任何解釋：
+
+原文：
+${content}`;
+
+    try {
+        const response = await callAPI(prompt);
+        if (response) {
+            el.editCanvasTextarea.value = response;
+            showToast('擴寫完成', 'success', 2000);
+        }
+    } catch (error) {
+        showToast('擴寫失敗：' + error.message, 'error');
+    } finally {
+        if (expandBtn) {
+            expandBtn.disabled = false;
+            expandBtn.innerHTML = '<span>➕</span><span>擴寫全文</span>';
+        }
+        if (refineBtn) refineBtn.disabled = false;
+    }
+}

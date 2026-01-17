@@ -1,6 +1,6 @@
 // 墨韻 MòYùn Service Worker
 // 版本號 - 更新時請遞增
-const CACHE_VERSION = 'moyun-v1.0.1';
+const CACHE_VERSION = 'moyun-v1.1.0';
 const CACHE_NAME = `moyun-cache-${CACHE_VERSION}`;
 
 // 需要快取的核心資源
@@ -8,7 +8,16 @@ const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  // 如果有其他靜態資源，可以添加在這裡
+  './js/config.js',
+  './js/utils.js',
+  './js/storage.js',
+  './js/offline.js',
+  './js/ui.js',
+  './js/doc-manager.js',
+  './js/char-manager.js',
+  './js/ai-engine.js',
+  './js/auth-manager.js',
+  './js/app.js',
 ];
 
 // Install 事件 - 安裝 Service Worker 並快取資源
