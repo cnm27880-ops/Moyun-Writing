@@ -517,6 +517,8 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function renderCharacterList() {
+            if (!el.characterList || !el.characterEmpty) return;
+
             if (!state.currentDoc?.characters?.length) {
                 el.characterEmpty.style.display = 'block';
                 // 清除其他角色卡片
@@ -686,6 +688,8 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function updateStatusBar() {
+            if (!el.directorFocusBar) return;
+
             const characters = state.currentDoc?.characters || [];
             const focusCharacterId = state.currentDoc?.focusCharacterId;
             const focusCharacter = characters.find(c => c.id === focusCharacterId);

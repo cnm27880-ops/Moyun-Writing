@@ -93,9 +93,15 @@ function loadDocument(docId) {
 
     // Update UI
     el.navTitle.textContent = docData.title || '未命名文檔';
-    el.storyAnchors.value = state.currentDoc.storyAnchors || '';
-    el.worldSetting.value = state.currentDoc.worldSetting || '';
-    el.customPrompt.value = state.currentDoc.customPrompt || '';
+    if (el.storyAnchors) {
+        el.storyAnchors.value = state.currentDoc.storyAnchors || '';
+    }
+    if (el.worldSetting) {
+        el.worldSetting.value = state.currentDoc.worldSetting || '';
+    }
+    if (el.customPrompt) {
+        el.customPrompt.value = state.currentDoc.customPrompt || '';
+    }
 
     // Character Notes (角色印象筆記)
     if (el.aiCharacterNoteText) {
