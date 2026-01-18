@@ -270,11 +270,19 @@ function initEventListeners() {
         console.error('worldDeleteBtn 元素不存在！');
     }
 
-    // Default World & Prompt buttons
-    el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
-    el.restoreDefaultWorldBtn.addEventListener('click', restoreDefaultWorld);
-    el.setDefaultPromptBtn.addEventListener('click', setDefaultPrompt);
-    el.restoreDefaultPromptBtn.addEventListener('click', restoreDefaultPrompt);
+    // Default World & Prompt buttons (已從 UI 移除，保留安全檢查)
+    if (el.setDefaultWorldBtn) {
+        el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
+    }
+    if (el.restoreDefaultWorldBtn) {
+        el.restoreDefaultWorldBtn.addEventListener('click', restoreDefaultWorld);
+    }
+    if (el.setDefaultPromptBtn) {
+        el.setDefaultPromptBtn.addEventListener('click', setDefaultPrompt);
+    }
+    if (el.restoreDefaultPromptBtn) {
+        el.restoreDefaultPromptBtn.addEventListener('click', restoreDefaultPrompt);
+    }
 
     // Settings
     el.saveSettingsBtn.addEventListener('click', saveGlobalSettings);
