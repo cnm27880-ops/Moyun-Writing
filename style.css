@@ -3211,6 +3211,262 @@
         }
 
         /* ============================================
+           Director Panel - 導演面板
+           ============================================ */
+
+        /* 邏輯模式選擇器 */
+        .logic-mode-selector {
+            background: linear-gradient(135deg, var(--bg-paper) 0%, var(--accent-light) 100%);
+            border: 1px solid var(--accent);
+            border-radius: 16px;
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .logic-mode-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink-primary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .logic-mode-select {
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-paper);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            font-family: var(--font-ui);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--ink-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .logic-mode-select:hover {
+            border-color: var(--accent-dark);
+            box-shadow: 0 0 0 4px rgba(74, 103, 82, 0.1);
+        }
+
+        .logic-mode-select:focus {
+            outline: none;
+            border-color: var(--accent-dark);
+            box-shadow: 0 0 0 4px rgba(74, 103, 82, 0.15);
+        }
+
+        .logic-mode-hint {
+            margin-top: var(--spacing-sm);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-tertiary);
+            line-height: 1.5;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+        }
+
+        /* 導演區塊 */
+        .director-block {
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .director-block-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .director-block-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink-primary);
+        }
+
+        .director-badge {
+            padding: 4px 10px;
+            background: var(--accent-light);
+            border-radius: 6px;
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .director-hint {
+            margin: 0 0 var(--spacing-md) 0;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: var(--ink-tertiary);
+        }
+
+        .director-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: var(--spacing-md);
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: var(--font-main);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--ink-primary);
+            resize: vertical;
+            transition: all var(--transition-fast);
+        }
+
+        .director-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(74, 103, 82, 0.1);
+        }
+
+        .director-textarea.scene-anchors {
+            min-height: 140px;
+        }
+
+        .director-textarea.character-note {
+            min-height: 120px;
+        }
+
+        .director-textarea::placeholder {
+            color: var(--ink-tertiary);
+            font-size: 0.9rem;
+        }
+
+        /* 世界觀圖書館工具列（緊湊版） */
+        .world-library-toolbar.compact {
+            margin-bottom: var(--spacing-md);
+            padding: var(--spacing-sm);
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 10px;
+        }
+
+        .world-library-toolbar.compact .world-library-row {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .world-library-toolbar.compact .world-library-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .world-library-toolbar.compact .world-select {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.9rem;
+        }
+
+        .world-library-toolbar.compact .world-name-input {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.9rem;
+        }
+
+        .world-library-toolbar.compact .world-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 0.85rem;
+        }
+
+        /* 本章結算按鈕（導演面板內） */
+        .director-block .checkpoint-btn {
+            width: 100%;
+            margin-top: var(--spacing-md);
+        }
+
+        /* 擷取按鈕 */
+        .extract-btn {
+            padding: 6px 12px;
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--accent-dark);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .extract-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .extract-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 角色印象筆記標籤 */
+        .character-note-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .character-note-tab {
+            flex: 1;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .character-note-tab:hover {
+            background: var(--border-light);
+        }
+
+        .character-note-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .character-note-content {
+            display: none;
+        }
+
+        .character-note-content.active {
+            display: block;
+        }
+
+        /* 自訂 Prompt 區塊（設定頁） */
+        .custom-prompt-group {
+            background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
+            border: 1px solid #f9a825;
+            border-radius: 14px;
+            padding: var(--spacing-lg);
+        }
+
+        .custom-prompt-group .setting-label {
+            color: #f57f17;
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }

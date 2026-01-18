@@ -9,37 +9,72 @@
 function buildSystemPrompt() {
     const parts = [];
 
-    if (el.customPrompt.value.trim()) {
-        parts.push(el.customPrompt.value.trim());
+    // 1. 底層邏輯指令 (根據 logicMode 決定)
+    const logicMode = state.currentDoc?.logicMode || 'claude';
+    let instruction = '';
+
+    if (logicMode === 'custom') {
+        // 自訂模式：使用 customPrompt
+        instruction = el.customPrompt?.value?.trim() || '';
+    } else {
+        // Gemini / Claude：使用預設的 LOGIC_PRESETS
+        const preset = LOGIC_PRESETS[logicMode];
+        if (preset) {
+            instruction = preset.instruction;
+        }
     }
 
-    if (el.worldSetting.value.trim()) {
-        parts.push(`【世界觀設定】\n${el.worldSetting.value.trim()}`);
+    if (instruction) {
+        parts.push(instruction);
     }
 
-    if (el.storyAnchors.value.trim()) {
-        parts.push(`【故事錨點 - 當前場景】\n${el.storyAnchors.value.trim()}`);
+    // 2. 世界觀設定 (Claude 模式用 XML 包裹)
+    const worldSetting = el.worldSetting?.value?.trim();
+    if (worldSetting) {
+        if (logicMode === 'claude') {
+            parts.push(`<world_setting>\n${worldSetting}\n</world_setting>`);
+        } else {
+            parts.push(`【世界觀設定】\n${worldSetting}`);
+        }
     }
 
-    // 角色印象筆記
+    // 3. 場景錨點 (當前 Context)
+    const storyAnchors = el.storyAnchors?.value?.trim();
+    if (storyAnchors) {
+        if (logicMode === 'claude') {
+            parts.push(`<current_scene>\n${storyAnchors}\n</current_scene>`);
+        } else {
+            parts.push(`【當前場景】\n${storyAnchors}`);
+        }
+    }
+
+    // 4. 角色印象筆記 (權重最高，防止 OOC)
     const aiCharNote = el.aiCharacterNoteText?.value?.trim();
     const userCharNote = el.userCharacterNoteText?.value?.trim();
     if (aiCharNote || userCharNote) {
-        let charNotes = '【角色印象筆記 - 必須遵守的角色設定】\n';
-        if (aiCharNote) {
-            charNotes += `\n[AI 主筆角色]\n${aiCharNote}`;
-        }
-        if (userCharNote) {
-            charNotes += `\n\n[用戶主筆角色]\n${userCharNote}`;
+        let charNotes = '';
+        if (logicMode === 'claude') {
+            charNotes = '<character_profiles priority="highest">\n';
+            if (aiCharNote) {
+                charNotes += `<ai_character>\n${aiCharNote}\n</ai_character>\n`;
+            }
+            if (userCharNote) {
+                charNotes += `<user_character>\n${userCharNote}\n</user_character>\n`;
+            }
+            charNotes += '</character_profiles>';
+        } else {
+            charNotes = '**【角色設定 - 最高優先級，嚴禁違反】**\n';
+            if (aiCharNote) {
+                charNotes += `\n[AI 主筆角色]\n${aiCharNote}`;
+            }
+            if (userCharNote) {
+                charNotes += `\n\n[用戶主筆角色]\n${userCharNote}`;
+            }
         }
         parts.push(charNotes);
     }
 
-    if (el.styleFingerprint.value.trim()) {
-        parts.push(`【文風指紋 - 寫作風格】\n${el.styleFingerprint.value.trim()}`);
-    }
-
-    // 角色心理混音台 Prompt
+    // 5. 角色心理混音台 Prompt
     const mindsetPrompt = buildCharacterMindsetPrompt();
     if (mindsetPrompt) {
         parts.push(mindsetPrompt);
@@ -365,7 +400,7 @@ async function handleSubmit() {
 }
 
 // ============================================
-// Checkpoint (本章結算)
+// Checkpoint (本章結算) - 簡化版：純文字場景摘要
 // ============================================
 async function performCheckpoint() {
     if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 3) {
@@ -387,52 +422,35 @@ async function performCheckpoint() {
             .map(p => p.content)
             .join('\n\n');
 
-        const analysisPrompt = `你是一位文學編輯，請分析以下故事片段，並提取兩種結構化資訊：
+        const analysisPrompt = `你是一位文學編輯助手。請閱讀以下故事片段，然後寫出一段簡潔的「場景與氛圍摘要」（約 100-200 字）。
+
+這段摘要將用於提醒 AI 續寫時的情境脈絡，所以請著重於：
+- 當前時間與地點
+- 環境氛圍（光影、聲音、氣味等）
+- 角色的狀態與情緒
+- 正在發生的衝突或張力
+- 接下來可能的發展方向
 
 【故事片段】
 ${recentContent}
 
-請以 JSON 格式回傳，包含兩個物件：
-
-1. "storyAnchors" (故事錨點 - 關注場景狀態)：
-{
-  "時間地點": "具體的時間與地點",
-  "環境氛圍": "光影、氣味、聲音等環境描述",
-  "當前衝突": "主要衝突或張力",
-  "禁止發生的劇情": ["不應該發生的情節"]
-}
-
-2. "styleFingerprint" (文風指紋)：
-{
-  "敘事節奏": "描述節奏特點",
-  "感官偏好": ["主要感官描寫類型"],
-  "禁忌與張力處理": "如何處理敏感或緊張情節",
-  "關鍵語氣樣本": ["摘錄代表性句子"]
-}
-
-請直接回傳 JSON，不要加任何其他說明。`;
+請直接輸出摘要文字，不要加標題或格式符號。用自然語言描述，讓 AI 一看就能理解當前情境。`;
 
         const response = await callAPIForAnalysis(analysisPrompt);
 
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const result = JSON.parse(jsonMatch[0]);
-
-            if (result.storyAnchors) {
-                el.storyAnchors.value = JSON.stringify(result.storyAnchors, null, 2);
-            }
-            if (result.styleFingerprint) {
-                el.styleFingerprint.value = JSON.stringify(result.styleFingerprint, null, 2);
-            }
-
+        if (response && response.trim()) {
+            // 直接將純文字摘要填入場景錨點
+            el.storyAnchors.value = response.trim();
             autoSave();
-            showToast('本章結算完成！', 'success');
+            showToast('本章結算完成！場景摘要已更新', 'success');
+        } else {
+            showToast('無法生成摘要，請重試', 'warning');
         }
     } catch (error) {
         showToast(`結算失敗: ${error.message}`, 'error');
     } finally {
         el.checkpointBtn.disabled = false;
-        el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (Checkpoint)</span>';
+        el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (自動摘要)</span>';
     }
 }
 

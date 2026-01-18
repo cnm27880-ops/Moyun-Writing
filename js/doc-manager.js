@@ -49,101 +49,156 @@ function createDocument() {
 }
 
 function loadDocument(docId) {
-    // Save current document first
-    if (state.currentDocId && state.currentDocId !== docId) {
-        saveCurrentDocument();
-    }
-
-    // Load document data
-    const docData = loadFromStorage(STORAGE.DOC_PREFIX + docId);
-    if (!docData) {
-        showToast('文檔不存在', 'error');
-        return;
-    }
-
-    state.currentDocId = docId;
-    state.currentDoc = docData;
-
-    // Update UI
-    el.navTitle.textContent = docData.title || '未命名文檔';
-    el.storyAnchors.value = docData.storyAnchors || DEFAULT_DOC_DATA.storyAnchors;
-    el.styleFingerprint.value = docData.styleFingerprint || DEFAULT_DOC_DATA.styleFingerprint;
-    el.worldSetting.value = docData.worldSetting || '';
-    el.customPrompt.value = docData.customPrompt || DEFAULT_DOC_DATA.customPrompt;
-
-    // Character Notes (角色印象筆記)
-    if (el.aiCharacterNoteText) {
-        el.aiCharacterNoteText.value = docData.aiCharacterNote || '';
-    }
-    if (el.userCharacterNoteText) {
-        el.userCharacterNoteText.value = docData.userCharacterNote || '';
-    }
-
-    // Ensure characters array exists
-    if (!state.currentDoc.characters) {
-        state.currentDoc.characters = [];
-    }
-
-    // Render paragraphs
-    renderParagraphs();
-    renderDocList();
-
-    // Render character list and status bar
-    renderCharacterList();
-    updateStatusBar();
-
-    closeDrawerLeft();
-
-    // 自動滾動到文檔底部，方便閱讀最新內容
-    setTimeout(() => {
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.scrollTop = mainContent.scrollHeight;
+    try {
+        // Save current document first
+        if (state.currentDocId && state.currentDocId !== docId) {
+            saveCurrentDocument();
         }
-    }, 150);
+
+        // Load document data
+        const docData = loadFromStorage(STORAGE.DOC_PREFIX + docId);
+        if (!docData) {
+            showToast('文檔不存在', 'error');
+            return;
+        }
+
+        state.currentDocId = docId;
+        state.currentDoc = docData;
+
+        // === 資料遷移：兼容舊版資料結構 ===
+        // 1. storyAnchors: JSON -> 純文字
+        if (docData.storyAnchors && docData.storyAnchors.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(docData.storyAnchors);
+                // 將 JSON 轉換為可讀的純文字格式
+                let textSummary = '';
+                if (parsed['時間地點']) textSummary += `時間地點：${parsed['時間地點']}\n`;
+                if (parsed['環境氛圍']) textSummary += `環境氛圍：${typeof parsed['環境氛圍'] === 'object' ? JSON.stringify(parsed['環境氛圍']) : parsed['環境氛圍']}\n`;
+                if (parsed['當前衝突']) textSummary += `當前衝突：${parsed['當前衝突']}\n`;
+                if (parsed['角色狀態']) textSummary += `角色狀態：${typeof parsed['角色狀態'] === 'object' ? JSON.stringify(parsed['角色狀態']) : parsed['角色狀態']}\n`;
+                state.currentDoc.storyAnchors = textSummary.trim() || '';
+            } catch (e) {
+                // 如果解析失敗，保持原樣
+            }
+        }
+
+        // 2. 確保 logicMode 存在
+        if (!state.currentDoc.logicMode) {
+            state.currentDoc.logicMode = 'claude';  // 預設使用 Claude 模式
+        }
+
+        // 3. 移除舊的 styleFingerprint（不再使用）
+        if (state.currentDoc.styleFingerprint) {
+            delete state.currentDoc.styleFingerprint;
+        }
+
+        // Update UI (全部添加安全檢查)
+        if (el.navTitle) {
+            el.navTitle.textContent = docData.title || '未命名文檔';
+        }
+        if (el.storyAnchors) {
+            el.storyAnchors.value = state.currentDoc.storyAnchors || '';
+        }
+        if (el.worldSetting) {
+            el.worldSetting.value = state.currentDoc.worldSetting || '';
+        }
+        if (el.customPrompt) {
+            el.customPrompt.value = state.currentDoc.customPrompt || '';
+        }
+
+        // Character Notes (角色印象筆記)
+        if (el.aiCharacterNoteText) {
+            el.aiCharacterNoteText.value = state.currentDoc.aiCharacterNote || '';
+        }
+        if (el.userCharacterNoteText) {
+            el.userCharacterNoteText.value = state.currentDoc.userCharacterNote || '';
+        }
+
+        // Ensure characters array exists
+        if (!state.currentDoc.characters) {
+            state.currentDoc.characters = [];
+        }
+
+        // Render paragraphs
+        renderParagraphs();
+        renderDocList();
+
+        // Render character list and status bar
+        renderCharacterList();
+        updateStatusBar();
+
+        // === 同步導演面板 ===
+        if (typeof syncDirectorPanelFromDoc === 'function') {
+            syncDirectorPanelFromDoc();
+        }
+
+        closeDrawerLeft();
+
+        // 自動滾動到文檔底部，方便閱讀最新內容
+        setTimeout(() => {
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.scrollTop = mainContent.scrollHeight;
+            }
+        }, 150);
+    } catch (error) {
+        console.error('loadDocument 錯誤:', error);
+        showToast('載入文檔時發生錯誤', 'error');
+    }
 }
 
 function saveCurrentDocument() {
-    if (!state.currentDocId || !state.currentDoc) return;
+    try {
+        if (!state.currentDocId || !state.currentDoc) return;
 
-    // Update document data
-    state.currentDoc.storyAnchors = el.storyAnchors.value;
-    state.currentDoc.styleFingerprint = el.styleFingerprint.value;
-    state.currentDoc.worldSetting = el.worldSetting.value;
-    state.currentDoc.customPrompt = el.customPrompt.value;
-    state.currentDoc.lastModified = Date.now();
+        // Update document data from UI
+        state.currentDoc.storyAnchors = el.storyAnchors?.value || '';
+        state.currentDoc.worldSetting = el.worldSetting?.value || '';
+        state.currentDoc.customPrompt = el.customPrompt?.value || '';
+        state.currentDoc.lastModified = Date.now();
 
-    // Character Notes (角色印象筆記)
-    if (el.aiCharacterNoteText) {
-        state.currentDoc.aiCharacterNote = el.aiCharacterNoteText.value;
+        // 保存邏輯模式
+        if (el.logicModeSelect) {
+            state.currentDoc.logicMode = el.logicModeSelect.value || 'claude';
+        }
+
+        // Character Notes (角色印象筆記)
+        if (el.aiCharacterNoteText) {
+            state.currentDoc.aiCharacterNote = el.aiCharacterNoteText.value;
+        }
+        if (el.userCharacterNoteText) {
+            state.currentDoc.userCharacterNote = el.userCharacterNoteText.value;
+        }
+
+        // Characters are already directly modified in state.currentDoc.characters
+
+        // Generate preview text (安全檢查 paragraphs)
+        const paragraphs = state.currentDoc.paragraphs || [];
+        const previewText = paragraphs
+            .slice(0, 2)
+            .map(p => p.content)
+            .join(' ')
+            .substring(0, 100);
+
+        // Save to storage
+        saveToStorage(STORAGE.DOC_PREFIX + state.currentDocId, state.currentDoc);
+
+        // Update index
+        const indexItem = state.docIndex.find(d => d.id === state.currentDocId);
+        if (indexItem) {
+            indexItem.title = state.currentDoc.title;
+            indexItem.lastModified = state.currentDoc.lastModified;
+            indexItem.previewText = previewText;
+            saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
+        }
+
+        // Update navbar title (安全檢查)
+        if (el.navTitle) {
+            el.navTitle.textContent = state.currentDoc.title || '未命名文檔';
+        }
+    } catch (error) {
+        console.error('saveCurrentDocument 錯誤:', error);
     }
-    if (el.userCharacterNoteText) {
-        state.currentDoc.userCharacterNote = el.userCharacterNoteText.value;
-    }
-
-    // Characters are already directly modified in state.currentDoc.characters
-
-    // Generate preview text
-    const previewText = state.currentDoc.paragraphs
-        .slice(0, 2)
-        .map(p => p.content)
-        .join(' ')
-        .substring(0, 100);
-
-    // Save to storage
-    saveToStorage(STORAGE.DOC_PREFIX + state.currentDocId, state.currentDoc);
-
-    // Update index
-    const indexItem = state.docIndex.find(d => d.id === state.currentDocId);
-    if (indexItem) {
-        indexItem.title = state.currentDoc.title;
-        indexItem.lastModified = state.currentDoc.lastModified;
-        indexItem.previewText = previewText;
-        saveToStorage(STORAGE.DOC_INDEX, state.docIndex);
-    }
-
-    // Update navbar title
-    el.navTitle.textContent = state.currentDoc.title || '未命名文檔';
 }
 
 function deleteDocument(docId) {

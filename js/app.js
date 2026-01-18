@@ -270,11 +270,19 @@ function initEventListeners() {
         console.error('worldDeleteBtn 元素不存在！');
     }
 
-    // Default World & Prompt buttons
-    el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
-    el.restoreDefaultWorldBtn.addEventListener('click', restoreDefaultWorld);
-    el.setDefaultPromptBtn.addEventListener('click', setDefaultPrompt);
-    el.restoreDefaultPromptBtn.addEventListener('click', restoreDefaultPrompt);
+    // Default World & Prompt buttons (已從 UI 移除，保留安全檢查)
+    if (el.setDefaultWorldBtn) {
+        el.setDefaultWorldBtn.addEventListener('click', setDefaultWorld);
+    }
+    if (el.restoreDefaultWorldBtn) {
+        el.restoreDefaultWorldBtn.addEventListener('click', restoreDefaultWorld);
+    }
+    if (el.setDefaultPromptBtn) {
+        el.setDefaultPromptBtn.addEventListener('click', setDefaultPrompt);
+    }
+    if (el.restoreDefaultPromptBtn) {
+        el.restoreDefaultPromptBtn.addEventListener('click', restoreDefaultPrompt);
+    }
 
     // Settings
     el.saveSettingsBtn.addEventListener('click', saveGlobalSettings);
@@ -337,8 +345,8 @@ function initEventListeners() {
         forceFixCloudBtn.addEventListener('click', forceFixCloudData);
     }
 
-    // Memory & settings auto-save
-    [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
+    // Memory & settings auto-save (移除 styleFingerprint)
+    [el.storyAnchors, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
         if (textarea) {
             textarea.addEventListener('input', autoSave);
         }
@@ -567,6 +575,7 @@ function init() {
 
     // Initialize UI
     initPanelTabs();
+    initDirectorPanel();         // 初始化導演面板（邏輯模式選擇器）
     initEventListeners();
     initActionSheet();           // 初始化 Action Sheet
     initEditCanvasAiActions();   // 初始化編輯畫布 AI 功能

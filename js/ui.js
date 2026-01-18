@@ -24,9 +24,13 @@ const $$ = sel => document.querySelectorAll(sel);
             panelClose: $('panelClose'),
             checkpointBtn: $('checkpointBtn'),
             storyAnchors: $('storyAnchors'),
-            styleFingerprint: $('styleFingerprint'),
             worldSetting: $('worldSetting'),
             customPrompt: $('customPrompt'),
+            customPromptGroup: $('customPromptGroup'),
+
+            // Logic Mode Selector (導演面板)
+            logicModeSelect: $('logicModeSelect'),
+            logicModeHint: $('logicModeHint'),
 
             // Character Notes (角色印象筆記)
             extractCharacterBtn: $('extractCharacterBtn'),
@@ -186,23 +190,23 @@ const $$ = sel => document.querySelectorAll(sel);
         // Drawer & Panel Controls
         // ============================================
         function openDrawerLeft() {
-            el.drawerLeft.classList.add('open');
-            el.overlay.classList.add('active');
+            if (el.drawerLeft) el.drawerLeft.classList.add('open');
+            if (el.overlay) el.overlay.classList.add('active');
         }
 
         function closeDrawerLeft() {
-            el.drawerLeft.classList.remove('open');
-            el.overlay.classList.remove('active');
+            if (el.drawerLeft) el.drawerLeft.classList.remove('open');
+            if (el.overlay) el.overlay.classList.remove('active');
         }
 
         function openPanelRight() {
-            el.panelRight.classList.add('open');
-            el.overlay.classList.add('active');
+            if (el.panelRight) el.panelRight.classList.add('open');
+            if (el.overlay) el.overlay.classList.add('active');
         }
 
         function closePanelRight() {
-            el.panelRight.classList.remove('open');
-            el.overlay.classList.remove('active');
+            if (el.panelRight) el.panelRight.classList.remove('open');
+            if (el.overlay) el.overlay.classList.remove('active');
         }
 
         function closeAllPanels() {
@@ -237,6 +241,8 @@ const $$ = sel => document.querySelectorAll(sel);
         // ============================================
         // Document Management
         function renderDocList() {
+            if (!el.docList) return;
+
             // 防禦性檢查：確保 state.docIndex 是陣列
             if (!Array.isArray(state.docIndex)) {
                 console.warn('renderDocList: state.docIndex 不是陣列，已重置為空陣列');
@@ -291,6 +297,8 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function renderParagraphs() {
+            if (!el.editorBody) return;
+
             if (!state.currentDoc?.paragraphs?.length) {
                 el.editorBody.innerHTML = '';
                 return;
@@ -437,7 +445,84 @@ const $$ = sel => document.querySelectorAll(sel);
                 });
             });
         }
+
+        // ============================================
+        // Director Panel - 導演面板初始化
+        // ============================================
+        function initDirectorPanel() {
+            if (!el.logicModeSelect) return;
+
+            // 監聽邏輯模式變更
+            el.logicModeSelect.addEventListener('change', (e) => {
+                const newMode = e.target.value;
+                if (state.currentDoc) {
+                    state.currentDoc.logicMode = newMode;
+                    updateLogicModeUI(newMode);
+                    autoSave();
+                    showToast(`已切換至：${LOGIC_PRESETS[newMode]?.name || newMode}`, 'success', 2000);
+                }
+            });
+        }
+
+        function updateLogicModeUI(mode) {
+            // 更新提示文字
+            if (el.logicModeHint) {
+                switch (mode) {
+                    case 'gemini':
+                        el.logicModeHint.textContent = '三段式思考：感知 → 判斷 → 行動。適合推演角色內心算計。';
+                        break;
+                    case 'claude':
+                        el.logicModeHint.textContent = '核心原則：Show, Don\'t Tell。優先順序：觸覺 > 溫覺 > 嗅覺 > 聽覺 > 視覺。';
+                        break;
+                    case 'custom':
+                        el.logicModeHint.textContent = '使用你在設定頁的自訂 System Prompt。';
+                        break;
+                }
+            }
+
+            // 控制 customPrompt 顯示/隱藏
+            if (el.customPromptGroup) {
+                el.customPromptGroup.style.display = (mode === 'custom') ? 'block' : 'none';
+            }
+        }
+
+        function syncDirectorPanelFromDoc() {
+            if (!state.currentDoc) return;
+
+            // 同步邏輯模式選擇器
+            const logicMode = state.currentDoc.logicMode || 'claude';
+            if (el.logicModeSelect) {
+                el.logicModeSelect.value = logicMode;
+            }
+            updateLogicModeUI(logicMode);
+
+            // 同步世界觀
+            if (el.worldSetting) {
+                el.worldSetting.value = state.currentDoc.worldSetting || '';
+            }
+
+            // 同步場景錨點
+            if (el.storyAnchors) {
+                el.storyAnchors.value = state.currentDoc.storyAnchors || '';
+            }
+
+            // 同步角色印象筆記
+            if (el.aiCharacterNoteText) {
+                el.aiCharacterNoteText.value = state.currentDoc.aiCharacterNote || '';
+            }
+            if (el.userCharacterNoteText) {
+                el.userCharacterNoteText.value = state.currentDoc.userCharacterNote || '';
+            }
+
+            // 同步自訂 Prompt
+            if (el.customPrompt) {
+                el.customPrompt.value = state.currentDoc.customPrompt || '';
+            }
+        }
+
         function renderCharacterList() {
+            if (!el.characterList || !el.characterEmpty) return;
+
             if (!state.currentDoc?.characters?.length) {
                 el.characterEmpty.style.display = 'block';
                 // 清除其他角色卡片
@@ -607,6 +692,8 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function updateStatusBar() {
+            if (!el.directorFocusBar) return;
+
             const characters = state.currentDoc?.characters || [];
             const focusCharacterId = state.currentDoc?.focusCharacterId;
             const focusCharacter = characters.find(c => c.id === focusCharacterId);
