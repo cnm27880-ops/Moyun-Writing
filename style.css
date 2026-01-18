@@ -1241,6 +1241,22 @@
             51%, 100% { opacity: 0; }
         }
 
+        /* History Indicator - 有歷史紀錄的段落指示器 */
+        .paragraph.has-history::after {
+            content: '⏪';
+            position: absolute;
+            top: 4px;
+            right: 42px;
+            font-size: 0.7rem;
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity var(--transition-fast);
+        }
+
+        .paragraph.has-history:hover::after {
+            opacity: 0.8;
+        }
+
         .paragraph-content p {
             margin-bottom: 1em;
         }
@@ -3178,6 +3194,25 @@
 
         .action-sheet-btn.danger:hover {
             background: rgba(199, 92, 92, 0.1);
+        }
+
+        /* 指導重寫按鈕樣式 */
+        .action-sheet-btn.ai-only {
+            color: var(--ai-marker);
+        }
+
+        .action-sheet-btn.ai-only:hover {
+            background: var(--ai-marker-light);
+        }
+
+        /* 還原按鈕樣式 */
+        .action-sheet-btn.restore-btn {
+            color: var(--info);
+            border-left: 3px solid var(--info);
+        }
+
+        .action-sheet-btn.restore-btn:hover {
+            background: rgba(93, 115, 126, 0.1);
         }
 
         .action-sheet-icon {

@@ -305,89 +305,126 @@ const $$ = sel => document.querySelectorAll(sel);
             }
 
             // 預設 contenteditable="false"，需要雙擊或透過選單的「編輯」按鈕才能編輯
-            el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => `
-                <div class="paragraph ${p.source === 'user' ? 'user' : 'ai'}" data-id="${escapeHtml(p.id)}">
+            // 效能優化：使用 Event Delegation，不在迴圈內綁定事件
+            el.editorBody.innerHTML = state.currentDoc.paragraphs.map(p => {
+                const hasHistory = p.history && p.history.length > 0;
+                return `
+                <div class="paragraph ${p.source === 'user' ? 'user' : 'ai'}${hasHistory ? ' has-history' : ''}" data-id="${escapeHtml(p.id)}">
                     <span class="paragraph-tag">${p.source === 'user' ? '你' : 'AI'}</span>
                     <div class="paragraph-content" contenteditable="false">${parseMarkdown(p.content)}</div>
                     ${p.source === 'ai' ? `<button class="regenerate-btn" data-id="${escapeHtml(p.id)}" title="重新生成">🔄</button>` : ''}
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
-            // Bind edit events
-            el.editorBody.querySelectorAll('.paragraph-content').forEach(content => {
-                const paraId = content.parentElement.dataset.id;
+            // 事件綁定已移至 initEditorBodyDelegation() 使用 Event Delegation 模式
+        }
 
-                // 電腦端：雙擊觸發編輯
-                content.addEventListener('dblclick', () => {
+        // ============================================
+        // Event Delegation for Editor Body
+        // 效能優化：使用單一監聽器處理所有段落事件
+        // ============================================
+        let editorBodyDelegationInitialized = false;
+
+        function initEditorBodyDelegation() {
+            if (editorBodyDelegationInitialized || !el.editorBody) return;
+            editorBodyDelegationInitialized = true;
+
+            // 雙擊事件 - 啟用編輯模式
+            el.editorBody.addEventListener('dblclick', (e) => {
+                const content = e.target.closest('.paragraph-content');
+                if (content) {
                     content.setAttribute('contenteditable', 'true');
                     content.focus();
-                });
+                }
+            });
 
-                // 失去焦點時：保存並禁用編輯
-                content.addEventListener('blur', () => {
-                    // 保存內容
-                    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
-                    if (para) {
-                        para.content = content.innerText;
-                        autoSave();
+            // 失焦事件 - 保存並退出編輯模式
+            el.editorBody.addEventListener('focusout', (e) => {
+                const content = e.target.closest('.paragraph-content');
+                if (content && content.getAttribute('contenteditable') === 'true') {
+                    const paragraph = content.closest('.paragraph');
+                    const paraId = paragraph?.dataset.id;
+                    if (paraId && state.currentDoc?.paragraphs) {
+                        const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+                        if (para) {
+                            para.content = content.innerText;
+                            autoSave();
+                        }
                     }
-
-                    // 退出編輯模式
                     content.setAttribute('contenteditable', 'false');
-                });
+                }
+            });
 
-                // 貼上純文字
-                content.addEventListener('paste', (e) => {
+            // 貼上事件 - 只貼純文字
+            el.editorBody.addEventListener('paste', (e) => {
+                const content = e.target.closest('.paragraph-content');
+                if (content && content.getAttribute('contenteditable') === 'true') {
                     e.preventDefault();
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
-                });
+                }
             });
 
-            // Bind regenerate button events for AI paragraphs
-            el.editorBody.querySelectorAll('.regenerate-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+            // 輸入事件 - 即時更新段落內容（可選，用於更頻繁的保存）
+            el.editorBody.addEventListener('input', (e) => {
+                const content = e.target.closest('.paragraph-content');
+                if (content && content.getAttribute('contenteditable') === 'true') {
+                    // 可在此實現即時保存或標記為已修改
+                }
+            });
+
+            // 點擊事件 - 重新生成按鈕
+            el.editorBody.addEventListener('click', (e) => {
+                const regenerateBtn = e.target.closest('.regenerate-btn');
+                if (regenerateBtn) {
                     e.stopPropagation();
-                    const paraId = btn.dataset.id;
-                    if (typeof regenerateParagraph === 'function') {
+                    const paraId = regenerateBtn.dataset.id;
+                    if (paraId && typeof regenerateParagraph === 'function') {
                         regenerateParagraph(paraId);
                     }
-                });
+                }
             });
 
-            // Bind long press events for paragraphs
-            el.editorBody.querySelectorAll('.paragraph').forEach(para => {
-                para.addEventListener('mousedown', (e) => {
-                    if (typeof handleLongPressStart === 'function') {
-                        handleLongPressStart(e);
-                    }
-                });
-                para.addEventListener('mousemove', (e) => {
-                    if (typeof handleLongPressMove === 'function') {
-                        handleLongPressMove(e);
-                    }
-                });
-                para.addEventListener('mouseup', () => {
-                    if (typeof handleLongPressEnd === 'function') {
-                        handleLongPressEnd();
-                    }
-                });
-                para.addEventListener('touchstart', (e) => {
-                    if (typeof handleLongPressStart === 'function') {
-                        handleLongPressStart(e);
-                    }
-                });
-                para.addEventListener('touchmove', (e) => {
-                    if (typeof handleLongPressMove === 'function') {
-                        handleLongPressMove(e);
-                    }
-                });
-                para.addEventListener('touchend', () => {
-                    if (typeof handleLongPressEnd === 'function') {
-                        handleLongPressEnd();
-                    }
-                });
+            // 長按事件 - Mouse Events
+            el.editorBody.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.paragraph') && typeof handleLongPressStart === 'function') {
+                    handleLongPressStart(e);
+                }
             });
+
+            el.editorBody.addEventListener('mousemove', (e) => {
+                if (typeof handleLongPressMove === 'function') {
+                    handleLongPressMove(e);
+                }
+            });
+
+            el.editorBody.addEventListener('mouseup', () => {
+                if (typeof handleLongPressEnd === 'function') {
+                    handleLongPressEnd();
+                }
+            });
+
+            // 長按事件 - Touch Events
+            el.editorBody.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.paragraph') && typeof handleLongPressStart === 'function') {
+                    handleLongPressStart(e);
+                }
+            }, { passive: true });
+
+            el.editorBody.addEventListener('touchmove', (e) => {
+                if (typeof handleLongPressMove === 'function') {
+                    handleLongPressMove(e);
+                }
+            }, { passive: true });
+
+            el.editorBody.addEventListener('touchend', () => {
+                if (typeof handleLongPressEnd === 'function') {
+                    handleLongPressEnd();
+                }
+            });
+
+            console.log('Editor body event delegation initialized');
         }
 
         function addParagraph(content, source = 'user') {

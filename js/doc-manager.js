@@ -516,6 +516,97 @@ function deleteParagraph(paraId) {
 }
 
 // ============================================
+// Paragraph History Mechanism (歷史紀錄機制)
+// 在 AI 覆蓋段落前自動保存舊內容
+// ============================================
+const MAX_HISTORY_LENGTH = 5; // 最多保留 5 個歷史版本
+
+/**
+ * 在修改段落前保存當前內容到歷史紀錄
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否成功保存
+ */
+function saveParagraphHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!para || !para.content || !para.content.trim()) return false;
+
+    // 初始化 history 陣列
+    if (!para.history) {
+        para.history = [];
+    }
+
+    // 保存當前內容到歷史（最新的在最前面）
+    para.history.unshift({
+        content: para.content,
+        timestamp: Date.now()
+    });
+
+    // 限制歷史長度
+    if (para.history.length > MAX_HISTORY_LENGTH) {
+        para.history = para.history.slice(0, MAX_HISTORY_LENGTH);
+    }
+
+    console.log(`段落 ${paraId} 歷史已保存，共 ${para.history.length} 個版本`);
+    return true;
+}
+
+/**
+ * 從歷史紀錄還原段落內容
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否成功還原
+ */
+function restoreParagraphFromHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!para || !para.history || para.history.length === 0) {
+        showToast('沒有可還原的歷史紀錄', 'warning');
+        return false;
+    }
+
+    // 取出最近的歷史版本
+    const lastHistory = para.history.shift();
+    para.content = lastHistory.content;
+
+    // 更新時間戳記
+    para.timestamp = Date.now();
+
+    // 重新渲染並保存
+    renderParagraphs();
+    autoSave();
+
+    const remainingHistory = para.history.length;
+    showToast(`已還原至上一個版本${remainingHistory > 0 ? `（還有 ${remainingHistory} 個版本）` : ''}`, 'success', 2000);
+    return true;
+}
+
+/**
+ * 檢查段落是否有歷史紀錄
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否有歷史紀錄
+ */
+function hasParagraphHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    return para?.history && para.history.length > 0;
+}
+
+/**
+ * 取得段落歷史紀錄數量
+ * @param {string} paraId - 段落 ID
+ * @returns {number} 歷史紀錄數量
+ */
+function getParagraphHistoryCount(paraId) {
+    if (!state.currentDoc?.paragraphs) return 0;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    return para?.history?.length || 0;
+}
+
+// ============================================
 // Text Selection Operations
 // ============================================
 function handleTextSelection() {

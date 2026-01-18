@@ -456,8 +456,9 @@ ${recentContent}
 
 // ============================================
 // Regenerate Paragraph (重新生成段落)
+// 支援指導重寫 (Directed Regeneration)
 // ============================================
-async function regenerateParagraph(paraId) {
+async function regenerateParagraph(paraId, instruction = null) {
     if (!state.currentDoc || state.isLoading) return;
 
     if (!state.globalSettings.apiKey) {
@@ -471,6 +472,11 @@ async function regenerateParagraph(paraId) {
     if (paraIndex === -1 || paragraphs[paraIndex].source !== 'ai') {
         showToast('找不到該段落或該段落不是 AI 生成的', 'warning');
         return;
+    }
+
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
     }
 
     // 建立乾淨歷史：取得該段落之前的所有段落 (修復重複對話)
@@ -518,11 +524,27 @@ async function regenerateParagraph(paraId) {
         editorPaper.classList.add('ai-writing');
     }
 
-    showToast('正在重新生成...', 'info', 2000);
+    // 根據是否有指令顯示不同提示
+    if (instruction) {
+        showToast(`正在按指令重寫：${instruction.substring(0, 20)}...`, 'info', 2000);
+    } else {
+        showToast('正在重新生成...', 'info', 2000);
+    }
 
     try {
-        // 構建 prompt：要求重新生成這一段
-        const prompt = '請繼續這個故事，重新生成接下來的段落。';
+        // 構建 prompt：根據是否有指令決定
+        let prompt;
+        if (instruction && instruction.trim()) {
+            // 指導重寫模式：包含用戶指令
+            prompt = `請根據以下指令重新撰寫接下來的段落：
+
+【重寫指令】${instruction.trim()}
+
+請依照指令調整風格、語氣或內容方向，重新生成這一段。不要在文中提及指令，直接輸出故事內容。`;
+        } else {
+            // 普通重生模式
+            prompt = '請繼續這個故事，重新生成接下來的段落。';
+        }
 
         // 添加 user 訊息到 customHistory
         customHistory.push({ role: 'user', content: prompt });
@@ -583,7 +605,7 @@ async function regenerateParagraph(paraId) {
 
                 renderParagraphs();
                 autoSave();
-                showToast('重新生成完成', 'success', 2000);
+                showToast(instruction ? '指導重寫完成' : '重新生成完成', 'success', 2000);
 
                 // 觸發自動同步（心靈同步功能）
                 setTimeout(() => triggerAutoSync(), 500);
@@ -605,6 +627,31 @@ async function regenerateParagraph(paraId) {
             btn.innerHTML = '🔄';
         }
     }
+}
+
+// ============================================
+// Directed Regeneration (指導重寫)
+// 彈出輸入框讓用戶輸入指令
+// ============================================
+function showDirectedRegenerationPrompt(paraId) {
+    // 使用 prompt 對話框取得用戶指令
+    const instruction = window.prompt(
+        '請輸入重寫指令（例如：讓語氣更悲傷、增加更多對話、描寫更細膩等）：',
+        ''
+    );
+
+    if (instruction === null) {
+        // 用戶取消
+        return;
+    }
+
+    if (!instruction.trim()) {
+        showToast('請輸入有效的指令', 'warning');
+        return;
+    }
+
+    // 執行指導重寫
+    regenerateParagraph(paraId, instruction.trim());
 }
 
 // ============================================
@@ -697,6 +744,11 @@ async function refineParagraph(paraId) {
         return;
     }
 
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
+    }
+
     showToast('正在潤飾段落...', 'info', 2000);
 
     const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
@@ -729,6 +781,11 @@ async function expandParagraph(paraId) {
     if (!paragraph || !paragraph.content.trim()) {
         showToast('找不到段落或段落內容為空', 'warning');
         return;
+    }
+
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
     }
 
     showToast('正在擴寫段落...', 'info', 2000);

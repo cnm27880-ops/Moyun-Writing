@@ -147,6 +147,32 @@ function showActionSheet(paraId) {
     if (overlay && sheet) {
         overlay.classList.add('active');
         sheet.classList.add('active');
+
+        // 取得段落資訊
+        const para = state.currentDoc?.paragraphs?.find(p => p.id === paraId);
+        const isAiParagraph = para?.source === 'ai';
+        const hasHistory = para?.history && para.history.length > 0;
+
+        // 控制「指導重寫」按鈕顯示（僅 AI 段落）
+        const directedRegenBtn = document.getElementById('actionSheetDirectedRegen');
+        if (directedRegenBtn) {
+            directedRegenBtn.style.display = isAiParagraph ? 'flex' : 'none';
+        }
+
+        // 控制「還原」按鈕顯示（僅有歷史紀錄時）
+        const restoreBtn = document.getElementById('actionSheetRestore');
+        if (restoreBtn) {
+            if (hasHistory) {
+                restoreBtn.style.display = 'flex';
+                const historyCount = para.history.length;
+                const spanEl = restoreBtn.querySelector('span:last-child');
+                if (spanEl) {
+                    spanEl.textContent = `還原上一版（${historyCount}）`;
+                }
+            } else {
+                restoreBtn.style.display = 'none';
+            }
+        }
     }
 }
 
@@ -166,6 +192,8 @@ function initActionSheet() {
     const editBtn = document.getElementById('actionSheetEdit');
     const refineBtn = document.getElementById('actionSheetRefine');
     const expandBtn = document.getElementById('actionSheetExpand');
+    const directedRegenBtn = document.getElementById('actionSheetDirectedRegen');
+    const restoreBtn = document.getElementById('actionSheetRestore');
     const deleteBtn = document.getElementById('actionSheetDelete');
     const cancelBtn = document.getElementById('actionSheetCancel');
 
@@ -195,6 +223,33 @@ function initActionSheet() {
         expandBtn.addEventListener('click', () => {
             if (currentActionSheetParagraphId) {
                 expandParagraph(currentActionSheetParagraphId);
+            }
+            hideActionSheet();
+        });
+    }
+
+    // 指導重寫按鈕
+    if (directedRegenBtn) {
+        directedRegenBtn.addEventListener('click', () => {
+            if (currentActionSheetParagraphId) {
+                hideActionSheet();
+                // 稍微延遲以確保 Action Sheet 關閉後再顯示 prompt
+                setTimeout(() => {
+                    if (typeof showDirectedRegenerationPrompt === 'function') {
+                        showDirectedRegenerationPrompt(currentActionSheetParagraphId);
+                    }
+                }, 100);
+            }
+        });
+    }
+
+    // 還原按鈕
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', () => {
+            if (currentActionSheetParagraphId) {
+                if (typeof restoreParagraphFromHistory === 'function') {
+                    restoreParagraphFromHistory(currentActionSheetParagraphId);
+                }
             }
             hideActionSheet();
         });
@@ -579,6 +634,7 @@ function init() {
     initEventListeners();
     initActionSheet();           // 初始化 Action Sheet
     initEditCanvasAiActions();   // 初始化編輯畫布 AI 功能
+    initEditorBodyDelegation();  // 初始化編輯器 Event Delegation（效能優化）
     renderDocList();
     renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
 
