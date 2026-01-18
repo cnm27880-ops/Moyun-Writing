@@ -190,23 +190,23 @@ const $$ = sel => document.querySelectorAll(sel);
         // Drawer & Panel Controls
         // ============================================
         function openDrawerLeft() {
-            el.drawerLeft.classList.add('open');
-            el.overlay.classList.add('active');
+            if (el.drawerLeft) el.drawerLeft.classList.add('open');
+            if (el.overlay) el.overlay.classList.add('active');
         }
 
         function closeDrawerLeft() {
-            el.drawerLeft.classList.remove('open');
-            el.overlay.classList.remove('active');
+            if (el.drawerLeft) el.drawerLeft.classList.remove('open');
+            if (el.overlay) el.overlay.classList.remove('active');
         }
 
         function openPanelRight() {
-            el.panelRight.classList.add('open');
-            el.overlay.classList.add('active');
+            if (el.panelRight) el.panelRight.classList.add('open');
+            if (el.overlay) el.overlay.classList.add('active');
         }
 
         function closePanelRight() {
-            el.panelRight.classList.remove('open');
-            el.overlay.classList.remove('active');
+            if (el.panelRight) el.panelRight.classList.remove('open');
+            if (el.overlay) el.overlay.classList.remove('active');
         }
 
         function closeAllPanels() {
@@ -241,6 +241,8 @@ const $$ = sel => document.querySelectorAll(sel);
         // ============================================
         // Document Management
         function renderDocList() {
+            if (!el.docList) return;
+
             // 防禦性檢查：確保 state.docIndex 是陣列
             if (!Array.isArray(state.docIndex)) {
                 console.warn('renderDocList: state.docIndex 不是陣列，已重置為空陣列');
@@ -295,6 +297,8 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         function renderParagraphs() {
+            if (!el.editorBody) return;
+
             if (!state.currentDoc?.paragraphs?.length) {
                 el.editorBody.innerHTML = '';
                 return;
