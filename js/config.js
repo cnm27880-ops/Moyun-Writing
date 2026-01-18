@@ -132,6 +132,24 @@ const DEFAULT_CHARACTER = {
 };
 
 // ============================================
+// Logic Presets - AI 底層邏輯模式
+// ============================================
+const LOGIC_PRESETS = {
+    'gemini': {
+        name: 'Gemini: 深度邏輯 (Protocol)',
+        instruction: `**【執行協議】**\n你必須嚴格遵守「三段式思考」：\n1. 感知：描寫環境與微表情。\n2. 判斷：分析局勢與風險。\n3. 行動：最後才輸出對白。\n\n**【絕對禁令】**\n禁止平鋪直敘、禁止總結劇情、禁止解釋象徵。`
+    },
+    'claude': {
+        name: 'Claude: 文學沉浸 (Immersion)',
+        instruction: `<style_guide>\n核心原則：Show, Don't Tell。\n優先順序：觸覺 > 溫覺 > 嗅覺 > 聽覺 > 視覺。\n請模仿人類作家的非線性敘事，允許對話破碎與留白。\n</style_guide>`
+    },
+    'custom': {
+        name: '自訂模式 (進階)',
+        instruction: '' // 使用者自訂
+    }
+};
+
+// ============================================
 // Style Tags Configuration
 // ============================================
 const STYLE_TAGS = {
@@ -172,29 +190,13 @@ const DEFAULT_DOC_DATA = {
     paragraphs: [],
     characters: [],  // 角色心理混音台：[{ id, name, drives: { driveId: weight }, autoSync }]
     focusCharacterId: null,  // 當前焦點角色
-    storyAnchors: `{
-  "時間地點": "",
-  "環境氛圍": {
-    "光影": "",
-    "氣味": "",
-    "聲音": ""
-  },
-  "角色狀態": {
-    "心理": "",
-    "姿勢": "",
-    "外觀": ""
-  },
-  "當前衝突": "",
-  "禁止發生的劇情": []
-}`,
-    styleFingerprint: `{
-  "敘事節奏": "",
-  "感官偏好": [],
-  "禁忌與張力處理": "",
-  "關鍵語氣樣本": []
-}`,
+    logicMode: 'claude',  // 底層邏輯模式：gemini / claude / custom
+    storyAnchors: '',  // 場景錨點：純文字摘要
     worldSetting: '',
-    customPrompt: '你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。'
+    customPrompt: '',  // 只在 custom 模式下使用
+    // 角色印象筆記
+    aiCharacterNote: '',
+    userCharacterNote: ''
 };
 
 // ============================================

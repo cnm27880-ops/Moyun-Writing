@@ -337,8 +337,8 @@ function initEventListeners() {
         forceFixCloudBtn.addEventListener('click', forceFixCloudData);
     }
 
-    // Memory & settings auto-save
-    [el.storyAnchors, el.styleFingerprint, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
+    // Memory & settings auto-save (移除 styleFingerprint)
+    [el.storyAnchors, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
         if (textarea) {
             textarea.addEventListener('input', autoSave);
         }
@@ -567,6 +567,7 @@ function init() {
 
     // Initialize UI
     initPanelTabs();
+    initDirectorPanel();         // 初始化導演面板（邏輯模式選擇器）
     initEventListeners();
     initActionSheet();           // 初始化 Action Sheet
     initEditCanvasAiActions();   // 初始化編輯畫布 AI 功能

@@ -145,96 +145,116 @@
                 <button class="panel-close" id="panelClose">×</button>
             </div>
             <div class="panel-tabs">
-                <button class="panel-tab active" data-panel="memory">記憶庫</button>
-                <button class="panel-tab" data-panel="director">角色</button>
+                <button class="panel-tab active" data-panel="director">導演</button>
+                <button class="panel-tab" data-panel="character">角色</button>
                 <button class="panel-tab" data-panel="settings">設定</button>
                 <button class="panel-tab" data-panel="stats">統計</button>
             </div>
             <div class="panel-content">
-                <!-- Memory Section -->
-                <div class="panel-section active" id="memorySection">
-                    <button class="checkpoint-btn" id="checkpointBtn">
-                        <span>✨</span>
-                        <span>本章結算 (Checkpoint)</span>
-                    </button>
+                <!-- Director Section - 導演控制區 (核心) -->
+                <div class="panel-section active" id="directorSection">
+                    <!-- 邏輯模式選擇器 -->
+                    <div class="logic-mode-selector">
+                        <label class="logic-mode-label">
+                            <span>🧠</span>
+                            <span>AI 底層邏輯</span>
+                        </label>
+                        <select class="logic-mode-select" id="logicModeSelect">
+                            <option value="claude">Claude: 文學沉浸 (Immersion)</option>
+                            <option value="gemini">Gemini: 深度邏輯 (Protocol)</option>
+                            <option value="custom">自訂模式 (進階)</option>
+                        </select>
+                        <p class="logic-mode-hint" id="logicModeHint">核心原則：Show, Don't Tell。優先順序：觸覺 > 溫覺 > 嗅覺 > 聽覺 > 視覺。</p>
+                    </div>
 
-                    <!-- 故事錨點 -->
-                    <div class="memory-block">
-                        <div class="memory-header">
-                            <span class="memory-label">
-                                <span>🎯</span>
-                                <span>故事錨點</span>
+                    <!-- 世界觀設定 (從設定頁移至此處) -->
+                    <div class="director-block">
+                        <div class="director-block-header">
+                            <span class="director-block-label">
+                                <span>🌍</span>
+                                <span>世界觀設定</span>
                             </span>
-                            <span class="memory-badge anchor">Scene</span>
                         </div>
-                        <p class="memory-hint">關注：時間、地點、氛圍、衝突</p>
-                        <textarea class="memory-textarea" id="storyAnchors" spellcheck="false">{
-  "時間地點": "",
-  "環境氛圍": "",
-  "當前衝突": "",
-  "禁止發生的劇情": []
-}</textarea>
+                        <!-- World Library Toolbar -->
+                        <div class="world-library-toolbar compact">
+                            <div class="world-library-row">
+                                <select class="world-select" id="worldLibrarySelect">
+                                    <option value="">-- 從圖書館選擇 --</option>
+                                </select>
+                            </div>
+                            <div class="world-library-row">
+                                <input type="text" class="world-name-input" id="worldNameInput" placeholder="輸入世界觀名稱...">
+                                <div class="world-btn-group">
+                                    <button class="world-btn save-btn" id="worldSaveBtn">💾</button>
+                                    <button class="world-btn delete-btn" id="worldDeleteBtn" disabled>🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                        <textarea class="director-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
+                    </div>
+
+                    <!-- 場景錨點 (純文字版本) -->
+                    <div class="director-block">
+                        <div class="director-block-header">
+                            <span class="director-block-label">
+                                <span>🎯</span>
+                                <span>場景錨點</span>
+                            </span>
+                            <span class="director-badge">Context</span>
+                        </div>
+                        <textarea class="director-textarea scene-anchors" id="storyAnchors" spellcheck="false" placeholder="本章重點摘要與氛圍...
+
+例如：
+- 時間：深夜、雨天
+- 地點：廢棄的圖書館
+- 氛圍：緊張、壓抑
+- 當前衝突：主角發現了隱藏的秘密..."></textarea>
+                        <button class="checkpoint-btn" id="checkpointBtn">
+                            <span>✨</span>
+                            <span>本章結算 (自動摘要)</span>
+                        </button>
                     </div>
 
                     <!-- 角色印象筆記 -->
-                    <div class="memory-block">
-                        <div class="memory-header">
-                            <span class="memory-label">
+                    <div class="director-block">
+                        <div class="director-block-header">
+                            <span class="director-block-label">
                                 <span>🎭</span>
                                 <span>角色印象筆記</span>
                             </span>
-                            <button class="extract-btn" id="extractCharacterBtn" title="擷取生成">🔄 擷取生成</button>
+                            <button class="extract-btn" id="extractCharacterBtn" title="擷取生成">🔄 擷取</button>
                         </div>
-                        <p class="memory-hint">關注：身分背景、狀態、角色理解</p>
+                        <p class="director-hint">防止 AI 角色失憶或 OOC，此設定權重最高</p>
                         <!-- 角色標籤切換 -->
                         <div class="character-note-tabs" id="characterNoteTabs">
-                            <button class="character-note-tab active" data-role="ai">🤖 AI 主筆角色</button>
-                            <button class="character-note-tab" data-role="user">👤 用戶主筆角色</button>
+                            <button class="character-note-tab active" data-role="ai">🤖 AI 主筆</button>
+                            <button class="character-note-tab" data-role="user">👤 用戶主筆</button>
                         </div>
                         <!-- AI 主筆角色筆記 -->
                         <div class="character-note-content active" id="aiCharacterNote" data-role="ai">
-                            <textarea class="memory-textarea character-note" id="aiCharacterNoteText" spellcheck="false" placeholder="AI 主筆角色的印象筆記...
-{
-  &quot;角色名稱&quot;: &quot;&quot;,
-  &quot;身分本質&quot;: &quot;&quot;,
-  &quot;當前狀態&quot;: &quot;&quot;,
-  &quot;性格特質&quot;: &quot;&quot;,
-  &quot;關鍵經歷&quot;: &quot;&quot;
-}"></textarea>
+                            <textarea class="director-textarea character-note" id="aiCharacterNoteText" spellcheck="false" placeholder="AI 主筆角色的設定與當前狀態...
+
+例如：
+角色名：艾莉絲
+身分：失憶的吸血鬼獵人
+當前狀態：受傷、疲憊
+性格：冷漠外表下藏著溫柔"></textarea>
                         </div>
                         <!-- 用戶主筆角色筆記 -->
                         <div class="character-note-content" id="userCharacterNote" data-role="user">
-                            <textarea class="memory-textarea character-note" id="userCharacterNoteText" spellcheck="false" placeholder="用戶主筆角色的印象筆記...
-{
-  &quot;角色名稱&quot;: &quot;&quot;,
-  &quot;身分本質&quot;: &quot;&quot;,
-  &quot;當前狀態&quot;: &quot;&quot;,
-  &quot;性格特質&quot;: &quot;&quot;,
-  &quot;關鍵經歷&quot;: &quot;&quot;
-}"></textarea>
-                        </div>
-                    </div>
+                            <textarea class="director-textarea character-note" id="userCharacterNoteText" spellcheck="false" placeholder="用戶主筆角色的設定與當前狀態...
 
-                    <!-- 文風指紋 -->
-                    <div class="memory-block">
-                        <div class="memory-header">
-                            <span class="memory-label">
-                                <span>🖋️</span>
-                                <span>文風指紋</span>
-                            </span>
-                            <span class="memory-badge style">Style</span>
+例如：
+角色名：雷恩
+身分：流浪的魔法師
+當前狀態：好奇、警戒
+性格：樂觀但謹慎"></textarea>
                         </div>
-                        <textarea class="memory-textarea" id="styleFingerprint" spellcheck="false">{
-  "敘事節奏": "",
-  "感官偏好": [],
-  "禁忌與張力處理": "",
-  "關鍵語氣樣本": []
-}</textarea>
                     </div>
                 </div>
 
-                <!-- Director Section - 角色心理混音台 -->
-                <div class="panel-section" id="directorSection">
+                <!-- Character Section - 角色心理混音台 -->
+                <div class="panel-section" id="characterSection">
                     <div class="director-section">
                         <div class="director-header">
                             <span class="director-title">
@@ -271,7 +291,7 @@
                     </div>
                 </div>
 
-                <!-- Settings Section (Merged with World) -->
+                <!-- Settings Section - 硬體設定 -->
                 <div class="panel-section" id="settingsSection">
                     <!-- Cloud Status & Backup -->
                     <div class="setting-group">
@@ -288,40 +308,13 @@
                         </div>
                     </div>
 
-                    <div class="setting-group">
-                        <label class="setting-label">🌍 世界觀設定</label>
-                        <!-- World Library Toolbar -->
-                        <div class="world-library-toolbar">
-                            <div class="world-library-row">
-                                <select class="world-select" id="worldLibrarySelect">
-                                    <option value="">-- 從圖書館選擇 --</option>
-                                </select>
-                            </div>
-                            <div class="world-library-row">
-                                <input type="text" class="world-name-input" id="worldNameInput" placeholder="輸入世界觀名稱...">
-                                <div class="world-btn-group">
-                                    <button class="world-btn save-btn" id="worldSaveBtn">💾 儲存</button>
-                                    <button class="world-btn delete-btn" id="worldDeleteBtn" disabled>🗑️ 刪除</button>
-                                </div>
-                            </div>
-                            <p class="world-library-hint">儲存常用世界觀，在不同文檔間快速切換</p>
-                        </div>
-                        <textarea class="setting-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
-                        <p class="setting-hint">此內容會作為每次請求的背景知識</p>
-                        <div class="world-btn-group" style="margin-top: 8px;">
-                            <button class="world-btn save-btn" id="setDefaultWorldBtn" style="font-size: 13px;">⭐ 設為預設</button>
-                            <button class="world-btn" id="restoreDefaultWorldBtn" style="font-size: 13px; background: #607D8B;">↩️ 回復預設</button>
-                        </div>
-                    </div>
-
-                    <div class="setting-group">
+                    <!-- 自訂 System Prompt (只在自訂模式下顯示) -->
+                    <div class="setting-group custom-prompt-group" id="customPromptGroup" style="display: none;">
                         <label class="setting-label">📝 自訂 System Prompt</label>
-                        <textarea class="setting-textarea" id="customPrompt" spellcheck="false">你是一位資深小說家，擅長細膩的心理描寫與環境塑造。請以第三人稱視角續寫故事，保持文風一致，注重角色內心活動的刻畫。每次續寫至少 1200 字，描寫要具體且富有畫面感。</textarea>
-                        <p class="setting-hint">此內容會作為 AI 的基礎行為指令</p>
-                        <div class="world-btn-group" style="margin-top: 8px;">
-                            <button class="world-btn save-btn" id="setDefaultPromptBtn" style="font-size: 13px;">⭐ 設為預設</button>
-                            <button class="world-btn" id="restoreDefaultPromptBtn" style="font-size: 13px; background: #607D8B;">↩️ 回復預設</button>
-                        </div>
+                        <textarea class="setting-textarea" id="customPrompt" spellcheck="false" placeholder="在此輸入你的自訂 AI 指令...
+
+例如：你是一位專精驚悚小說的作家，擅長營造懸疑氛圍..."></textarea>
+                        <p class="setting-hint">只在「自訂模式」下使用，會取代預設的底層邏輯</p>
                     </div>
 
                     <div class="setting-group">

@@ -64,19 +64,45 @@ function loadDocument(docId) {
     state.currentDocId = docId;
     state.currentDoc = docData;
 
+    // === 資料遷移：兼容舊版資料結構 ===
+    // 1. storyAnchors: JSON -> 純文字
+    if (docData.storyAnchors && docData.storyAnchors.trim().startsWith('{')) {
+        try {
+            const parsed = JSON.parse(docData.storyAnchors);
+            // 將 JSON 轉換為可讀的純文字格式
+            let textSummary = '';
+            if (parsed['時間地點']) textSummary += `時間地點：${parsed['時間地點']}\n`;
+            if (parsed['環境氛圍']) textSummary += `環境氛圍：${typeof parsed['環境氛圍'] === 'object' ? JSON.stringify(parsed['環境氛圍']) : parsed['環境氛圍']}\n`;
+            if (parsed['當前衝突']) textSummary += `當前衝突：${parsed['當前衝突']}\n`;
+            if (parsed['角色狀態']) textSummary += `角色狀態：${typeof parsed['角色狀態'] === 'object' ? JSON.stringify(parsed['角色狀態']) : parsed['角色狀態']}\n`;
+            state.currentDoc.storyAnchors = textSummary.trim() || '';
+        } catch (e) {
+            // 如果解析失敗，保持原樣
+        }
+    }
+
+    // 2. 確保 logicMode 存在
+    if (!state.currentDoc.logicMode) {
+        state.currentDoc.logicMode = 'claude';  // 預設使用 Claude 模式
+    }
+
+    // 3. 移除舊的 styleFingerprint（不再使用）
+    if (state.currentDoc.styleFingerprint) {
+        delete state.currentDoc.styleFingerprint;
+    }
+
     // Update UI
     el.navTitle.textContent = docData.title || '未命名文檔';
-    el.storyAnchors.value = docData.storyAnchors || DEFAULT_DOC_DATA.storyAnchors;
-    el.styleFingerprint.value = docData.styleFingerprint || DEFAULT_DOC_DATA.styleFingerprint;
-    el.worldSetting.value = docData.worldSetting || '';
-    el.customPrompt.value = docData.customPrompt || DEFAULT_DOC_DATA.customPrompt;
+    el.storyAnchors.value = state.currentDoc.storyAnchors || '';
+    el.worldSetting.value = state.currentDoc.worldSetting || '';
+    el.customPrompt.value = state.currentDoc.customPrompt || '';
 
     // Character Notes (角色印象筆記)
     if (el.aiCharacterNoteText) {
-        el.aiCharacterNoteText.value = docData.aiCharacterNote || '';
+        el.aiCharacterNoteText.value = state.currentDoc.aiCharacterNote || '';
     }
     if (el.userCharacterNoteText) {
-        el.userCharacterNoteText.value = docData.userCharacterNote || '';
+        el.userCharacterNoteText.value = state.currentDoc.userCharacterNote || '';
     }
 
     // Ensure characters array exists
@@ -92,6 +118,11 @@ function loadDocument(docId) {
     renderCharacterList();
     updateStatusBar();
 
+    // === 同步導演面板 ===
+    if (typeof syncDirectorPanelFromDoc === 'function') {
+        syncDirectorPanelFromDoc();
+    }
+
     closeDrawerLeft();
 
     // 自動滾動到文檔底部，方便閱讀最新內容
@@ -106,12 +137,16 @@ function loadDocument(docId) {
 function saveCurrentDocument() {
     if (!state.currentDocId || !state.currentDoc) return;
 
-    // Update document data
-    state.currentDoc.storyAnchors = el.storyAnchors.value;
-    state.currentDoc.styleFingerprint = el.styleFingerprint.value;
-    state.currentDoc.worldSetting = el.worldSetting.value;
-    state.currentDoc.customPrompt = el.customPrompt.value;
+    // Update document data from UI
+    state.currentDoc.storyAnchors = el.storyAnchors?.value || '';
+    state.currentDoc.worldSetting = el.worldSetting?.value || '';
+    state.currentDoc.customPrompt = el.customPrompt?.value || '';
     state.currentDoc.lastModified = Date.now();
+
+    // 保存邏輯模式
+    if (el.logicModeSelect) {
+        state.currentDoc.logicMode = el.logicModeSelect.value || 'claude';
+    }
 
     // Character Notes (角色印象筆記)
     if (el.aiCharacterNoteText) {
