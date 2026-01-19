@@ -143,10 +143,31 @@ async function callAPI(userContent, options = {}) {
         headers['X-Title'] = 'MoYun';
     }
 
+    // 檢測是否為 Claude 模型（支援 Prompt Caching）
+    const isClaude = modelName.toLowerCase().includes('claude') || modelName.toLowerCase().includes('sonnet');
+    if (isClaude) {
+        headers['Anthropic-Beta'] = 'prompt-caching-2024-07-31';
+    }
+
     // 建構 messages 陣列，過濾空的 system message (修復 API 空訊息過濾)
     const messages = [];
     if (systemPrompt && systemPrompt.trim()) {
-        messages.push({ role: 'system', content: systemPrompt });
+        if (isClaude) {
+            // Claude 模型：使用快取優化
+            messages.push({
+                role: 'system',
+                content: [
+                    {
+                        type: 'text',
+                        text: systemPrompt,
+                        cache_control: { type: 'ephemeral' }
+                    }
+                ]
+            });
+        } else {
+            // 其他模型：使用標準格式
+            messages.push({ role: 'system', content: systemPrompt });
+        }
     }
     messages.push(...history);
 
