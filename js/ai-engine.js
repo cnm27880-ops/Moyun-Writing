@@ -38,13 +38,14 @@ function buildSystemPrompt() {
         }
     }
 
-    // 3. 場景錨點 (當前 Context)
-    const storyAnchors = el.storyAnchors?.value?.trim();
-    if (storyAnchors) {
+    // 3. 文風基因 (Style DNA) - 全域設定
+    const styleDNA = state.globalSettings?.authorStyleProfile?.trim() ||
+                     document.getElementById('styleDNA')?.value?.trim();
+    if (styleDNA) {
         if (logicMode === 'claude') {
-            parts.push(`<current_scene>\n${storyAnchors}\n</current_scene>`);
+            parts.push(`<style_reference>\n${styleDNA}\n</style_reference>`);
         } else {
-            parts.push(`【當前場景】\n${storyAnchors}`);
+            parts.push(`【文風參考】\n${styleDNA}`);
         }
     }
 
@@ -400,9 +401,9 @@ async function handleSubmit() {
 }
 
 // ============================================
-// Checkpoint (本章結算) - 簡化版：純文字場景摘要
+// Extract Style DNA (提取文風基因)
 // ============================================
-async function performCheckpoint() {
+async function extractStyleDNA() {
     if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 3) {
         showToast('內容太少，請先寫一些故事', 'warning');
         return;
@@ -413,51 +414,74 @@ async function performCheckpoint() {
         return;
     }
 
-    el.checkpointBtn.disabled = true;
-    el.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
+    const extractStyleBtn = document.getElementById('extractStyleBtn');
+    const styleDNATextarea = document.getElementById('styleDNA');
+
+    if (extractStyleBtn) {
+        extractStyleBtn.disabled = true;
+        extractStyleBtn.textContent = '⏳ 分析中...';
+    }
 
     try {
-        const recentContent = state.currentDoc.paragraphs
-            .slice(-10)
-            .map(p => p.content)
-            .join('\n\n');
+        // 優先取用戶撰寫的段落來分析風格
+        const userParagraphs = state.currentDoc.paragraphs
+            .filter(p => p.source === 'user' && p.content?.trim())
+            .map(p => p.content);
 
-        const analysisPrompt = `你是一位文學編輯助手。請閱讀以下故事片段，然後寫出一段簡潔的「場景與氛圍摘要」（約 100-200 字）。
+        // 如果用戶段落不夠，補充一些 AI 段落
+        let contentToAnalyze = userParagraphs.slice(-8).join('\n\n');
+        if (userParagraphs.length < 3) {
+            const allContent = state.currentDoc.paragraphs
+                .filter(p => p.content?.trim())
+                .slice(-10)
+                .map(p => p.content)
+                .join('\n\n');
+            contentToAnalyze = allContent;
+        }
 
-這段摘要將用於提醒 AI 續寫時的情境脈絡，所以請著重於：
-- 當前時間與地點
-- 環境氛圍（光影、聲音、氣味等）
-- 角色的狀態與情緒
-- 正在發生的衝突或張力
-- 接下來可能的發展方向
+        const analysisPrompt = `你是一位文學評論家。請閱讀以下文字片段，分析這位作者的「敘事風格」。
 
-【故事片段】
-${recentContent}
+請用描述性的語言總結其：
+- 句式節奏（長短句交錯？簡潔俐落？綿延流暢？）
+- 感官側重（偏好視覺描寫？聽覺？觸覺？心理活動？）
+- 用詞氛圍（典雅？口語化？帶有詩意？冷峻？溫暖？）
 
-請直接輸出摘要文字，不要加標題或格式符號。用自然語言描述，讓 AI 一看就能理解當前情境。`;
+請不要列出條列式規則，而是給出一份約 100 字的「風格側寫」，像是在向另一位作家描述這種寫作風格的特徵。
+
+【文字片段】
+${contentToAnalyze}
+
+請直接輸出風格側寫，不要加標題或額外說明。`;
 
         const response = await callAPIForAnalysis(analysisPrompt);
 
         if (response && response.trim()) {
-            // 直接將純文字摘要填入場景錨點
-            el.storyAnchors.value = response.trim();
-            autoSave();
-            showToast('本章結算完成！場景摘要已更新', 'success');
+            // 填入 styleDNA textarea
+            if (styleDNATextarea) {
+                styleDNATextarea.value = response.trim();
+            }
+            // 同時存入全域設定
+            state.globalSettings.authorStyleProfile = response.trim();
+            saveGlobalSettings();
+            showToast('文風基因提取完成！', 'success');
         } else {
-            showToast('無法生成摘要，請重試', 'warning');
+            showToast('無法分析風格，請重試', 'warning');
         }
     } catch (error) {
-        showToast(`結算失敗: ${error.message}`, 'error');
+        showToast(`提取失敗: ${error.message}`, 'error');
     } finally {
-        el.checkpointBtn.disabled = false;
-        el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (自動摘要)</span>';
+        if (extractStyleBtn) {
+            extractStyleBtn.disabled = false;
+            extractStyleBtn.textContent = '🧬 提取文風';
+        }
     }
 }
 
 // ============================================
 // Regenerate Paragraph (重新生成段落)
+// 支援指導重寫 (Directed Regeneration)
 // ============================================
-async function regenerateParagraph(paraId) {
+async function regenerateParagraph(paraId, instruction = null) {
     if (!state.currentDoc || state.isLoading) return;
 
     if (!state.globalSettings.apiKey) {
@@ -471,6 +495,11 @@ async function regenerateParagraph(paraId) {
     if (paraIndex === -1 || paragraphs[paraIndex].source !== 'ai') {
         showToast('找不到該段落或該段落不是 AI 生成的', 'warning');
         return;
+    }
+
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
     }
 
     // 建立乾淨歷史：取得該段落之前的所有段落 (修復重複對話)
@@ -518,11 +547,27 @@ async function regenerateParagraph(paraId) {
         editorPaper.classList.add('ai-writing');
     }
 
-    showToast('正在重新生成...', 'info', 2000);
+    // 根據是否有指令顯示不同提示
+    if (instruction) {
+        showToast(`正在按指令重寫：${instruction.substring(0, 20)}...`, 'info', 2000);
+    } else {
+        showToast('正在重新生成...', 'info', 2000);
+    }
 
     try {
-        // 構建 prompt：要求重新生成這一段
-        const prompt = '請繼續這個故事，重新生成接下來的段落。';
+        // 構建 prompt：根據是否有指令決定
+        let prompt;
+        if (instruction && instruction.trim()) {
+            // 指導重寫模式：包含用戶指令
+            prompt = `請根據以下指令重新撰寫接下來的段落：
+
+【重寫指令】${instruction.trim()}
+
+請依照指令調整風格、語氣或內容方向，重新生成這一段。不要在文中提及指令，直接輸出故事內容。`;
+        } else {
+            // 普通重生模式
+            prompt = '請繼續這個故事，重新生成接下來的段落。';
+        }
 
         // 添加 user 訊息到 customHistory
         customHistory.push({ role: 'user', content: prompt });
@@ -583,7 +628,7 @@ async function regenerateParagraph(paraId) {
 
                 renderParagraphs();
                 autoSave();
-                showToast('重新生成完成', 'success', 2000);
+                showToast(instruction ? '指導重寫完成' : '重新生成完成', 'success', 2000);
 
                 // 觸發自動同步（心靈同步功能）
                 setTimeout(() => triggerAutoSync(), 500);
@@ -605,6 +650,31 @@ async function regenerateParagraph(paraId) {
             btn.innerHTML = '🔄';
         }
     }
+}
+
+// ============================================
+// Directed Regeneration (指導重寫)
+// 彈出輸入框讓用戶輸入指令
+// ============================================
+function showDirectedRegenerationPrompt(paraId) {
+    // 使用 prompt 對話框取得用戶指令
+    const instruction = window.prompt(
+        '請輸入重寫指令（例如：讓語氣更悲傷、增加更多對話、描寫更細膩等）：',
+        ''
+    );
+
+    if (instruction === null) {
+        // 用戶取消
+        return;
+    }
+
+    if (!instruction.trim()) {
+        showToast('請輸入有效的指令', 'warning');
+        return;
+    }
+
+    // 執行指導重寫
+    regenerateParagraph(paraId, instruction.trim());
 }
 
 // ============================================
@@ -697,6 +767,11 @@ async function refineParagraph(paraId) {
         return;
     }
 
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
+    }
+
     showToast('正在潤飾段落...', 'info', 2000);
 
     const prompt = `請潤飾以下文字，使其更加優美、有文采，保持原意不變，但讓描寫更加生動細膩。只輸出潤飾後的結果，不要加任何解釋：
@@ -729,6 +804,11 @@ async function expandParagraph(paraId) {
     if (!paragraph || !paragraph.content.trim()) {
         showToast('找不到段落或段落內容為空', 'warning');
         return;
+    }
+
+    // === 保存歷史紀錄 ===
+    if (typeof saveParagraphHistory === 'function') {
+        saveParagraphHistory(paraId);
     }
 
     showToast('正在擴寫段落...', 'info', 2000);

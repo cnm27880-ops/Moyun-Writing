@@ -59,7 +59,8 @@ const DEFAULT_GLOBAL_SETTINGS = {
         'gemini-3-pro-preview'
     ],     // 常用 Model 列表（雲端同步）
     defaultWorldSetting: '',  // 預設世界觀
-    defaultCustomPrompt: ''   // 預設系統指令
+    defaultCustomPrompt: '',  // 預設系統指令
+    authorStyleProfile: ''    // 文風基因 (Style DNA)
 };
 
 // ============================================

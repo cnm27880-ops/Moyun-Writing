@@ -96,9 +96,6 @@ function loadDocument(docId) {
         if (el.navTitle) {
             el.navTitle.textContent = docData.title || '未命名文檔';
         }
-        if (el.storyAnchors) {
-            el.storyAnchors.value = state.currentDoc.storyAnchors || '';
-        }
         if (el.worldSetting) {
             el.worldSetting.value = state.currentDoc.worldSetting || '';
         }
@@ -152,7 +149,6 @@ function saveCurrentDocument() {
         if (!state.currentDocId || !state.currentDoc) return;
 
         // Update document data from UI
-        state.currentDoc.storyAnchors = el.storyAnchors?.value || '';
         state.currentDoc.worldSetting = el.worldSetting?.value || '';
         state.currentDoc.customPrompt = el.customPrompt?.value || '';
         state.currentDoc.lastModified = Date.now();
@@ -513,6 +509,154 @@ function deleteParagraph(paraId) {
         }
         hideConfirmModal();
     });
+}
+
+// ============================================
+// Paragraph History Mechanism (歷史紀錄機制)
+// 在 AI 覆蓋段落前自動保存舊內容
+// ============================================
+const MAX_HISTORY_LENGTH = 5; // 最多保留 5 個歷史版本
+
+/**
+ * 在修改段落前保存當前內容到歷史紀錄
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否成功保存
+ */
+function saveParagraphHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!para || !para.content || !para.content.trim()) return false;
+
+    // 初始化 history 陣列
+    if (!para.history) {
+        para.history = [];
+    }
+
+    // 保存當前內容到歷史（最新的在最前面）
+    para.history.unshift({
+        content: para.content,
+        timestamp: Date.now()
+    });
+
+    // 限制歷史長度
+    if (para.history.length > MAX_HISTORY_LENGTH) {
+        para.history = para.history.slice(0, MAX_HISTORY_LENGTH);
+    }
+
+    console.log(`段落 ${paraId} 歷史已保存，共 ${para.history.length} 個版本`);
+    return true;
+}
+
+/**
+ * 從歷史紀錄還原段落內容
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否成功還原
+ */
+function restoreParagraphFromHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    if (!para || !para.history || para.history.length === 0) {
+        showToast('沒有可還原的歷史紀錄', 'warning');
+        return false;
+    }
+
+    // 取出最近的歷史版本
+    const lastHistory = para.history.shift();
+    para.content = lastHistory.content;
+
+    // 更新時間戳記
+    para.timestamp = Date.now();
+
+    // 重新渲染並保存
+    renderParagraphs();
+    autoSave();
+
+    const remainingHistory = para.history.length;
+    showToast(`已還原至上一個版本${remainingHistory > 0 ? `（還有 ${remainingHistory} 個版本）` : ''}`, 'success', 2000);
+    return true;
+}
+
+/**
+ * 檢查段落是否有歷史紀錄
+ * @param {string} paraId - 段落 ID
+ * @returns {boolean} 是否有歷史紀錄
+ */
+function hasParagraphHistory(paraId) {
+    if (!state.currentDoc?.paragraphs) return false;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    return para?.history && para.history.length > 0;
+}
+
+/**
+ * 取得段落歷史紀錄數量
+ * @param {string} paraId - 段落 ID
+ * @returns {number} 歷史紀錄數量
+ */
+function getParagraphHistoryCount(paraId) {
+    if (!state.currentDoc?.paragraphs) return 0;
+
+    const para = state.currentDoc.paragraphs.find(p => p.id === paraId);
+    return para?.history?.length || 0;
+}
+
+// ============================================
+// Export Document (匯出文檔)
+// ============================================
+/**
+ * 匯出當前文檔為純文字檔案
+ * @param {string} format - 匯出格式 ('txt' 或 'md')，預設為 'txt'
+ */
+function exportDocument(format = 'txt') {
+    if (!state.currentDoc) {
+        showToast('沒有可匯出的文檔', 'warning');
+        return;
+    }
+
+    const paragraphs = state.currentDoc.paragraphs;
+    if (!paragraphs || paragraphs.length === 0) {
+        showToast('文檔內容為空', 'warning');
+        return;
+    }
+
+    // 取得文檔標題
+    const title = state.currentDoc.title || '未命名文檔';
+
+    // 組合段落內容
+    let content = '';
+
+    if (format === 'md') {
+        // Markdown 格式：加入標題和段落標記
+        content = `# ${title}\n\n`;
+        content += paragraphs.map(p => {
+            const prefix = p.source === 'user' ? '> ' : '';
+            return prefix + p.content;
+        }).join('\n\n');
+    } else {
+        // 純文字格式：只保留內容
+        content = paragraphs.map(p => p.content).join('\n\n');
+    }
+
+    // 建立 Blob 並觸發下載
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    // 建立臨時連結並觸發下載
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title}.${format}`;
+
+    // 觸發下載
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`已匯出：${title}.${format}`, 'success', 2000);
 }
 
 // ============================================

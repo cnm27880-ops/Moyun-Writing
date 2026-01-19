@@ -147,6 +147,32 @@ function showActionSheet(paraId) {
     if (overlay && sheet) {
         overlay.classList.add('active');
         sheet.classList.add('active');
+
+        // 取得段落資訊
+        const para = state.currentDoc?.paragraphs?.find(p => p.id === paraId);
+        const isAiParagraph = para?.source === 'ai';
+        const hasHistory = para?.history && para.history.length > 0;
+
+        // 控制「指導重寫」按鈕顯示（僅 AI 段落）
+        const directedRegenBtn = document.getElementById('actionSheetDirectedRegen');
+        if (directedRegenBtn) {
+            directedRegenBtn.style.display = isAiParagraph ? 'flex' : 'none';
+        }
+
+        // 控制「還原」按鈕顯示（僅有歷史紀錄時）
+        const restoreBtn = document.getElementById('actionSheetRestore');
+        if (restoreBtn) {
+            if (hasHistory) {
+                restoreBtn.style.display = 'flex';
+                const historyCount = para.history.length;
+                const spanEl = restoreBtn.querySelector('span:last-child');
+                if (spanEl) {
+                    spanEl.textContent = `還原上一版（${historyCount}）`;
+                }
+            } else {
+                restoreBtn.style.display = 'none';
+            }
+        }
     }
 }
 
@@ -166,6 +192,8 @@ function initActionSheet() {
     const editBtn = document.getElementById('actionSheetEdit');
     const refineBtn = document.getElementById('actionSheetRefine');
     const expandBtn = document.getElementById('actionSheetExpand');
+    const directedRegenBtn = document.getElementById('actionSheetDirectedRegen');
+    const restoreBtn = document.getElementById('actionSheetRestore');
     const deleteBtn = document.getElementById('actionSheetDelete');
     const cancelBtn = document.getElementById('actionSheetCancel');
 
@@ -195,6 +223,33 @@ function initActionSheet() {
         expandBtn.addEventListener('click', () => {
             if (currentActionSheetParagraphId) {
                 expandParagraph(currentActionSheetParagraphId);
+            }
+            hideActionSheet();
+        });
+    }
+
+    // 指導重寫按鈕
+    if (directedRegenBtn) {
+        directedRegenBtn.addEventListener('click', () => {
+            if (currentActionSheetParagraphId) {
+                hideActionSheet();
+                // 稍微延遲以確保 Action Sheet 關閉後再顯示 prompt
+                setTimeout(() => {
+                    if (typeof showDirectedRegenerationPrompt === 'function') {
+                        showDirectedRegenerationPrompt(currentActionSheetParagraphId);
+                    }
+                }, 100);
+            }
+        });
+    }
+
+    // 還原按鈕
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', () => {
+            if (currentActionSheetParagraphId) {
+                if (typeof restoreParagraphFromHistory === 'function') {
+                    restoreParagraphFromHistory(currentActionSheetParagraphId);
+                }
             }
             hideActionSheet();
         });
@@ -241,8 +296,30 @@ function initEventListeners() {
     // New document
     el.newDocBtn.addEventListener('click', createDocument);
 
-    // Checkpoint
-    el.checkpointBtn.addEventListener('click', performCheckpoint);
+    // Export document
+    const exportDocBtn = document.getElementById('exportDocBtn');
+    if (exportDocBtn) {
+        exportDocBtn.addEventListener('click', () => {
+            if (typeof exportDocument === 'function') {
+                exportDocument('txt');
+            }
+        });
+    }
+
+    // Extract Style DNA (文風基因提取)
+    const extractStyleBtn = document.getElementById('extractStyleBtn');
+    if (extractStyleBtn) {
+        extractStyleBtn.addEventListener('click', extractStyleDNA);
+    }
+
+    // Style DNA auto-save (文風基因自動保存)
+    const styleDNATextarea = document.getElementById('styleDNA');
+    if (styleDNATextarea) {
+        styleDNATextarea.addEventListener('input', () => {
+            state.globalSettings.authorStyleProfile = styleDNATextarea.value;
+            saveGlobalSettings();
+        });
+    }
 
     // Add Character
     el.addCharacterBtn.addEventListener('click', createCharacter);
@@ -345,8 +422,8 @@ function initEventListeners() {
         forceFixCloudBtn.addEventListener('click', forceFixCloudData);
     }
 
-    // Memory & settings auto-save (移除 styleFingerprint)
-    [el.storyAnchors, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
+    // Memory & settings auto-save (文檔設定自動保存)
+    [el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
         if (textarea) {
             textarea.addEventListener('input', autoSave);
         }
@@ -574,11 +651,13 @@ function init() {
     }
 
     // Initialize UI
+    initTheme();                 // 初始化主題（深色/淺色模式）
     initPanelTabs();
     initDirectorPanel();         // 初始化導演面板（邏輯模式選擇器）
     initEventListeners();
     initActionSheet();           // 初始化 Action Sheet
     initEditCanvasAiActions();   // 初始化編輯畫布 AI 功能
+    initEditorBodyDelegation();  // 初始化編輯器 Event Delegation（效能優化）
     renderDocList();
     renderWorldLibrarySelect();  // 初始化世界觀圖書館下拉選單
 

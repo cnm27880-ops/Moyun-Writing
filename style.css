@@ -62,6 +62,155 @@
         }
 
         /* ============================================
+           Dark Mode - 深色模式
+           ============================================ */
+        [data-theme="dark"] {
+            /* Core Colors - Dark Theme */
+            --bg-app: #1a1a1a;
+            --bg-paper: #242424;
+            --bg-drawer: #1e1e1e;
+            --ink-primary: #e0e0e0;
+            --ink-secondary: #b0b0b0;
+            --ink-muted: #808080;
+            --accent: #7fa828;
+            --accent-hover: #6b9020;
+            --accent-light: rgba(127, 168, 40, 0.15);
+            --ai-marker: #7a9ba8;
+            --ai-marker-light: rgba(122, 155, 168, 0.15);
+            --border: #3a3a3a;
+            --border-light: #2e2e2e;
+            --overlay: rgba(0, 0, 0, 0.7);
+
+            /* Semantic - Dark Theme */
+            --success: #7fa828;
+            --warning: #d4a574;
+            --error: #d46a6a;
+            --info: #7a9ba8;
+
+            /* Shadows - Dark Theme */
+            --shadow-navbar: 0 2px 12px rgba(0, 0, 0, 0.3);
+            --shadow-drawer: 4px 0 24px rgba(0, 0, 0, 0.4);
+            --shadow-sheet: 0 -4px 30px rgba(0, 0, 0, 0.5);
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Dark mode specific overrides */
+        [data-theme="dark"] .editor-paper {
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="dark"] .setting-input,
+        [data-theme="dark"] .setting-textarea,
+        [data-theme="dark"] .setting-select,
+        [data-theme="dark"] .combo-select,
+        [data-theme="dark"] .combo-input {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+            color: var(--ink-primary);
+        }
+
+        [data-theme="dark"] .setting-input:focus,
+        [data-theme="dark"] .setting-textarea:focus,
+        [data-theme="dark"] .setting-select:focus {
+            border-color: var(--accent);
+        }
+
+        [data-theme="dark"] .director-textarea {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+        }
+
+        [data-theme="dark"] .modal {
+            background: var(--bg-paper);
+        }
+
+        [data-theme="dark"] .action-sheet {
+            background: var(--bg-drawer);
+        }
+
+        [data-theme="dark"] .toast {
+            background: #333333;
+            color: var(--ink-primary);
+        }
+
+        /* 靈感抽屜深色模式 */
+        [data-theme="dark"] .inspiration-drawer {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+        }
+
+        [data-theme="dark"] .inspiration-content {
+            background: #1e1e1e;
+            border-color: #3a3a3a;
+        }
+
+        [data-theme="dark"] .inspiration-empty {
+            background: transparent;
+        }
+
+        [data-theme="dark"] .generate-conflict-btn {
+            background: #3d3d2a;
+            border-color: #5a5a3a;
+            color: #d4a574;
+        }
+
+        /* 輸入區域深色模式 */
+        [data-theme="dark"] .input-area {
+            background: #1a1a1a;
+            border-top-color: #2a2a2a;
+        }
+
+        [data-theme="dark"] .input-wrapper {
+            background: transparent;
+        }
+
+        [data-theme="dark"] .input-field-wrapper {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+        }
+
+        [data-theme="dark"] .input-field {
+            background: transparent;
+            color: var(--ink-primary);
+        }
+
+        [data-theme="dark"] .input-field::placeholder {
+            color: #666666;
+        }
+
+        /* 風格標籤列深色模式 */
+        [data-theme="dark"] .style-tag-bar {
+            background: transparent;
+        }
+
+        [data-theme="dark"] .style-tag {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+            color: #888888;
+        }
+
+        [data-theme="dark"] .style-tag:hover,
+        [data-theme="dark"] .style-tag.active {
+            background: #3a3a3a;
+            border-color: var(--accent);
+        }
+
+        [data-theme="dark"] .director-mode-toggle {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+        }
+
+        [data-theme="dark"] .director-mode-toggle.active {
+            background: var(--accent-light);
+            border-color: var(--accent);
+        }
+
+        /* 發送按鈕深色模式 */
+        [data-theme="dark"] .send-btn {
+            background: var(--accent);
+        }
+
+        /* ============================================
            Reset & Base
            ============================================ */
         *, *::before, *::after {
@@ -456,6 +605,35 @@
 
         .new-doc-btn:active {
             transform: translateY(0);
+        }
+
+        .export-doc-btn {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-paper);
+            color: var(--ink-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .export-doc-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .export-doc-btn:active {
+            transform: scale(0.98);
         }
 
         .doc-list-title {
@@ -1036,6 +1214,41 @@
             color: var(--accent);
         }
 
+        /* Theme Toggle - 主題切換按鈕 */
+        .theme-toggle-wrapper {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .theme-toggle-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--bg-paper);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            color: var(--ink-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .theme-toggle-btn:hover {
+            border-color: var(--accent);
+            color: var(--ink-primary);
+        }
+
+        .theme-toggle-btn.active {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
         .action-btns {
             display: flex;
             gap: var(--spacing-sm);
@@ -1239,6 +1452,22 @@
         @keyframes cursorBlink {
             0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0; }
+        }
+
+        /* History Indicator - 有歷史紀錄的段落指示器 */
+        .paragraph.has-history::after {
+            content: '⏪';
+            position: absolute;
+            top: 4px;
+            right: 42px;
+            font-size: 0.7rem;
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity var(--transition-fast);
+        }
+
+        .paragraph.has-history:hover::after {
+            opacity: 0.8;
         }
 
         .paragraph-content p {
@@ -3178,6 +3407,25 @@
 
         .action-sheet-btn.danger:hover {
             background: rgba(199, 92, 92, 0.1);
+        }
+
+        /* 指導重寫按鈕樣式 */
+        .action-sheet-btn.ai-only {
+            color: var(--ai-marker);
+        }
+
+        .action-sheet-btn.ai-only:hover {
+            background: var(--ai-marker-light);
+        }
+
+        /* 還原按鈕樣式 */
+        .action-sheet-btn.restore-btn {
+            color: var(--info);
+            border-left: 3px solid var(--info);
+        }
+
+        .action-sheet-btn.restore-btn:hover {
+            background: rgba(93, 115, 126, 0.1);
         }
 
         .action-sheet-icon {
