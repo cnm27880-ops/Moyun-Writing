@@ -296,6 +296,16 @@ function initEventListeners() {
     // New document
     el.newDocBtn.addEventListener('click', createDocument);
 
+    // Export document
+    const exportDocBtn = document.getElementById('exportDocBtn');
+    if (exportDocBtn) {
+        exportDocBtn.addEventListener('click', () => {
+            if (typeof exportDocument === 'function') {
+                exportDocument('txt');
+            }
+        });
+    }
+
     // Checkpoint
     el.checkpointBtn.addEventListener('click', performCheckpoint);
 
@@ -629,6 +639,7 @@ function init() {
     }
 
     // Initialize UI
+    initTheme();                 // 初始化主題（深色/淺色模式）
     initPanelTabs();
     initDirectorPanel();         // 初始化導演面板（邏輯模式選擇器）
     initEventListeners();

@@ -449,6 +449,77 @@ const $$ = sel => document.querySelectorAll(sel);
         }
 
         // ============================================
+        // Theme Management - 主題管理
+        // ============================================
+        const THEME_STORAGE_KEY = 'moyun_theme';
+
+        function toggleTheme(theme) {
+            // 設定主題
+            document.documentElement.setAttribute('data-theme', theme);
+
+            // 保存到 localStorage
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+            // 更新按鈕狀態
+            updateThemeButtonsUI(theme);
+
+            showToast(theme === 'dark' ? '已切換至深色模式' : '已切換至淺色模式', 'success', 2000);
+        }
+
+        function updateThemeButtonsUI(theme) {
+            const lightBtn = document.getElementById('themeLightBtn');
+            const darkBtn = document.getElementById('themeDarkBtn');
+
+            if (lightBtn && darkBtn) {
+                lightBtn.classList.toggle('active', theme === 'light');
+                darkBtn.classList.toggle('active', theme === 'dark');
+            }
+        }
+
+        function initTheme() {
+            // 從 localStorage 讀取主題設定
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+
+            // 如果沒有保存的設定，檢查系統偏好
+            let theme = savedTheme;
+            if (!theme) {
+                // 檢查系統是否偏好深色模式
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    theme = 'dark';
+                } else {
+                    theme = 'light';
+                }
+            }
+
+            // 套用主題（不顯示 toast）
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeButtonsUI(theme);
+
+            // 綁定按鈕事件
+            const lightBtn = document.getElementById('themeLightBtn');
+            const darkBtn = document.getElementById('themeDarkBtn');
+
+            if (lightBtn) {
+                lightBtn.addEventListener('click', () => toggleTheme('light'));
+            }
+            if (darkBtn) {
+                darkBtn.addEventListener('click', () => toggleTheme('dark'));
+            }
+
+            // 監聽系統主題變更
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    // 只有在用戶沒有手動設定時才跟隨系統
+                    if (!localStorage.getItem(THEME_STORAGE_KEY)) {
+                        const newTheme = e.matches ? 'dark' : 'light';
+                        document.documentElement.setAttribute('data-theme', newTheme);
+                        updateThemeButtonsUI(newTheme);
+                    }
+                });
+            }
+        }
+
+        // ============================================
         // Panel Tabs
         // ============================================
         function initPanelTabs() {

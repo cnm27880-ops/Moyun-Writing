@@ -607,6 +607,63 @@ function getParagraphHistoryCount(paraId) {
 }
 
 // ============================================
+// Export Document (匯出文檔)
+// ============================================
+/**
+ * 匯出當前文檔為純文字檔案
+ * @param {string} format - 匯出格式 ('txt' 或 'md')，預設為 'txt'
+ */
+function exportDocument(format = 'txt') {
+    if (!state.currentDoc) {
+        showToast('沒有可匯出的文檔', 'warning');
+        return;
+    }
+
+    const paragraphs = state.currentDoc.paragraphs;
+    if (!paragraphs || paragraphs.length === 0) {
+        showToast('文檔內容為空', 'warning');
+        return;
+    }
+
+    // 取得文檔標題
+    const title = state.currentDoc.title || '未命名文檔';
+
+    // 組合段落內容
+    let content = '';
+
+    if (format === 'md') {
+        // Markdown 格式：加入標題和段落標記
+        content = `# ${title}\n\n`;
+        content += paragraphs.map(p => {
+            const prefix = p.source === 'user' ? '> ' : '';
+            return prefix + p.content;
+        }).join('\n\n');
+    } else {
+        // 純文字格式：只保留內容
+        content = paragraphs.map(p => p.content).join('\n\n');
+    }
+
+    // 建立 Blob 並觸發下載
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    // 建立臨時連結並觸發下載
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title}.${format}`;
+
+    // 觸發下載
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast(`已匯出：${title}.${format}`, 'success', 2000);
+}
+
+// ============================================
 // Text Selection Operations
 // ============================================
 function handleTextSelection() {
