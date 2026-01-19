@@ -620,6 +620,66 @@ class StorageManager {
             return false;
         }
     }
+
+    async deleteCloudBackup(backupId) {
+        if (!this.isLoggedIn() || !firebaseDB) {
+            console.error('無法刪除備份：未登入');
+            return false;
+        }
+
+        try {
+            console.log('🗑️ 刪除備份:', backupId);
+            await firebaseDB.ref(`users/${this.getUserId()}/backups/${backupId}`).remove();
+            console.log('✓ 備份已刪除:', backupId);
+            return true;
+        } catch (error) {
+            console.error('刪除備份失敗:', error);
+            return false;
+        }
+    }
+
+    async cleanOldBackups(daysToKeep = 3) {
+        if (!this.isLoggedIn() || !firebaseDB) {
+            console.log('無法清理備份：未登入');
+            return 0;
+        }
+
+        try {
+            console.log(`🧹 開始清理超過 ${daysToKeep} 天的備份...`);
+
+            const backups = await this.getCloudBackups();
+            if (!backups || backups.length === 0) {
+                console.log('沒有備份需要清理');
+                return 0;
+            }
+
+            const now = Date.now();
+            const maxAge = daysToKeep * 24 * 60 * 60 * 1000; // 轉換為毫秒
+            let deletedCount = 0;
+
+            for (const backup of backups) {
+                const age = now - backup.timestamp;
+                if (age > maxAge) {
+                    const success = await this.deleteCloudBackup(backup.id);
+                    if (success) {
+                        deletedCount++;
+                        console.log(`✓ 已刪除舊備份: ${backup.note} (${new Date(backup.timestamp).toLocaleString()})`);
+                    }
+                }
+            }
+
+            if (deletedCount > 0) {
+                console.log(`✅ 清理完成，共刪除 ${deletedCount} 個舊備份`);
+            } else {
+                console.log('✓ 沒有需要清理的舊備份');
+            }
+
+            return deletedCount;
+        } catch (error) {
+            console.error('清理備份失敗:', error);
+            return 0;
+        }
+    }
 }
 
 // Create global storage manager instance

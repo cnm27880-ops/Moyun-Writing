@@ -154,6 +154,7 @@ async function callAPI(userContent, options = {}) {
         model: modelName,
         messages: messages,
         temperature: parseFloat(temperature),
+        top_p: 0.95,
         max_tokens: 4096
     };
 
@@ -423,16 +424,16 @@ async function extractStyleDNA() {
     }
 
     try {
-        // 優先取用戶撰寫的段落來分析風格
+        // 優先取用戶撰寫的段落來分析風格（品質過濾：只分析超過 50 字的段落）
         const userParagraphs = state.currentDoc.paragraphs
-            .filter(p => p.source === 'user' && p.content?.trim())
+            .filter(p => p.source === 'user' && p.content?.trim() && p.content.length > 50)
             .map(p => p.content);
 
         // 如果用戶段落不夠，補充一些 AI 段落
         let contentToAnalyze = userParagraphs.slice(-8).join('\n\n');
         if (userParagraphs.length < 3) {
             const allContent = state.currentDoc.paragraphs
-                .filter(p => p.content?.trim())
+                .filter(p => p.content?.trim() && p.content.length > 50)
                 .slice(-10)
                 .map(p => p.content)
                 .join('\n\n');
@@ -446,6 +447,7 @@ async function extractStyleDNA() {
 - 感官側重（偏好視覺描寫？聽覺？觸覺？心理活動？）
 - 用詞氛圍（典雅？口語化？帶有詩意？冷峻？溫暖？）
 
+請忽略短促的對話或指令，專注於描寫類段落的敘事質感。
 請不要列出條列式規則，而是給出一份約 100 字的「風格側寫」，像是在向另一位作家描述這種寫作風格的特徵。
 
 【文字片段】
