@@ -192,7 +192,6 @@ const DEFAULT_DOC_DATA = {
     characters: [],  // 角色心理混音台：[{ id, name, drives: { driveId: weight }, autoSync }]
     focusCharacterId: null,  // 當前焦點角色
     logicMode: 'claude',  // 底層邏輯模式：gemini / claude / custom
-    storyAnchors: '',  // 場景錨點：純文字摘要
     worldSetting: '',
     customPrompt: '',  // 只在 custom 模式下使用
     // 角色印象筆記
