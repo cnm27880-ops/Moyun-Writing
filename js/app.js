@@ -306,8 +306,20 @@ function initEventListeners() {
         });
     }
 
-    // Checkpoint
-    el.checkpointBtn.addEventListener('click', performCheckpoint);
+    // Extract Style DNA (文風基因提取)
+    const extractStyleBtn = document.getElementById('extractStyleBtn');
+    if (extractStyleBtn) {
+        extractStyleBtn.addEventListener('click', extractStyleDNA);
+    }
+
+    // Style DNA auto-save (文風基因自動保存)
+    const styleDNATextarea = document.getElementById('styleDNA');
+    if (styleDNATextarea) {
+        styleDNATextarea.addEventListener('input', () => {
+            state.globalSettings.authorStyleProfile = styleDNATextarea.value;
+            saveGlobalSettings();
+        });
+    }
 
     // Add Character
     el.addCharacterBtn.addEventListener('click', createCharacter);
@@ -410,8 +422,8 @@ function initEventListeners() {
         forceFixCloudBtn.addEventListener('click', forceFixCloudData);
     }
 
-    // Memory & settings auto-save (移除 styleFingerprint)
-    [el.storyAnchors, el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
+    // Memory & settings auto-save (文檔設定自動保存)
+    [el.worldSetting, el.customPrompt, el.aiCharacterNoteText, el.userCharacterNoteText].forEach(textarea => {
         if (textarea) {
             textarea.addEventListener('input', autoSave);
         }

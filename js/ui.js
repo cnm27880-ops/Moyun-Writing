@@ -22,8 +22,8 @@ const $$ = sel => document.querySelectorAll(sel);
             // Right Panel
             panelRight: $('panelRight'),
             panelClose: $('panelClose'),
-            checkpointBtn: $('checkpointBtn'),
-            storyAnchors: $('storyAnchors'),
+            styleDNA: $('styleDNA'),
+            extractStyleBtn: $('extractStyleBtn'),
             worldSetting: $('worldSetting'),
             customPrompt: $('customPrompt'),
             customPromptGroup: $('customPromptGroup'),
@@ -609,9 +609,9 @@ const $$ = sel => document.querySelectorAll(sel);
                 el.worldSetting.value = state.currentDoc.worldSetting || '';
             }
 
-            // 同步場景錨點
-            if (el.storyAnchors) {
-                el.storyAnchors.value = state.currentDoc.storyAnchors || '';
+            // 同步文風基因 (從全域設定載入)
+            if (el.styleDNA) {
+                el.styleDNA.value = state.globalSettings?.authorStyleProfile || '';
             }
 
             // 同步角色印象筆記

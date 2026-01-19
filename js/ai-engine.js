@@ -38,13 +38,14 @@ function buildSystemPrompt() {
         }
     }
 
-    // 3. 場景錨點 (當前 Context)
-    const storyAnchors = el.storyAnchors?.value?.trim();
-    if (storyAnchors) {
+    // 3. 文風基因 (Style DNA) - 全域設定
+    const styleDNA = state.globalSettings?.authorStyleProfile?.trim() ||
+                     document.getElementById('styleDNA')?.value?.trim();
+    if (styleDNA) {
         if (logicMode === 'claude') {
-            parts.push(`<current_scene>\n${storyAnchors}\n</current_scene>`);
+            parts.push(`<style_reference>\n${styleDNA}\n</style_reference>`);
         } else {
-            parts.push(`【當前場景】\n${storyAnchors}`);
+            parts.push(`【文風參考】\n${styleDNA}`);
         }
     }
 
@@ -400,9 +401,9 @@ async function handleSubmit() {
 }
 
 // ============================================
-// Checkpoint (本章結算) - 簡化版：純文字場景摘要
+// Extract Style DNA (提取文風基因)
 // ============================================
-async function performCheckpoint() {
+async function extractStyleDNA() {
     if (!state.currentDoc?.paragraphs?.length || state.currentDoc.paragraphs.length < 3) {
         showToast('內容太少，請先寫一些故事', 'warning');
         return;
@@ -413,44 +414,66 @@ async function performCheckpoint() {
         return;
     }
 
-    el.checkpointBtn.disabled = true;
-    el.checkpointBtn.innerHTML = '<span>⏳</span><span>分析中...</span>';
+    const extractStyleBtn = document.getElementById('extractStyleBtn');
+    const styleDNATextarea = document.getElementById('styleDNA');
+
+    if (extractStyleBtn) {
+        extractStyleBtn.disabled = true;
+        extractStyleBtn.textContent = '⏳ 分析中...';
+    }
 
     try {
-        const recentContent = state.currentDoc.paragraphs
-            .slice(-10)
-            .map(p => p.content)
-            .join('\n\n');
+        // 優先取用戶撰寫的段落來分析風格
+        const userParagraphs = state.currentDoc.paragraphs
+            .filter(p => p.source === 'user' && p.content?.trim())
+            .map(p => p.content);
 
-        const analysisPrompt = `你是一位文學編輯助手。請閱讀以下故事片段，然後寫出一段簡潔的「場景與氛圍摘要」（約 100-200 字）。
+        // 如果用戶段落不夠，補充一些 AI 段落
+        let contentToAnalyze = userParagraphs.slice(-8).join('\n\n');
+        if (userParagraphs.length < 3) {
+            const allContent = state.currentDoc.paragraphs
+                .filter(p => p.content?.trim())
+                .slice(-10)
+                .map(p => p.content)
+                .join('\n\n');
+            contentToAnalyze = allContent;
+        }
 
-這段摘要將用於提醒 AI 續寫時的情境脈絡，所以請著重於：
-- 當前時間與地點
-- 環境氛圍（光影、聲音、氣味等）
-- 角色的狀態與情緒
-- 正在發生的衝突或張力
-- 接下來可能的發展方向
+        const analysisPrompt = `你是一位文學評論家。請閱讀以下文字片段，分析這位作者的「敘事風格」。
 
-【故事片段】
-${recentContent}
+請用描述性的語言總結其：
+- 句式節奏（長短句交錯？簡潔俐落？綿延流暢？）
+- 感官側重（偏好視覺描寫？聽覺？觸覺？心理活動？）
+- 用詞氛圍（典雅？口語化？帶有詩意？冷峻？溫暖？）
 
-請直接輸出摘要文字，不要加標題或格式符號。用自然語言描述，讓 AI 一看就能理解當前情境。`;
+請不要列出條列式規則，而是給出一份約 100 字的「風格側寫」，像是在向另一位作家描述這種寫作風格的特徵。
+
+【文字片段】
+${contentToAnalyze}
+
+請直接輸出風格側寫，不要加標題或額外說明。`;
 
         const response = await callAPIForAnalysis(analysisPrompt);
 
         if (response && response.trim()) {
-            // 直接將純文字摘要填入場景錨點
-            el.storyAnchors.value = response.trim();
-            autoSave();
-            showToast('本章結算完成！場景摘要已更新', 'success');
+            // 填入 styleDNA textarea
+            if (styleDNATextarea) {
+                styleDNATextarea.value = response.trim();
+            }
+            // 同時存入全域設定
+            state.globalSettings.authorStyleProfile = response.trim();
+            saveGlobalSettings();
+            showToast('文風基因提取完成！', 'success');
         } else {
-            showToast('無法生成摘要，請重試', 'warning');
+            showToast('無法分析風格，請重試', 'warning');
         }
     } catch (error) {
-        showToast(`結算失敗: ${error.message}`, 'error');
+        showToast(`提取失敗: ${error.message}`, 'error');
     } finally {
-        el.checkpointBtn.disabled = false;
-        el.checkpointBtn.innerHTML = '<span>✨</span><span>本章結算 (自動摘要)</span>';
+        if (extractStyleBtn) {
+            extractStyleBtn.disabled = false;
+            extractStyleBtn.textContent = '🧬 提取文風';
+        }
     }
 }
 

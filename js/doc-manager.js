@@ -96,9 +96,6 @@ function loadDocument(docId) {
         if (el.navTitle) {
             el.navTitle.textContent = docData.title || '未命名文檔';
         }
-        if (el.storyAnchors) {
-            el.storyAnchors.value = state.currentDoc.storyAnchors || '';
-        }
         if (el.worldSetting) {
             el.worldSetting.value = state.currentDoc.worldSetting || '';
         }
@@ -152,7 +149,6 @@ function saveCurrentDocument() {
         if (!state.currentDocId || !state.currentDoc) return;
 
         // Update document data from UI
-        state.currentDoc.storyAnchors = el.storyAnchors?.value || '';
         state.currentDoc.worldSetting = el.worldSetting?.value || '';
         state.currentDoc.customPrompt = el.customPrompt?.value || '';
         state.currentDoc.lastModified = Date.now();

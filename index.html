@@ -197,26 +197,19 @@
                         <textarea class="director-textarea" id="worldSetting" placeholder="描述你的故事世界觀、背景設定、魔法系統等..." spellcheck="false"></textarea>
                     </div>
 
-                    <!-- 場景錨點 (純文字版本) -->
+                    <!-- 文風基因 (Style DNA) -->
                     <div class="director-block">
                         <div class="director-block-header">
                             <span class="director-block-label">
-                                <span>🎯</span>
-                                <span>場景錨點</span>
+                                <span>🧬</span>
+                                <span>文風基因 (Style DNA)</span>
                             </span>
-                            <span class="director-badge">Context</span>
+                            <button class="extract-btn" id="extractStyleBtn" title="分析前文，提取寫作風格">🧬 提取文風</button>
                         </div>
-                        <textarea class="director-textarea scene-anchors" id="storyAnchors" spellcheck="false" placeholder="本章重點摘要與氛圍...
+                        <textarea class="director-textarea" id="styleDNA" spellcheck="false" placeholder="此處顯示您的寫作風格側寫（全域共用）。
 
-例如：
-- 時間：深夜、雨天
-- 地點：廢棄的圖書館
-- 氛圍：緊張、壓抑
-- 當前衝突：主角發現了隱藏的秘密..."></textarea>
-                        <button class="checkpoint-btn" id="checkpointBtn">
-                            <span>✨</span>
-                            <span>本章結算 (自動摘要)</span>
-                        </button>
+點擊上方按鈕，AI 將分析您的前文並自動填入風格特徵。"></textarea>
+                        <p class="director-hint">💡 這是全域設定。AI 會依此模仿您的筆觸。</p>
                     </div>
 
                     <!-- 角色印象筆記 -->
