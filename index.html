@@ -12,7 +12,7 @@
         script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com https://accounts.google.com https://*.firebasedatabase.app;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
         font-src 'self' https://fonts.gstatic.com;
-        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com https://yinli.one https://api.vectorengine.ai https://accounts.google.com https://*.firebaseapp.com https://*.firebasedatabase.app wss://*.firebasedatabase.app;
+        connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com https://*.openrouter.ai https://api.openai.com https://openrouter.ai wss://*.firebaseio.com https://yinli.one https://api.vectorengine.ai https://accounts.google.com https://*.firebaseapp.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*;
         img-src 'self' data: https: blob:;
         frame-src 'self' https://*.firebaseapp.com https://*.google.com https://accounts.google.com https://*.firebasedatabase.app;
         object-src 'none';
@@ -290,6 +290,69 @@
 
                 <!-- Settings Section - 硬體設定 -->
                 <div class="panel-section" id="settingsSection">
+                    <!-- Game Mode Settings -->
+                    <div class="setting-group">
+                        <label class="setting-label">🎲 遊戲模式（TRPG）</label>
+                        <div class="game-mode-toggle">
+                            <button class="action-btn" id="toggleGameModeBtn">啟用遊戲模式</button>
+                            <p class="setting-hint">啟用後將使用社交屬性系統與骰子判定</p>
+                        </div>
+                        <div class="character-creation-panel" id="characterCreationPanel" style="display: none;">
+                            <h3 class="setting-label">👤 角色創建</h3>
+                            <p class="setting-hint">分配 10 點到以下屬性（基礎值各 5）</p>
+
+                            <!-- 威儀 -->
+                            <div class="attribute-row">
+                                <label class="attribute-label">
+                                    <span class="attribute-icon">👑</span>
+                                    <span>威儀 (Authority)</span>
+                                </label>
+                                <input type="range" class="attribute-slider" id="authoritySlider" min="0" max="10" value="5">
+                                <span class="attribute-value" id="authorityValue">5</span>
+                            </div>
+
+                            <!-- 共情 -->
+                            <div class="attribute-row">
+                                <label class="attribute-label">
+                                    <span class="attribute-icon">💗</span>
+                                    <span>共情 (Empathy)</span>
+                                </label>
+                                <input type="range" class="attribute-slider" id="empathySlider" min="0" max="10" value="5">
+                                <span class="attribute-value" id="empathyValue">5</span>
+                            </div>
+
+                            <!-- 機變 -->
+                            <div class="attribute-row">
+                                <label class="attribute-label">
+                                    <span class="attribute-icon">🦊</span>
+                                    <span>機變 (Cunning)</span>
+                                </label>
+                                <input type="range" class="attribute-slider" id="cunningSlider" min="0" max="10" value="5">
+                                <span class="attribute-value" id="cunningValue">5</span>
+                            </div>
+
+                            <!-- 理性 -->
+                            <div class="attribute-row">
+                                <label class="attribute-label">
+                                    <span class="attribute-icon">🧠</span>
+                                    <span>理性 (Logic)</span>
+                                </label>
+                                <input type="range" class="attribute-slider" id="logicSlider" min="0" max="10" value="5">
+                                <span class="attribute-value" id="logicValue">5</span>
+                            </div>
+
+                            <div class="points-display">
+                                <span>剩餘點數：</span>
+                                <span class="points-value" id="remainingPoints">10</span>
+                            </div>
+
+                            <div class="action-btns">
+                                <button class="action-btn" id="createCharacterBtn">創建角色</button>
+                                <button class="action-btn" id="resetCharacterBtn">重置</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Cloud Status & Backup -->
                     <div class="setting-group">
                         <label class="setting-label">☁️ 雲端狀態與備份</label>
@@ -521,6 +584,19 @@
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
 
+        <!-- 3D Dice Animation Container -->
+        <div class="dice-container" id="diceContainer">
+            <div class="dice-cube" id="diceCube">
+                <div class="dice-face dice-front">1</div>
+                <div class="dice-face dice-back">6</div>
+                <div class="dice-face dice-right">2</div>
+                <div class="dice-face dice-left">5</div>
+                <div class="dice-face dice-top">3</div>
+                <div class="dice-face dice-bottom">4</div>
+            </div>
+            <div class="dice-result" id="diceResult"></div>
+        </div>
+
         <!-- Title Edit Modal -->
         <div class="modal-overlay" id="titleModal">
             <div class="modal">
@@ -568,6 +644,10 @@
     <script src="js/char-manager.js"></script>
     <script src="js/ai-engine.js"></script>
     <script src="js/auth-manager.js"></script>
+    <!-- Game System Modules -->
+    <script src="js/game-state.js"></script>
+    <script src="js/prompts.js"></script>
+    <script src="js/systems.js"></script>
     <!-- Main Application -->
     <script src="js/app.js"></script>
 </body>

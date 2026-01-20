@@ -983,3 +983,229 @@ const $$ = sel => document.querySelectorAll(sel);
                     text.textContent = '已同步';
             }
         }
+
+// ============================================
+// Game Mode UI - TRPG System
+// ============================================
+
+/**
+ * 顯示 3D 骰子動畫
+ * @param {number} result - 骰子結果 (1-12)
+ * @param {boolean} success - 是否成功
+ */
+function showDiceAnimation(result, success) {
+    const container = document.getElementById('diceContainer');
+    const cube = document.getElementById('diceCube');
+    const resultText = document.getElementById('diceResult');
+
+    if (!container || !cube || !resultText) {
+        console.warn('骰子動畫元素不存在');
+        return;
+    }
+
+    // 計算最終旋轉角度以顯示正確的面
+    const rotations = getDiceRotation(result);
+
+    // 設置 CSS 變數
+    cube.style.setProperty('--final-x', `${rotations.x}deg`);
+    cube.style.setProperty('--final-y', `${rotations.y}deg`);
+    cube.style.setProperty('--final-z', `${rotations.z}deg`);
+
+    // 設置結果文字
+    resultText.textContent = success ? `成功！骰得 ${result}` : `失敗！骰得 ${result}`;
+    resultText.style.background = success ? 'var(--success)' : 'var(--error)';
+
+    // 更新骰子上的數字（D12 有 1-12 的面）
+    const faces = cube.querySelectorAll('.dice-face');
+    faces[0].textContent = result; // 顯示正面
+
+    // 顯示容器
+    container.classList.add('active');
+
+    // 重新觸發動畫
+    cube.style.animation = 'none';
+    setTimeout(() => {
+        cube.style.animation = 'dice-roll 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    }, 10);
+
+    // 2.5 秒後隱藏
+    setTimeout(() => {
+        container.classList.remove('active');
+    }, 2500);
+}
+
+/**
+ * 根據骰子結果計算旋轉角度
+ * @param {number} result - 骰子結果 (1-12)
+ * @returns {Object} 旋轉角度 {x, y, z}
+ */
+function getDiceRotation(result) {
+    // D12 的旋轉角度映射（簡化版，只顯示數字）
+    const rotations = {
+        1: { x: 0, y: 0, z: 0 },
+        2: { x: 0, y: 90, z: 0 },
+        3: { x: 90, y: 0, z: 0 },
+        4: { x: -90, y: 0, z: 0 },
+        5: { x: 0, y: -90, z: 0 },
+        6: { x: 0, y: 180, z: 0 },
+        7: { x: 45, y: 45, z: 0 },
+        8: { x: -45, y: 45, z: 0 },
+        9: { x: 45, y: -45, z: 0 },
+        10: { x: -45, y: -45, z: 0 },
+        11: { x: 45, y: 0, z: 45 },
+        12: { x: -45, y: 0, z: -45 }
+    };
+
+    return rotations[result] || { x: 0, y: 0, z: 0 };
+}
+
+/**
+ * 初始化遊戲模式 UI
+ */
+function initGameModeUI() {
+    const toggleBtn = document.getElementById('toggleGameModeBtn');
+    const panel = document.getElementById('characterCreationPanel');
+    const createBtn = document.getElementById('createCharacterBtn');
+    const resetBtn = document.getElementById('resetCharacterBtn');
+
+    // 屬性滑桿
+    const authoritySlider = document.getElementById('authoritySlider');
+    const empathySlider = document.getElementById('empathySlider');
+    const cunningSlider = document.getElementById('cunningSlider');
+    const logicSlider = document.getElementById('logicSlider');
+
+    const authorityValue = document.getElementById('authorityValue');
+    const empathyValue = document.getElementById('empathyValue');
+    const cunningValue = document.getElementById('cunningValue');
+    const logicValue = document.getElementById('logicValue');
+
+    const remainingPoints = document.getElementById('remainingPoints');
+
+    if (!toggleBtn || !panel) return;
+
+    // 初始化遊戲狀態
+    if (typeof initGameState === 'function') {
+        initGameState();
+    }
+
+    // 更新按鈕文字
+    function updateToggleButton() {
+        if (gameState.gameMode) {
+            toggleBtn.textContent = '關閉遊戲模式';
+            toggleBtn.classList.add('active');
+            panel.style.display = 'block';
+        } else {
+            toggleBtn.textContent = '啟用遊戲模式';
+            toggleBtn.classList.remove('active');
+            panel.style.display = 'none';
+        }
+    }
+
+    // 切換遊戲模式
+    toggleBtn.addEventListener('click', () => {
+        if (typeof toggleGameMode === 'function') {
+            toggleGameMode();
+            updateToggleButton();
+            showToast(gameState.gameMode ? '遊戲模式已啟用' : '遊戲模式已關閉', 'info');
+        }
+    });
+
+    // 計算剩餘點數
+    function calculateRemainingPoints() {
+        const total =
+            parseInt(authoritySlider.value) +
+            parseInt(empathySlider.value) +
+            parseInt(cunningSlider.value) +
+            parseInt(logicSlider.value);
+
+        const baseTotal = 20; // 4 * 5
+        const maxTotal = 30; // baseTotal + 10
+
+        const remaining = maxTotal - total;
+        remainingPoints.textContent = remaining;
+
+        // 如果點數用完，禁用所有滑桿的增加
+        if (remaining <= 0) {
+            remainingPoints.style.color = 'var(--error)';
+        } else {
+            remainingPoints.style.color = 'var(--accent)';
+        }
+
+        return remaining;
+    }
+
+    // 滑桿事件
+    function setupSlider(slider, valueDisplay) {
+        slider.addEventListener('input', (e) => {
+            valueDisplay.textContent = e.target.value;
+            calculateRemainingPoints();
+        });
+    }
+
+    if (authoritySlider && authorityValue) setupSlider(authoritySlider, authorityValue);
+    if (empathySlider && empathyValue) setupSlider(empathySlider, empathyValue);
+    if (cunningSlider && cunningValue) setupSlider(cunningSlider, cunningValue);
+    if (logicSlider && logicValue) setupSlider(logicSlider, logicValue);
+
+    // 創建角色
+    if (createBtn) {
+        createBtn.addEventListener('click', () => {
+            const remaining = calculateRemainingPoints();
+
+            if (remaining !== 0) {
+                showToast(`點數尚未分配完畢！剩餘 ${remaining} 點`, 'warning');
+                return;
+            }
+
+            const attributes = {
+                authority: parseInt(authoritySlider.value),
+                empathy: parseInt(empathySlider.value),
+                cunning: parseInt(cunningSlider.value),
+                logic: parseInt(logicSlider.value)
+            };
+
+            try {
+                if (typeof createCharacter === 'function') {
+                    createCharacter(attributes);
+                    showToast('角色創建成功！', 'success');
+                }
+            } catch (error) {
+                showToast(`創建失敗: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    // 重置角色
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (typeof resetCharacter === 'function') {
+                resetCharacter();
+
+                authoritySlider.value = 5;
+                empathySlider.value = 5;
+                cunningSlider.value = 5;
+                logicSlider.value = 5;
+
+                authorityValue.textContent = 5;
+                empathyValue.textContent = 5;
+                cunningValue.textContent = 5;
+                logicValue.textContent = 5;
+
+                calculateRemainingPoints();
+
+                showToast('角色已重置', 'info');
+            }
+        });
+    }
+
+    // 初始化顯示
+    updateToggleButton();
+    calculateRemainingPoints();
+}
+
+// 在頁面載入時初始化遊戲 UI
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGameModeUI);
+} else {
+    initGameModeUI();
+}

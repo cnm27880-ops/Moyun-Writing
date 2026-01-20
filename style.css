@@ -3715,6 +3715,346 @@
         }
 
         /* ============================================
+           Game Mode - TRPG System
+           ============================================ */
+
+        /* Character Creation Panel */
+        .character-creation-panel {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-lg);
+            background: var(--bg-paper);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .attribute-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .attribute-label {
+            flex: 0 0 180px;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ink-primary);
+        }
+
+        .attribute-icon {
+            font-size: 20px;
+        }
+
+        .attribute-slider {
+            flex: 1;
+            height: 6px;
+            background: var(--border-light);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .attribute-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .attribute-slider::-webkit-slider-thumb:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        .attribute-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .attribute-slider::-moz-range-thumb:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        .attribute-value {
+            flex: 0 0 40px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .points-display {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: var(--accent-light);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .points-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-left: var(--spacing-xs);
+        }
+
+        /* Game Options */
+        .game-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            margin: var(--spacing-lg) 0;
+        }
+
+        .game-option-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--bg-paper);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: var(--font-literary);
+            font-size: 16px;
+            color: var(--ink-primary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .game-option-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .game-option-btn:active {
+            transform: translateY(0);
+        }
+
+        .option-icon {
+            font-size: 24px;
+        }
+
+        .option-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .option-attribute {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: var(--accent-light);
+            border-radius: 6px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Dice Check Result */
+        .dice-check-result {
+            margin: var(--spacing-lg) 0;
+            padding: var(--spacing-lg);
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--bg-paper);
+        }
+
+        .dice-check-result.success {
+            border-color: var(--success);
+            background: linear-gradient(135deg, rgba(107, 142, 35, 0.1) 0%, rgba(107, 142, 35, 0.05) 100%);
+        }
+
+        .dice-check-result.failure {
+            border-color: var(--error);
+            background: linear-gradient(135deg, rgba(199, 92, 92, 0.1) 0%, rgba(199, 92, 92, 0.05) 100%);
+        }
+
+        .check-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .check-attribute {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--ink-primary);
+        }
+
+        .check-status {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .dice-check-result.success .check-status {
+            color: var(--success);
+        }
+
+        .dice-check-result.failure .check-status {
+            color: var(--error);
+        }
+
+        .check-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            font-size: 14px;
+            color: var(--ink-secondary);
+        }
+
+        .check-details .resonance {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .check-details .difficulty {
+            margin-left: auto;
+            color: var(--ink-muted);
+        }
+
+        /* ============================================
+           3D Dice Animation
+           ============================================ */
+
+        .dice-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            perspective: 1000px;
+            z-index: var(--z-modal);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dice-container.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .dice-cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: dice-roll 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes dice-roll {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+                transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg);
+            }
+            50% {
+                transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg);
+            }
+            75% {
+                transform: rotateX(1080deg) rotateY(540deg) rotateZ(270deg);
+            }
+            100% {
+                transform: rotateX(var(--final-x, 0deg)) rotateY(var(--final-y, 0deg)) rotateZ(var(--final-z, 0deg));
+            }
+        }
+
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            border: 3px solid var(--accent);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            font-weight: 900;
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(107, 142, 35, 0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .dice-front {
+            transform: translateZ(100px);
+        }
+
+        .dice-back {
+            transform: rotateY(180deg) translateZ(100px);
+        }
+
+        .dice-right {
+            transform: rotateY(90deg) translateZ(100px);
+        }
+
+        .dice-left {
+            transform: rotateY(-90deg) translateZ(100px);
+        }
+
+        .dice-top {
+            transform: rotateX(90deg) translateZ(100px);
+        }
+
+        .dice-bottom {
+            transform: rotateX(-90deg) translateZ(100px);
+        }
+
+        .dice-result {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--accent);
+            color: white;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: result-fade-in 0.5s ease 2s forwards;
+        }
+
+        @keyframes result-fade-in {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Dark mode adjustments for dice */
+        [data-theme="dark"] .dice-face {
+            background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        [data-theme="dark"] .dice-result {
+            background: var(--accent);
+            color: var(--bg-app);
+        }
+
+        /* ============================================
            Utility
            ============================================ */
         .hidden { display: none !important; }
