@@ -143,47 +143,30 @@ async function callAPI(userContent, options = {}) {
         headers['X-Title'] = 'MoYun';
     }
 
-    // 檢測是否支援 Prompt Caching（只有官方 Anthropic API 和 OpenRouter 支援）
-    const isClaude = modelName.toLowerCase().includes('claude') || modelName.toLowerCase().includes('sonnet');
-    const supportsPromptCaching = isClaude && (
-        apiEndpoint.includes('anthropic.com') ||
-        apiEndpoint.includes('openrouter.ai')
-    );
-
-    // 只在支援的端點上添加 Beta Header
-    if (supportsPromptCaching) {
-        headers['Anthropic-Beta'] = 'prompt-caching-2024-07-31';
-    }
-
     // 建構 messages 陣列，過濾空的 system message (修復 API 空訊息過濾)
     const messages = [];
     if (systemPrompt && systemPrompt.trim()) {
-        if (supportsPromptCaching) {
-            // 官方 API / OpenRouter：使用快取優化
-            messages.push({
-                role: 'system',
-                content: [
-                    {
-                        type: 'text',
-                        text: systemPrompt,
-                        cache_control: { type: 'ephemeral' }
-                    }
-                ]
-            });
-        } else {
-            // Bedrock 或其他中轉站：使用標準格式（純文字字串）
-            messages.push({ role: 'system', content: systemPrompt });
-        }
+        // 統一使用標準字串格式，確保 Bedrock 等中轉站相容
+        messages.push({ role: 'system', content: systemPrompt });
     }
     messages.push(...history);
 
+    // 建構請求體
     const requestBody = {
         model: modelName,
         messages: messages,
-        temperature: parseFloat(temperature),
-        top_p: 0.95,
         max_tokens: 4096
     };
+
+    // 二選一策略：temperature 與 top_p 不可同時設定（Bedrock 限制）
+    const tempValue = parseFloat(temperature);
+    if (tempValue !== 1.0 && tempValue !== 0) {
+        // 用戶有自訂創意度，優先使用 temperature
+        requestBody.temperature = tempValue;
+    } else {
+        // 使用預設的 top_p
+        requestBody.top_p = 0.95;
+    }
 
     // 如果開啟 streaming 模式
     if (options.stream) {
