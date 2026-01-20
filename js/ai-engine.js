@@ -143,17 +143,23 @@ async function callAPI(userContent, options = {}) {
         headers['X-Title'] = 'MoYun';
     }
 
-    // 檢測是否為 Claude 模型（支援 Prompt Caching）
+    // 檢測是否支援 Prompt Caching（只有官方 Anthropic API 和 OpenRouter 支援）
     const isClaude = modelName.toLowerCase().includes('claude') || modelName.toLowerCase().includes('sonnet');
-    if (isClaude) {
+    const supportsPromptCaching = isClaude && (
+        apiEndpoint.includes('anthropic.com') ||
+        apiEndpoint.includes('openrouter.ai')
+    );
+
+    // 只在支援的端點上添加 Beta Header
+    if (supportsPromptCaching) {
         headers['Anthropic-Beta'] = 'prompt-caching-2024-07-31';
     }
 
     // 建構 messages 陣列，過濾空的 system message (修復 API 空訊息過濾)
     const messages = [];
     if (systemPrompt && systemPrompt.trim()) {
-        if (isClaude) {
-            // Claude 模型：使用快取優化
+        if (supportsPromptCaching) {
+            // 官方 API / OpenRouter：使用快取優化
             messages.push({
                 role: 'system',
                 content: [
@@ -165,7 +171,7 @@ async function callAPI(userContent, options = {}) {
                 ]
             });
         } else {
-            // 其他模型：使用標準格式
+            // Bedrock 或其他中轉站：使用標準格式（純文字字串）
             messages.push({ role: 'system', content: systemPrompt });
         }
     }
