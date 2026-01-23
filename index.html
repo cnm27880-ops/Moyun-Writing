@@ -554,6 +554,27 @@
                 </div>
             </div>
         </div>
+
+        <!-- Directed Regeneration Modal - 引導重寫 -->
+        <div class="modal-overlay" id="directedRegenModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">🎬 引導重寫</h3>
+                    <button class="modal-close" id="directedRegenModalClose">×</button>
+                </div>
+                <div class="modal-body">
+                    <label for="directedRegenInput" class="modal-label">請輸入重寫指令：</label>
+                    <textarea class="modal-textarea" id="directedRegenInput"
+                              placeholder="例如：讓語氣更悲傷、增加更多對話、描寫更細膩、加入更多心理活動..."
+                              rows="4" spellcheck="false"></textarea>
+                    <p class="modal-hint">💡 提示：具體的指令能獲得更好的重寫效果</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn cancel" id="directedRegenModalCancel">取消</button>
+                    <button class="modal-btn confirm" id="directedRegenModalConfirm">開始重寫</button>
+                </div>
+            </div>
+        </div>
     </div>
 
 

@@ -142,7 +142,25 @@ const LOGIC_PRESETS = {
     },
     'claude': {
         name: 'Claude: 文學沉浸 (Immersion)',
-        instruction: `<style_guide>\n核心原則：Show, Don't Tell。\n優先順序：觸覺 > 溫覺 > 嗅覺 > 聽覺 > 視覺。\n請模仿人類作家的非線性敘事，允許對話破碎與留白。\n</style_guide>`
+        instruction: `<writing_protocol>
+  <style_dna>
+    1. 模仿人類作家的寫作直覺，採用直接切入法，禁止總結式開頭。
+    2. 嚴格遵守「短促動作（10字內）— 中長描寫（20-30字）— 情緒爆發」的節奏。
+    3. 嚴格執行「Show, Don't Tell」：每一段描寫必須包含至少一種觸覺、溫覺或嗅覺。
+    4. 角色心理必須透過生理反應展現，嚴禁直接標註心情。
+    5. 嚴禁使用「不是...而是...」、「與其說...倒不如說...」、「不僅僅是...更是...」等句式。
+    6. 禁用過多破折號。
+  </style_dna>
+  <viewpoint_control>
+    - 你負責「AI 主筆角色」與配角。
+    - 嚴禁揣測、代行「用戶主筆角色」的心聲與言語，僅能描寫 AI 角色對其觀察到的反應。
+  </viewpoint_control>
+  <format_protocol>
+    - 每個段落（除對話外）至少 30 字以上。
+    - 嚴格遵守「段落、對白、段落」交錯排列的句式。
+    - 回覆末尾嚴禁任何昇華主題或情感感嘆。
+  </format_protocol>
+</writing_protocol>`
     },
     'custom': {
         name: '自訂模式 (進階)',

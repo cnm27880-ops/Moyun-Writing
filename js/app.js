@@ -504,6 +504,38 @@ function initEventListeners() {
         if (e.target === el.confirmModal) hideConfirmModal();
     });
 
+    // Directed Regeneration Modal
+    if (el.directedRegenModalClose) {
+        el.directedRegenModalClose.addEventListener('click', hideDirectedRegenModal);
+    }
+    if (el.directedRegenModalCancel) {
+        el.directedRegenModalCancel.addEventListener('click', hideDirectedRegenModal);
+    }
+    if (el.directedRegenModalConfirm) {
+        el.directedRegenModalConfirm.addEventListener('click', () => {
+            const instruction = el.directedRegenInput?.value?.trim();
+            if (instruction && directedRegenCallback) {
+                hideDirectedRegenModal();
+                directedRegenCallback(instruction);
+            } else if (!instruction) {
+                showToast('請輸入有效的指令', 'warning');
+            }
+        });
+    }
+    if (el.directedRegenModal) {
+        el.directedRegenModal.addEventListener('click', (e) => {
+            if (e.target === el.directedRegenModal) hideDirectedRegenModal();
+        });
+    }
+    if (el.directedRegenInput) {
+        el.directedRegenInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                el.directedRegenModalConfirm?.click();
+            }
+        });
+    }
+
     // Scroll behavior
     window.addEventListener('scroll', handleScroll, { passive: true });
 

@@ -666,27 +666,35 @@ async function regenerateParagraph(paraId, instruction = null) {
 
 // ============================================
 // Directed Regeneration (指導重寫)
-// 彈出輸入框讓用戶輸入指令
+// 彈出 Modal 讓用戶輸入指令
 // ============================================
 function showDirectedRegenerationPrompt(paraId) {
-    // 使用 prompt 對話框取得用戶指令
-    const instruction = window.prompt(
-        '請輸入重寫指令（例如：讓語氣更悲傷、增加更多對話、描寫更細膩等）：',
-        ''
-    );
+    // 使用 Modal 對話框取得用戶指令
+    if (typeof showDirectedRegenModal === 'function') {
+        showDirectedRegenModal((instruction) => {
+            // 執行指導重寫
+            regenerateParagraph(paraId, instruction.trim());
+        });
+    } else {
+        // 降級處理：使用原本的 prompt（相容性保護）
+        const instruction = window.prompt(
+            '請輸入重寫指令（例如：讓語氣更悲傷、增加更多對話、描寫更細膩等）：',
+            ''
+        );
 
-    if (instruction === null) {
-        // 用戶取消
-        return;
+        if (instruction === null) {
+            // 用戶取消
+            return;
+        }
+
+        if (!instruction.trim()) {
+            showToast('請輸入有效的指令', 'warning');
+            return;
+        }
+
+        // 執行指導重寫
+        regenerateParagraph(paraId, instruction.trim());
     }
-
-    if (!instruction.trim()) {
-        showToast('請輸入有效的指令', 'warning');
-        return;
-    }
-
-    // 執行指導重寫
-    regenerateParagraph(paraId, instruction.trim());
 }
 
 // ============================================

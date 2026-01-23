@@ -105,6 +105,13 @@ const $$ = sel => document.querySelectorAll(sel);
             confirmModalCancel: $('confirmModalCancel'),
             confirmModalConfirm: $('confirmModalConfirm'),
 
+            // Directed Regeneration Modal
+            directedRegenModal: $('directedRegenModal'),
+            directedRegenInput: $('directedRegenInput'),
+            directedRegenModalClose: $('directedRegenModalClose'),
+            directedRegenModalCancel: $('directedRegenModalCancel'),
+            directedRegenModalConfirm: $('directedRegenModalConfirm'),
+
             // Focus Mode
             focusModeBtn: $('focusModeBtn'),
             focusModeExit: $('focusModeExit'),
@@ -162,6 +169,7 @@ const $$ = sel => document.querySelectorAll(sel);
         // Modal Functions
         // ============================================
         let confirmCallback = null;
+        let directedRegenCallback = null;
 
         function showTitleModal() {
             el.titleModalInput.value = state.currentDoc?.title || '';
@@ -184,6 +192,20 @@ const $$ = sel => document.querySelectorAll(sel);
         function hideConfirmModal() {
             el.confirmModal.classList.remove('active');
             confirmCallback = null;
+        }
+
+        function showDirectedRegenModal(onConfirm) {
+            if (!el.directedRegenModal) return;
+            el.directedRegenInput.value = '';
+            el.directedRegenModal.classList.add('active');
+            el.directedRegenInput.focus();
+            directedRegenCallback = onConfirm;
+        }
+
+        function hideDirectedRegenModal() {
+            if (!el.directedRegenModal) return;
+            el.directedRegenModal.classList.remove('active');
+            directedRegenCallback = null;
         }
 
         // ============================================
@@ -580,7 +602,7 @@ const $$ = sel => document.querySelectorAll(sel);
                         el.logicModeHint.textContent = '三段式思考：感知 → 判斷 → 行動。適合推演角色內心算計。';
                         break;
                     case 'claude':
-                        el.logicModeHint.textContent = '核心原則：Show, Don\'t Tell。優先順序：觸覺 > 溫覺 > 嗅覺 > 聽覺 > 視覺。';
+                        el.logicModeHint.textContent = '文學沉浸模式：Show, Don\'t Tell + 生理反應展現心理 + 嚴禁代行用戶角色心聲。';
                         break;
                     case 'custom':
                         el.logicModeHint.textContent = '使用你在設定頁的自訂 System Prompt。';

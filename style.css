@@ -1899,6 +1899,41 @@
             border-color: var(--accent);
         }
 
+        .modal-textarea {
+            width: 100%;
+            padding: var(--spacing-md);
+            font-family: var(--font-literary);
+            font-size: 1rem;
+            color: var(--ink-primary);
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-family: var(--font-literary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--ink-secondary);
+        }
+
+        .modal-hint {
+            margin-top: var(--spacing-sm);
+            font-family: var(--font-literary);
+            font-size: 0.85rem;
+            color: var(--ink-tertiary);
+            line-height: 1.5;
+        }
+
         .modal-footer {
             padding: var(--spacing-md) var(--spacing-lg);
             border-top: 1px solid var(--border-light);
