@@ -2018,6 +2018,7 @@
         .world-btn-group {
             display: flex;
             gap: var(--spacing-xs);
+            flex-shrink: 0;
         }
 
         .world-btn {
@@ -3053,6 +3054,33 @@
         }
 
         .backup-restore-btn:active {
+            transform: translateY(0);
+        }
+
+        .backup-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .backup-delete-btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            background: var(--bg-paper);
+            color: var(--error);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all var(--transition-smooth);
+            font-family: var(--font-secondary);
+        }
+
+        .backup-delete-btn:hover {
+            background: rgba(199, 92, 92, 0.1);
+            border-color: var(--error);
+            transform: translateY(-1px);
+        }
+
+        .backup-delete-btn:active {
             transform: translateY(0);
         }
 

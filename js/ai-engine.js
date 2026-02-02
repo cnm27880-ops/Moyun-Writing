@@ -9,26 +9,37 @@
 function buildSystemPrompt() {
     const parts = [];
 
-    // 1. 底層邏輯指令 (根據 logicMode 決定)
-    const logicMode = state.currentDoc?.logicMode || 'claude';
-    let instruction = '';
+    // === 快取友善排序原則：靜態在前，動態在後 ===
+    // 這樣可以最大化 Prompt Caching 的效益
 
+    const logicMode = state.currentDoc?.logicMode || 'claude';
+
+    // 1. 底層邏輯指令 (Logic Mode) - 最靜態，極少變動
+    let instruction = '';
     if (logicMode === 'custom') {
-        // 自訂模式：使用 customPrompt
         instruction = el.customPrompt?.value?.trim() || '';
     } else {
-        // Gemini / Claude：使用預設的 LOGIC_PRESETS
         const preset = LOGIC_PRESETS[logicMode];
         if (preset) {
             instruction = preset.instruction;
         }
     }
-
     if (instruction) {
         parts.push(instruction);
     }
 
-    // 2. 世界觀設定 (Claude 模式用 XML 包裹)
+    // 2. 文風基因 (Style DNA) - 全域設定，極少變動
+    const styleDNA = state.globalSettings?.authorStyleProfile?.trim() ||
+                     document.getElementById('styleDNA')?.value?.trim();
+    if (styleDNA) {
+        if (logicMode === 'claude') {
+            parts.push(`<style_dna>\n${styleDNA}\n</style_dna>`);
+        } else {
+            parts.push(`【文風基因】\n${styleDNA}`);
+        }
+    }
+
+    // 3. 世界觀設定 - 文檔級設定，不常變動
     const worldSetting = el.worldSetting?.value?.trim();
     if (worldSetting) {
         if (logicMode === 'claude') {
@@ -38,18 +49,7 @@ function buildSystemPrompt() {
         }
     }
 
-    // 3. 文風基因 (Style DNA) - 全域設定
-    const styleDNA = state.globalSettings?.authorStyleProfile?.trim() ||
-                     document.getElementById('styleDNA')?.value?.trim();
-    if (styleDNA) {
-        if (logicMode === 'claude') {
-            parts.push(`<style_reference>\n${styleDNA}\n</style_reference>`);
-        } else {
-            parts.push(`【文風參考】\n${styleDNA}`);
-        }
-    }
-
-    // 4. 角色印象筆記 (權重最高，防止 OOC)
+    // 4. 角色印象筆記 - 最高權重，會隨劇情更新（動態）
     const aiCharNote = el.aiCharacterNoteText?.value?.trim();
     const userCharNote = el.userCharacterNoteText?.value?.trim();
     if (aiCharNote || userCharNote) {
@@ -75,7 +75,7 @@ function buildSystemPrompt() {
         parts.push(charNotes);
     }
 
-    // 5. 角色心理混音台 Prompt
+    // 5. 角色心理混音台 - 動態權重，隨對話變動
     const mindsetPrompt = buildCharacterMindsetPrompt();
     if (mindsetPrompt) {
         parts.push(mindsetPrompt);
@@ -146,16 +146,27 @@ async function callAPI(userContent, options = {}) {
     // 建構 messages 陣列，過濾空的 system message (修復 API 空訊息過濾)
     const messages = [];
     if (systemPrompt && systemPrompt.trim()) {
+        // 統一使用標準字串格式，確保 Bedrock 等中轉站相容
         messages.push({ role: 'system', content: systemPrompt });
     }
     messages.push(...history);
 
+    // 建構請求體
     const requestBody = {
         model: modelName,
         messages: messages,
-        temperature: parseFloat(temperature),
         max_tokens: 4096
     };
+
+    // 二選一策略：temperature 與 top_p 不可同時設定（Bedrock 限制）
+    const tempValue = parseFloat(temperature);
+    if (tempValue !== 1.0 && tempValue !== 0) {
+        // 用戶有自訂創意度，優先使用 temperature
+        requestBody.temperature = tempValue;
+    } else {
+        // 使用預設的 top_p
+        requestBody.top_p = 0.95;
+    }
 
     // 如果開啟 streaming 模式
     if (options.stream) {
@@ -423,16 +434,16 @@ async function extractStyleDNA() {
     }
 
     try {
-        // 優先取用戶撰寫的段落來分析風格
+        // 優先取用戶撰寫的段落來分析風格（品質過濾：只分析超過 50 字的段落）
         const userParagraphs = state.currentDoc.paragraphs
-            .filter(p => p.source === 'user' && p.content?.trim())
+            .filter(p => p.source === 'user' && p.content?.trim() && p.content.length > 50)
             .map(p => p.content);
 
         // 如果用戶段落不夠，補充一些 AI 段落
         let contentToAnalyze = userParagraphs.slice(-8).join('\n\n');
         if (userParagraphs.length < 3) {
             const allContent = state.currentDoc.paragraphs
-                .filter(p => p.content?.trim())
+                .filter(p => p.content?.trim() && p.content.length > 50)
                 .slice(-10)
                 .map(p => p.content)
                 .join('\n\n');
@@ -446,6 +457,7 @@ async function extractStyleDNA() {
 - 感官側重（偏好視覺描寫？聽覺？觸覺？心理活動？）
 - 用詞氛圍（典雅？口語化？帶有詩意？冷峻？溫暖？）
 
+請忽略短促的對話或指令，專注於描寫類段落的敘事質感。
 請不要列出條列式規則，而是給出一份約 100 字的「風格側寫」，像是在向另一位作家描述這種寫作風格的特徵。
 
 【文字片段】

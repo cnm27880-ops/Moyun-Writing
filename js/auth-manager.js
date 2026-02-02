@@ -173,6 +173,9 @@ async function checkAndPerformAutoBackup() {
             if (backupId) {
                 localStorage.setItem('moyun_lastAutoBackup', now.toString());
                 console.log('自動備份完成');
+
+                // 自動清理超過三天的舊備份
+                await storageManager.cleanOldBackups(3);
             }
         }
     } catch (error) {
@@ -221,7 +224,10 @@ async function renderBackupList() {
                         <div class="backup-note">${escapeHtml(backup.note)}</div>
                         <div class="backup-date">${dateStr}</div>
                     </div>
-                    <button class="backup-restore-btn" onclick="restoreBackup('${backup.id}')">還原</button>
+                    <div class="backup-actions">
+                        <button class="backup-restore-btn" onclick="restoreBackup('${backup.id}')">還原</button>
+                        <button class="backup-delete-btn" onclick="deleteBackup('${backup.id}')">刪除</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -361,6 +367,35 @@ async function restoreBackup(backupId) {
             }
             console.error('還原備份失敗:', error);
             showToast('還原失敗：' + error.message, 'error');
+        }
+    });
+}
+
+async function deleteBackup(backupId) {
+    showConfirmModal('刪除備份', '確定要刪除此備份嗎？此操作無法復原。', async () => {
+        hideConfirmModal();
+
+        const toastEl = showToast('正在刪除備份...', 'info', 0);
+
+        try {
+            const success = await storageManager.deleteCloudBackup(backupId);
+
+            if (toastEl && toastEl.parentNode) {
+                toastEl.remove();
+            }
+
+            if (success) {
+                showToast('備份已刪除', 'success');
+                await renderBackupList();
+            } else {
+                showToast('刪除備份失敗', 'error');
+            }
+        } catch (error) {
+            if (toastEl && toastEl.parentNode) {
+                toastEl.remove();
+            }
+            console.error('刪除備份失敗:', error);
+            showToast('刪除失敗：' + error.message, 'error');
         }
     });
 }
